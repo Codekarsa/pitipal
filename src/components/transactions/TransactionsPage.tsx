@@ -33,12 +33,31 @@ export function TransactionsPage() {
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("date_desc");
+  const [userCurrency, setUserCurrency] = useState<string>('USD');
 
   useEffect(() => {
     if (user) {
       fetchTransactions();
+      fetchUserProfile();
     }
   }, [user]);
+
+  const fetchUserProfile = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('currency')
+        .eq('user_id', user?.id)
+        .single();
+
+      if (error) throw error;
+      if (data?.currency) {
+        setUserCurrency(data.currency);
+      }
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+    }
+  };
 
   const fetchTransactions = async () => {
     try {
@@ -171,7 +190,7 @@ export function TransactionsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Total Income</p>
-                <p className="text-2xl font-bold text-green-600">{formatCurrency(stats.income)}</p>
+                <p className="text-2xl font-bold text-green-600">{formatCurrency(stats.income, userCurrency)}</p>
               </div>
               <div className="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center">
                 <TrendingUp className="h-6 w-6 text-green-600" />
@@ -185,7 +204,7 @@ export function TransactionsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Total Expenses</p>
-                <p className="text-2xl font-bold text-red-600">{formatCurrency(stats.expenses)}</p>
+                <p className="text-2xl font-bold text-red-600">{formatCurrency(stats.expenses, userCurrency)}</p>
               </div>
               <div className="w-12 h-12 bg-red-500/10 rounded-xl flex items-center justify-center">
                 <TrendingDown className="h-6 w-6 text-red-600" />
@@ -200,7 +219,7 @@ export function TransactionsPage() {
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Net Amount</p>
                 <p className={`text-2xl font-bold ${stats.net >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {formatCurrency(stats.net)}
+                  {formatCurrency(stats.net, userCurrency)}
                 </p>
               </div>
               <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
@@ -336,7 +355,7 @@ export function TransactionsPage() {
                     </TableCell>
                     <TableCell className="text-right font-medium">
                       <span className={transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}>
-                        {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
+                        {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount, userCurrency)}
                       </span>
                     </TableCell>
                     <TableCell>
