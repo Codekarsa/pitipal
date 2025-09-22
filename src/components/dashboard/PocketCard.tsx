@@ -8,19 +8,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useState } from "react";
 import { formatCurrency, formatNumber } from "@/lib/utils";
 
-const getBudgetTypeLabel = (budgetType: string): string => {
-  const typeLabels: Record<string, string> = {
-    regular_monthly: "Regular Monthly",
-    periodic_scheduled: "Periodic",
-    goal_based: "Goal-Based", 
-    emergency_irregular: "Emergency",
-    seasonal: "Seasonal",
-    project_based: "Project",
-    debt_payment: "Debt Payment"
-  };
-  return typeLabels[budgetType] || budgetType;
-};
-
 interface PocketCardProps {
   pocket: {
     id: string;
@@ -94,9 +81,6 @@ export function PocketCard({
                   Featured
                 </Badge>
               )}
-              <Badge variant="outline" className="text-xs">
-                {getBudgetTypeLabel(budget_type)}
-              </Badge>
               <Badge variant="secondary" className="text-xs">
                 {cycle_type}
               </Badge>
