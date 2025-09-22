@@ -8,6 +8,19 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useState } from "react";
 import { formatCurrency, formatNumber } from "@/lib/utils";
 
+const getBudgetTypeLabel = (budgetType: string): string => {
+  const typeLabels: Record<string, string> = {
+    regular_monthly: "Regular Monthly",
+    periodic_scheduled: "Periodic",
+    goal_based: "Goal-Based", 
+    emergency_irregular: "Emergency",
+    seasonal: "Seasonal",
+    project_based: "Project",
+    debt_payment: "Debt Payment"
+  };
+  return typeLabels[budgetType] || budgetType;
+};
+
 interface PocketCardProps {
   pocket: {
     id: string;
@@ -16,6 +29,7 @@ interface PocketCardProps {
     budget_amount: number;
     current_amount: number;
     cycle_type: string;
+    budget_type: string;
     color: string;
     is_featured: boolean;
   };
@@ -41,7 +55,7 @@ export function PocketCard({
     return null;
   }
 
-  const { id, name, description, budget_amount, current_amount, cycle_type, color, is_featured } = pocket;
+  const { id, name, description, budget_amount, current_amount, cycle_type, budget_type, color, is_featured } = pocket;
   const percentageUsed = budget_amount > 0 ? (current_amount / budget_amount) * 100 : 0;
   const remaining = budget_amount - current_amount;
   const isOverBudget = current_amount > budget_amount;
@@ -80,6 +94,9 @@ export function PocketCard({
                   Featured
                 </Badge>
               )}
+              <Badge variant="outline" className="text-xs">
+                {getBudgetTypeLabel(budget_type)}
+              </Badge>
               <Badge variant="secondary" className="text-xs">
                 {cycle_type}
               </Badge>
