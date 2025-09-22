@@ -273,26 +273,6 @@ export function Dashboard() {
               </div>
             )}
 
-            {/* All Pockets */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">All Pockets</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {pockets.map((pocket) => (
-                  <PocketCard
-                    key={pocket.id}
-                    pocket={pocket}
-                    onClick={() => {
-                      // TODO: Open pocket details
-                    }}
-                    onEdit={() => {
-                      // TODO: Open edit dialog
-                    }}
-                    onDelete={handleDeletePocket}
-                    onToggleFeatured={handleToggleFeatured}
-                  />
-                ))}
-              </div>
-            </div>
           </>
         )}
       </div>
