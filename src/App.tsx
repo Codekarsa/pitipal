@@ -23,6 +23,7 @@ interface BudgetPocket {
   id: string;
   name: string;
   color: string;
+  pocket_type: string;
 }
 
 function AppContent() {
@@ -45,7 +46,7 @@ function AppContent() {
     try {
       const { data, error } = await supabase
         .from('budget_pockets')
-        .select('id, name, color')
+        .select('id, name, color, pocket_type')
         .eq('user_id', user.id)
         .eq('is_active', true)
         .order('created_at', { ascending: false });

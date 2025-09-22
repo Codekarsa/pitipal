@@ -14,6 +14,7 @@ interface BudgetPocket {
   id: string;
   name: string;
   color: string;
+  pocket_type: string;
 }
 
 interface Category {
@@ -216,29 +217,41 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
             </Select>
           </div>
 
-          {pockets.length > 0 && (
-            <div className="space-y-2">
-              <Label htmlFor="pocket">Budget Pocket</Label>
-              <Select value={pocketId} onValueChange={setPocketId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select pocket (optional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  {pockets.map((pocket) => (
-                    <SelectItem key={pocket.id} value={pocket.id}>
-                      <div className="flex items-center space-x-2">
-                        <div
-                          className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: pocket.color }}
-                        />
-                        <span>{pocket.name}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+          <div className="space-y-2">
+            <Label htmlFor="pocket">Budget Pocket</Label>
+            {(() => {
+              const filteredPockets = pockets.filter(pocket => pocket.pocket_type === type);
+              
+              if (filteredPockets.length === 0) {
+                return (
+                  <div className="text-sm text-muted-foreground p-3 border rounded-md bg-muted/50">
+                    No {type} pockets have been created yet.
+                  </div>
+                );
+              }
+              
+              return (
+                <Select value={pocketId} onValueChange={setPocketId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select pocket (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredPockets.map((pocket) => (
+                      <SelectItem key={pocket.id} value={pocket.id}>
+                        <div className="flex items-center space-x-2">
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: pocket.color }}
+                          />
+                          <span>{pocket.name}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              );
+            })()}
+          </div>
 
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
