@@ -8,6 +8,7 @@ import { TransactionDialog } from "./TransactionDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface BudgetPocket {
   id: string;
@@ -26,6 +27,7 @@ export function Dashboard() {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Calculate totals
   const totalBudget = pockets.reduce((sum, pocket) => sum + pocket.budget_amount, 0);
@@ -69,6 +71,33 @@ export function Dashboard() {
       title: "Pocket created!",
       description: "Your new budget pocket has been created successfully.",
     });
+  };
+
+  const handleDeletePocket = async (pocketId: string) => {
+    try {
+      const { error } = await supabase
+        .from("budget_pockets")
+        .update({ is_active: false })
+        .eq("id", pocketId)
+        .eq("user_id", user?.id);
+
+      if (error) throw error;
+
+      // Refresh the pockets data
+      fetchPockets();
+      
+      toast({
+        title: "Pocket deleted",
+        description: "Your pocket has been successfully deleted.",
+      });
+    } catch (error) {
+      console.error("Error deleting pocket:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete pocket. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleTransactionAdded = () => {
@@ -199,9 +228,7 @@ export function Dashboard() {
                 onEdit={() => {
                   // TODO: Open edit dialog
                 }}
-                onDelete={() => {
-                  // TODO: Delete pocket
-                }}
+                onDelete={handleDeletePocket}
               />
             ))}
           </div>
