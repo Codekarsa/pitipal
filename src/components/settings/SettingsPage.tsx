@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { DollarSign, Euro, PoundSterling, CircleDollarSign } from "lucide-react";
+import { CategoriesSection } from "./CategoriesSection";
 
 const currencies = [
   { code: "USD", symbol: "$", name: "US Dollar", icon: DollarSign },
@@ -132,6 +133,8 @@ export function SettingsPage() {
             </Select>
           </CardContent>
         </Card>
+
+        <CategoriesSection />
 
         <Card>
           <CardHeader>

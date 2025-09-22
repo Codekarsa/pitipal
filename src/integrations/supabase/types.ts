@@ -77,6 +77,7 @@ export type Database = {
           is_default: boolean | null
           name: string
           type: string
+          user_id: string | null
         }
         Insert: {
           color?: string | null
@@ -86,6 +87,7 @@ export type Database = {
           is_default?: boolean | null
           name: string
           type: string
+          user_id?: string | null
         }
         Update: {
           color?: string | null
@@ -95,6 +97,7 @@ export type Database = {
           is_default?: boolean | null
           name?: string
           type?: string
+          user_id?: string | null
         }
         Relationships: []
       }
