@@ -19,6 +19,7 @@ interface PocketCardProps {
     color: string;
     is_featured: boolean;
   };
+  currency?: string;
   onEdit?: () => void;
   onDelete?: (id: string) => void;
   onToggleFeatured?: (id: string) => void;
@@ -27,6 +28,7 @@ interface PocketCardProps {
 
 export function PocketCard({
   pocket,
+  currency = 'USD',
   onEdit,
   onDelete,
   onToggleFeatured,
@@ -115,10 +117,10 @@ export function PocketCard({
           <div className="flex justify-between items-end">
             <div>
               <p className="text-2xl font-bold">
-                {formatCurrency(current_amount)}
+                {formatCurrency(current_amount, currency)}
               </p>
               <p className="text-sm text-muted-foreground">
-                of {formatCurrency(budget_amount)} budget
+                of {formatCurrency(budget_amount, currency)} budget
               </p>
             </div>
             <div className="text-right">
@@ -126,12 +128,12 @@ export function PocketCard({
                 {isOverBudget ? (
                   <>
                     <TrendingUp className="inline w-4 h-4 mr-1" />
-                    {formatCurrency(Math.abs(remaining))} over
+                    {formatCurrency(Math.abs(remaining), currency)} over
                   </>
                 ) : (
                   <>
                     <TrendingDown className="inline w-4 h-4 mr-1" />
-                    {formatCurrency(remaining)} left
+                    {formatCurrency(remaining, currency)} left
                   </>
                 )}
               </p>
