@@ -44,8 +44,32 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
   const [budgetType, setBudgetType] = useState("regular_monthly");
   const [color, setColor] = useState("#8b5cf6");
   const [loading, setLoading] = useState(false);
+  
+  // Additional fields for different budget types
+  const [targetDate, setTargetDate] = useState("");
+  const [totalAmount, setTotalAmount] = useState("");
+  const [frequency, setFrequency] = useState("");
+  const [projectDuration, setProjectDuration] = useState("");
+  const [minimumPayment, setMinimumPayment] = useState("");
+  const [extraPayment, setExtraPayment] = useState("");
+  
   const { user } = useAuth();
   const { toast } = useToast();
+
+  const isFormValid = (): boolean => {
+    switch (budgetType) {
+      case 'periodic_scheduled':
+        return !!(totalAmount && frequency);
+      case 'goal_based':
+        return !!(totalAmount && targetDate);
+      case 'project_based':
+        return !!(totalAmount && projectDuration);
+      case 'debt_payment':
+        return !!minimumPayment;
+      default:
+        return !!budgetAmount;
+    }
+  };
 
   const handleBudgetAmountChange = (value: string) => {
     // Remove any non-numeric characters except decimal point
@@ -66,19 +90,51 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
     }
   };
 
+  const calculateBudgetAmount = (): number => {
+    switch (budgetType) {
+      case 'periodic_scheduled':
+        const total = parseFloat(totalAmount) || 0;
+        const freq = parseFloat(frequency) || 1;
+        return total / freq; // Monthly savings = total_amount / months_until_due
+      
+      case 'goal_based':
+        const targetAmount = parseFloat(totalAmount) || 0;
+        const currentSaved = 0; // Assuming starting from 0
+        const targetDateObj = new Date(targetDate);
+        const now = new Date();
+        const monthsRemaining = Math.max(1, Math.ceil((targetDateObj.getTime() - now.getTime()) / (1000 * 60 * 60 * 24 * 30)));
+        return (targetAmount - currentSaved) / monthsRemaining;
+      
+      case 'project_based':
+        const projectCost = parseFloat(totalAmount) || 0;
+        const duration = parseFloat(projectDuration) || 1;
+        return projectCost / duration;
+      
+      case 'debt_payment':
+        const minPayment = parseFloat(minimumPayment) || 0;
+        const extraPaymentAmount = parseFloat(extraPayment) || 0;
+        return minPayment + extraPaymentAmount;
+      
+      default:
+        return parseFloat(budgetAmount) || 0;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
 
     try {
       setLoading(true);
+      const calculatedBudget = calculateBudgetAmount();
+      
       const { error } = await supabase
         .from('budget_pockets')
         .insert({
           user_id: user.id,
           name: name.trim(),
           description: description.trim() || null,
-          budget_amount: parseFloat(budgetAmount) || 0,
+          budget_amount: calculatedBudget,
           cycle_type: cycleType,
           budget_type: budgetType,
           color: color,
@@ -93,6 +149,12 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
       setCycleType("monthly");
       setBudgetType("regular_monthly");
       setColor("#8b5cf6");
+      setTargetDate("");
+      setTotalAmount("");
+      setFrequency("");
+      setProjectDuration("");
+      setMinimumPayment("");
+      setExtraPayment("");
       
       onSuccess();
     } catch (error: any) {
@@ -159,9 +221,10 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
             </Select>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          {/* Conditional fields based on budget type */}
+          {budgetType === 'regular_monthly' || budgetType === 'emergency_irregular' || budgetType === 'seasonal' ? (
             <div className="space-y-2">
-              <Label htmlFor="budget">Budget Amount</Label>
+              <Label htmlFor="budget">Monthly Budget Amount</Label>
               <Input
                 id="budget"
                 type="text"
@@ -170,22 +233,106 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
                 placeholder="0.00"
               />
             </div>
+          ) : null}
 
-            <div className="space-y-2">
-              <Label htmlFor="cycle">Budget Cycle</Label>
-              <Select value={cycleType} onValueChange={setCycleType}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="weekly">Weekly</SelectItem>
-                  <SelectItem value="monthly">Monthly</SelectItem>
-                  <SelectItem value="quarterly">Quarterly</SelectItem>
-                  <SelectItem value="yearly">Yearly</SelectItem>
-                </SelectContent>
-              </Select>
+          {budgetType === 'periodic_scheduled' ? (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="totalAmount">Total Amount</Label>
+                <Input
+                  id="totalAmount"
+                  type="text"
+                  value={totalAmount}
+                  onChange={(e) => setTotalAmount(e.target.value.replace(/[^\d.]/g, ''))}
+                  placeholder="0.00"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="frequency">Months Until Due</Label>
+                <Input
+                  id="frequency"
+                  type="text"
+                  value={frequency}
+                  onChange={(e) => setFrequency(e.target.value.replace(/[^\d]/g, ''))}
+                  placeholder="12"
+                />
+              </div>
             </div>
-          </div>
+          ) : null}
+
+          {budgetType === 'goal_based' ? (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="targetAmount">Target Amount</Label>
+                <Input
+                  id="targetAmount"
+                  type="text"
+                  value={totalAmount}
+                  onChange={(e) => setTotalAmount(e.target.value.replace(/[^\d.]/g, ''))}
+                  placeholder="0.00"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="targetDate">Target Date</Label>
+                <Input
+                  id="targetDate"
+                  type="date"
+                  value={targetDate}
+                  onChange={(e) => setTargetDate(e.target.value)}
+                />
+              </div>
+            </div>
+          ) : null}
+
+          {budgetType === 'project_based' ? (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="projectCost">Total Project Cost</Label>
+                <Input
+                  id="projectCost"
+                  type="text"
+                  value={totalAmount}
+                  onChange={(e) => setTotalAmount(e.target.value.replace(/[^\d.]/g, ''))}
+                  placeholder="0.00"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="duration">Duration (Months)</Label>
+                <Input
+                  id="duration"
+                  type="text"
+                  value={projectDuration}
+                  onChange={(e) => setProjectDuration(e.target.value.replace(/[^\d]/g, ''))}
+                  placeholder="12"
+                />
+              </div>
+            </div>
+          ) : null}
+
+          {budgetType === 'debt_payment' ? (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="minPayment">Minimum Payment</Label>
+                <Input
+                  id="minPayment"
+                  type="text"
+                  value={minimumPayment}
+                  onChange={(e) => setMinimumPayment(e.target.value.replace(/[^\d.]/g, ''))}
+                  placeholder="0.00"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="extraPayment">Extra Payment</Label>
+                <Input
+                  id="extraPayment"
+                  type="text"
+                  value={extraPayment}
+                  onChange={(e) => setExtraPayment(e.target.value.replace(/[^\d.]/g, ''))}
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+          ) : null}
 
           <div className="space-y-2">
             <Label>Color</Label>
@@ -214,7 +361,7 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
             >
               Cancel
             </Button>
-            <Button type="submit" variant="hero" disabled={loading || !name.trim()}>
+            <Button type="submit" variant="hero" disabled={loading || !name.trim() || !isFormValid()}>
               {loading ? "Creating..." : "Create Pocket"}
             </Button>
           </DialogFooter>
