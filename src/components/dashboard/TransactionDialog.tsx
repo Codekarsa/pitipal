@@ -97,7 +97,7 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
       if (transactionError) throw transactionError;
 
       // Update pocket current amount if pocket is selected
-      if (pocketId && type === 'expense') {
+      if (pocketId) {
         // Get current pocket amount first
         const { data: pocketData, error: fetchError } = await supabase
           .from('budget_pockets')
@@ -108,7 +108,11 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
         if (fetchError) {
           console.error('Error fetching pocket data:', fetchError);
         } else {
-          const newAmount = (pocketData.current_amount || 0) + parseFloat(amount);
+          // For expenses, add to current_amount (money spent from budget)
+          // For income, subtract from current_amount (adding money back to budget)
+          const amountChange = type === 'expense' ? parseFloat(amount) : -parseFloat(amount);
+          const newAmount = (pocketData.current_amount || 0) + amountChange;
+          
           const { error: updateError } = await supabase
             .from('budget_pockets')
             .update({ 
@@ -212,7 +216,7 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
             </Select>
           </div>
 
-          {type === "expense" && pockets.length > 0 && (
+          {pockets.length > 0 && (
             <div className="space-y-2">
               <Label htmlFor="pocket">Budget Pocket</Label>
               <Select value={pocketId} onValueChange={setPocketId}>
