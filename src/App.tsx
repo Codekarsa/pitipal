@@ -10,6 +10,7 @@ import { LandingPage } from "@/components/landing/LandingPage";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Dashboard } from "@/components/dashboard/Dashboard";
 import { TransactionDialog } from "@/components/dashboard/TransactionDialog";
+import { CreatePocketDialog } from "@/components/dashboard/CreatePocketDialog";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -18,6 +19,7 @@ function AppContent() {
   const { user, loading } = useAuth();
   const [showAuthForm, setShowAuthForm] = useState(false);
   const [showAddTransaction, setShowAddTransaction] = useState(false);
+  const [showCreatePocket, setShowCreatePocket] = useState(false);
 
   if (loading) {
     return (
@@ -43,6 +45,7 @@ function AppContent() {
   return (
     <DashboardLayout 
       onAddTransaction={() => setShowAddTransaction(true)}
+      onAddPocket={() => setShowCreatePocket(true)}
     >
       <Dashboard />
       <TransactionDialog
@@ -50,6 +53,11 @@ function AppContent() {
         onOpenChange={setShowAddTransaction}
         onSuccess={() => setShowAddTransaction(false)}
         pockets={[]}
+      />
+      <CreatePocketDialog
+        open={showCreatePocket}
+        onOpenChange={setShowCreatePocket}
+        onSuccess={() => setShowCreatePocket(false)}
       />
     </DashboardLayout>
   );

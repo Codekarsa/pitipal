@@ -80,11 +80,22 @@ export function DashboardLayout({ children, onAddTransaction, onAddPocket }: Das
               <PieChart className="h-4 w-4" />
               <span className="font-medium">Dashboard</span>
             </button>
-            <button className="flex items-center space-x-2 py-4 text-muted-foreground hover:text-foreground">
+            <button 
+              onClick={onAddPocket}
+              className="flex items-center space-x-2 py-4 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            >
               <Wallet className="h-4 w-4" />
               <span className="font-medium">Pockets</span>
             </button>
-            <button className="flex items-center space-x-2 py-4 text-muted-foreground hover:text-foreground">
+            <button 
+              onClick={() => {
+                toast({
+                  title: "Settings",
+                  description: "Settings panel coming soon!",
+                });
+              }}
+              className="flex items-center space-x-2 py-4 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            >
               <Settings className="h-4 w-4" />
               <span className="font-medium">Settings</span>
             </button>
