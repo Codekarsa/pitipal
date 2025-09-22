@@ -6,33 +6,30 @@ import { MoreHorizontal, TrendingUp, TrendingDown, Edit, Trash } from "lucide-re
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface PocketCardProps {
-  id: string;
-  name: string;
-  description?: string;
-  budgetAmount: number;
-  currentAmount: number;
-  cycleType: string;
-  color: string;
+  pocket: {
+    id: string;
+    name: string;
+    description?: string;
+    budget_amount: number;
+    current_amount: number;
+    cycle_type: string;
+    color: string;
+  };
   onEdit?: () => void;
-  onDelete?: () => void;
+  onDelete?: (id: string) => void;
   onClick?: () => void;
 }
 
 export function PocketCard({
-  id,
-  name,
-  description,
-  budgetAmount,
-  currentAmount,
-  cycleType,
-  color,
+  pocket,
   onEdit,
   onDelete,
   onClick,
 }: PocketCardProps) {
-  const percentageUsed = budgetAmount > 0 ? (currentAmount / budgetAmount) * 100 : 0;
-  const remaining = budgetAmount - currentAmount;
-  const isOverBudget = currentAmount > budgetAmount;
+  const { id, name, description, budget_amount, current_amount, cycle_type, color } = pocket;
+  const percentageUsed = budget_amount > 0 ? (current_amount / budget_amount) * 100 : 0;
+  const remaining = budget_amount - current_amount;
+  const isOverBudget = current_amount > budget_amount;
 
   return (
     <Card 
@@ -57,7 +54,7 @@ export function PocketCard({
           </div>
           <div className="flex items-center space-x-2">
             <Badge variant="secondary" className="text-xs">
-              {cycleType}
+              {cycle_type}
             </Badge>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -71,7 +68,7 @@ export function PocketCard({
                   Edit
                 </DropdownMenuItem>
                 <DropdownMenuItem 
-                  onClick={(e) => { e.stopPropagation(); onDelete?.(); }}
+                  onClick={(e) => { e.stopPropagation(); onDelete?.(id); }}
                   className="text-destructive"
                 >
                   <Trash className="mr-2 h-4 w-4" />
@@ -86,14 +83,14 @@ export function PocketCard({
         <div className="flex justify-between items-end">
           <div>
             <p className="text-2xl font-bold">
-              ${currentAmount.toFixed(2)}
+              ${current_amount.toFixed(2)}
             </p>
             <p className="text-sm text-muted-foreground">
-              of ${budgetAmount.toFixed(2)} budget
+              of ${budget_amount.toFixed(2)} budget
             </p>
           </div>
           <div className="text-right">
-            <p className={`text-sm font-medium ${isOverBudget ? 'text-destructive' : remaining < budgetAmount * 0.2 ? 'text-yellow-600' : 'text-success'}`}>
+            <p className={`text-sm font-medium ${isOverBudget ? 'text-destructive' : remaining < budget_amount * 0.2 ? 'text-yellow-600' : 'text-success'}`}>
               {isOverBudget ? (
                 <>
                   <TrendingUp className="inline w-4 h-4 mr-1" />
