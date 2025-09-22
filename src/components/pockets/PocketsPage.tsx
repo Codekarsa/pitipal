@@ -61,6 +61,34 @@ export function PocketsPage() {
     }
   };
 
+  const handleToggleFeatured = async (pocketId: string) => {
+    try {
+      const currentPocket = pockets?.find(p => p.id === pocketId);
+      if (!currentPocket) return;
+
+      const { error } = await supabase
+        .from("budget_pockets")
+        .update({ is_featured: !currentPocket.is_featured })
+        .eq("id", pocketId)
+        .eq("user_id", user?.id);
+
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ["pockets"] });
+      toast({
+        title: currentPocket.is_featured ? "Pocket unfeatured" : "Pocket featured",
+        description: `"${currentPocket.name}" has been ${currentPocket.is_featured ? 'removed from' : 'added to'} featured pockets.`,
+      });
+    } catch (error) {
+      console.error("Error toggling featured status:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update pocket status. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -98,11 +126,19 @@ export function PocketsPage() {
 
       {pockets && pockets.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {pockets.map((pocket) => (
+          {pockets
+            .sort((a, b) => {
+              // Sort featured pockets first
+              if (a.is_featured && !b.is_featured) return -1;
+              if (!a.is_featured && b.is_featured) return 1;
+              return 0;
+            })
+            .map((pocket) => (
             <PocketCard
               key={pocket.id}
               pocket={pocket}
               onDelete={handleDeletePocket}
+              onToggleFeatured={handleToggleFeatured}
             />
           ))}
         </div>
