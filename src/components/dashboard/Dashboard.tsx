@@ -192,13 +192,7 @@ export function Dashboard() {
             {pockets.map((pocket) => (
               <PocketCard
                 key={pocket.id}
-                id={pocket.id}
-                name={pocket.name}
-                description={pocket.description}
-                budgetAmount={pocket.budget_amount}
-                currentAmount={pocket.current_amount}
-                cycleType={pocket.cycle_type}
-                color={pocket.color}
+                pocket={pocket}
                 onClick={() => {
                   // TODO: Open pocket details
                 }}

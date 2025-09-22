@@ -6,13 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { DollarSign, Euro, PoundSterling, Yen } from "lucide-react";
+import { DollarSign, Euro, PoundSterling, CircleDollarSign } from "lucide-react";
 
 const currencies = [
   { code: "USD", symbol: "$", name: "US Dollar", icon: DollarSign },
   { code: "EUR", symbol: "€", name: "Euro", icon: Euro },
   { code: "GBP", symbol: "£", name: "British Pound", icon: PoundSterling },
-  { code: "JPY", symbol: "¥", name: "Japanese Yen", icon: Yen },
+  { code: "JPY", symbol: "¥", name: "Japanese Yen", icon: CircleDollarSign },
 ];
 
 export function SettingsPage() {

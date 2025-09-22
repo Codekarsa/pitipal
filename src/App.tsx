@@ -1,14 +1,16 @@
+import { useState } from "react";
+import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { useState } from "react";
 import { useAuth } from "@/components/auth/useAuth";
 import { AuthForm } from "@/components/auth/AuthForm";
 import { LandingPage } from "@/components/landing/LandingPage";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Dashboard } from "@/components/dashboard/Dashboard";
+import { PocketsPage } from "@/components/pockets/PocketsPage";
+import { SettingsPage } from "@/components/settings/SettingsPage";
 import { TransactionDialog } from "@/components/dashboard/TransactionDialog";
 import { CreatePocketDialog } from "@/components/dashboard/CreatePocketDialog";
 import NotFound from "./pages/NotFound";
@@ -20,6 +22,7 @@ function AppContent() {
   const [showAuthForm, setShowAuthForm] = useState(false);
   const [showAddTransaction, setShowAddTransaction] = useState(false);
   const [showCreatePocket, setShowCreatePocket] = useState(false);
+  const navigate = useNavigate();
 
   if (loading) {
     return (
@@ -43,23 +46,65 @@ function AppContent() {
   }
 
   return (
-    <DashboardLayout 
-      onAddTransaction={() => setShowAddTransaction(true)}
-      onAddPocket={() => setShowCreatePocket(true)}
-    >
-      <Dashboard />
-      <TransactionDialog
-        open={showAddTransaction}
-        onOpenChange={setShowAddTransaction}
-        onSuccess={() => setShowAddTransaction(false)}
-        pockets={[]}
+    <Routes>
+      <Route 
+        path="/" 
+        element={
+          <DashboardLayout 
+            onAddTransaction={() => setShowAddTransaction(true)}
+            onAddPocket={() => navigate("/pockets")}
+          >
+            <Dashboard />
+            <TransactionDialog
+              open={showAddTransaction}
+              onOpenChange={setShowAddTransaction}
+              onSuccess={() => setShowAddTransaction(false)}
+              pockets={[]}
+            />
+          </DashboardLayout>
+        } 
       />
-      <CreatePocketDialog
-        open={showCreatePocket}
-        onOpenChange={setShowCreatePocket}
-        onSuccess={() => setShowCreatePocket(false)}
+      <Route 
+        path="/pockets" 
+        element={
+          <DashboardLayout 
+            onAddTransaction={() => setShowAddTransaction(true)}
+            onAddPocket={() => setShowCreatePocket(true)}
+          >
+            <PocketsPage />
+            <TransactionDialog
+              open={showAddTransaction}
+              onOpenChange={setShowAddTransaction}
+              onSuccess={() => setShowAddTransaction(false)}
+              pockets={[]}
+            />
+            <CreatePocketDialog
+              open={showCreatePocket}
+              onOpenChange={setShowCreatePocket}
+              onSuccess={() => setShowCreatePocket(false)}
+            />
+          </DashboardLayout>
+        } 
       />
-    </DashboardLayout>
+      <Route 
+        path="/settings" 
+        element={
+          <DashboardLayout 
+            onAddTransaction={() => setShowAddTransaction(true)}
+            onAddPocket={() => navigate("/pockets")}
+          >
+            <SettingsPage />
+            <TransactionDialog
+              open={showAddTransaction}
+              onOpenChange={setShowAddTransaction}
+              onSuccess={() => setShowAddTransaction(false)}
+              pockets={[]}
+            />
+          </DashboardLayout>
+        } 
+      />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
   );
 }
 
@@ -69,11 +114,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<AppContent />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AppContent />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
