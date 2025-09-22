@@ -70,6 +70,7 @@ export type Database = {
       }
       categories: {
         Row: {
+          category_group_id: string | null
           color: string | null
           created_at: string
           icon: string | null
@@ -80,6 +81,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          category_group_id?: string | null
           color?: string | null
           created_at?: string
           icon?: string | null
@@ -90,6 +92,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          category_group_id?: string | null
           color?: string | null
           created_at?: string
           icon?: string | null
@@ -97,6 +100,53 @@ export type Database = {
           is_default?: boolean | null
           name?: string
           type?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categories_category_group_id_fkey"
+            columns: ["category_group_id"]
+            isOneToOne: false
+            referencedRelation: "category_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      category_groups: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          is_default: boolean | null
+          name: string
+          type: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_default?: boolean | null
+          name: string
+          type: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          type?: string
+          updated_at?: string
           user_id?: string | null
         }
         Relationships: []
