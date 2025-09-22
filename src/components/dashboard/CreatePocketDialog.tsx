@@ -26,11 +26,22 @@ const colorOptions = [
   { name: "Teal", value: "#14b8a6" },
 ];
 
+const budgetTypeOptions = [
+  { value: "regular_monthly", label: "Regular Monthly", description: "Simple monthly allocation (groceries, utilities, gas)" },
+  { value: "periodic_scheduled", label: "Periodic/Scheduled", description: "Divide total by months (insurance, property tax)" },
+  { value: "goal_based", label: "Goal-Based", description: "Target amount by target date (vacation, new car)" },
+  { value: "emergency_irregular", label: "Emergency/Irregular", description: "Estimate based on risk (car repairs, medical)" },
+  { value: "seasonal", label: "Seasonal", description: "Save throughout year (holiday gifts, heating)" },
+  { value: "project_based", label: "Project-Based", description: "Total cost over timeline (renovation, education)" },
+  { value: "debt_payment", label: "Debt Payment", description: "Minimum + extra payments (credit cards, loans)" },
+];
+
 export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePocketDialogProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [budgetAmount, setBudgetAmount] = useState("");
   const [cycleType, setCycleType] = useState("monthly");
+  const [budgetType, setBudgetType] = useState("regular_monthly");
   const [color, setColor] = useState("#8b5cf6");
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
@@ -69,6 +80,7 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
           description: description.trim() || null,
           budget_amount: parseFloat(budgetAmount) || 0,
           cycle_type: cycleType,
+          budget_type: budgetType,
           color: color,
         });
 
@@ -79,6 +91,7 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
       setDescription("");
       setBudgetAmount("");
       setCycleType("monthly");
+      setBudgetType("regular_monthly");
       setColor("#8b5cf6");
       
       onSuccess();
@@ -125,6 +138,25 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
               maxLength={200}
               rows={2}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="budgetType">Budget Type</Label>
+            <Select value={budgetType} onValueChange={setBudgetType}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {budgetTypeOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    <div className="flex flex-col">
+                      <span className="font-medium">{option.label}</span>
+                      <span className="text-xs text-muted-foreground">{option.description}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
