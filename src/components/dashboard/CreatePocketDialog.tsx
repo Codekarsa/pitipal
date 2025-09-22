@@ -36,6 +36,25 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
   const { user } = useAuth();
   const { toast } = useToast();
 
+  const handleBudgetAmountChange = (value: string) => {
+    // Remove any non-numeric characters except decimal point
+    const cleanValue = value.replace(/[^\d.]/g, '');
+    
+    // Ensure only one decimal point
+    const parts = cleanValue.split('.');
+    if (parts.length > 2) {
+      return;
+    }
+    
+    // Format with thousands separator for display
+    const numericValue = parseFloat(cleanValue);
+    if (!isNaN(numericValue)) {
+      setBudgetAmount(cleanValue);
+    } else if (cleanValue === '') {
+      setBudgetAmount('');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -113,11 +132,9 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
               <Label htmlFor="budget">Budget Amount</Label>
               <Input
                 id="budget"
-                type="number"
-                step="0.01"
-                min="0"
+                type="text"
                 value={budgetAmount}
-                onChange={(e) => setBudgetAmount(e.target.value)}
+                onChange={(e) => handleBudgetAmountChange(e.target.value)}
                 placeholder="0.00"
               />
             </div>
