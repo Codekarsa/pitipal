@@ -14,6 +14,30 @@ export function PocketsPage() {
   const queryClient = useQueryClient();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
 
+  // Fetch user profile for currency preference
+  const { data: profile } = useQuery({
+    queryKey: ["profile", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("user_id", user.id)
+        .single();
+
+      if (error && error.code !== "PGRST116") {
+        console.error("Error fetching profile:", error);
+        return { currency: 'USD' }; // fallback
+      }
+
+      return data || { currency: 'USD' };
+    },
+    enabled: !!user?.id,
+  });
+
+  const userCurrency = profile?.currency || 'USD';
+
   const { data: pockets, isLoading } = useQuery({
     queryKey: ["pockets", user?.id],
     queryFn: async () => {
@@ -137,6 +161,7 @@ export function PocketsPage() {
             <PocketCard
               key={pocket.id}
               pocket={pocket}
+              currency={userCurrency}
               onDelete={handleDeletePocket}
               onToggleFeatured={handleToggleFeatured}
             />

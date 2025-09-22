@@ -8,7 +8,7 @@ import { TransactionDialog } from "./TransactionDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { formatCurrency, formatNumber } from "@/lib/utils";
 
 interface BudgetPocket {
@@ -30,6 +30,30 @@ export function Dashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Fetch user profile for currency preference
+  const { data: profile } = useQuery({
+    queryKey: ["profile", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("user_id", user.id)
+        .single();
+
+      if (error && error.code !== "PGRST116") {
+        console.error("Error fetching profile:", error);
+        return { currency: 'USD' }; // fallback
+      }
+
+      return data || { currency: 'USD' };
+    },
+    enabled: !!user?.id,
+  });
+
+  const userCurrency = profile?.currency || 'USD';
 
   // Calculate totals
   const totalBudget = pockets.reduce((sum, pocket) => sum + pocket.budget_amount, 0);
@@ -172,7 +196,7 @@ export function Dashboard() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalBudget)}</div>
+            <div className="text-2xl font-bold">{formatCurrency(totalBudget, userCurrency)}</div>
             <p className="text-xs text-muted-foreground">
               Across {pockets.length} pockets
             </p>
@@ -185,7 +209,7 @@ export function Dashboard() {
             <TrendingDown className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalSpent)}</div>
+            <div className="text-2xl font-bold">{formatCurrency(totalSpent, userCurrency)}</div>
             <p className="text-xs text-muted-foreground">
               {totalBudget > 0 ? `${formatNumber((totalSpent / totalBudget) * 100)}% of budget` : 'No budget set'}
             </p>
@@ -199,7 +223,7 @@ export function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold ${totalRemaining < 0 ? 'text-destructive' : 'text-success'}`}>
-              {formatCurrency(Math.abs(totalRemaining))}
+              {formatCurrency(Math.abs(totalRemaining), userCurrency)}
             </div>
             <p className="text-xs text-muted-foreground">
               {totalRemaining < 0 ? 'Over budget' : 'Available to spend'}
@@ -257,18 +281,19 @@ export function Dashboard() {
                 <h3 className="text-lg font-semibold">Featured Pockets</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {pockets.filter(pocket => pocket.is_featured).map((pocket) => (
-                    <PocketCard
-                      key={pocket.id}
-                      pocket={pocket}
-                      onClick={() => {
-                        // TODO: Open pocket details
-                      }}
-                      onEdit={() => {
-                        // TODO: Open edit dialog
-                      }}
-                      onDelete={handleDeletePocket}
-                      onToggleFeatured={handleToggleFeatured}
-                    />
+                     <PocketCard
+                       key={pocket.id}
+                       pocket={pocket}
+                       currency={userCurrency}
+                       onClick={() => {
+                         // TODO: Open pocket details
+                       }}
+                       onEdit={() => {
+                         // TODO: Open edit dialog
+                       }}
+                       onDelete={handleDeletePocket}
+                       onToggleFeatured={handleToggleFeatured}
+                     />
                   ))}
                 </div>
               </div>
