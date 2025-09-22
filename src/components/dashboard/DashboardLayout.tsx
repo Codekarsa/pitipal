@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/components/auth/useAuth";
-import { LogOut, Plus, Settings, PieChart, Wallet } from "lucide-react";
+import { LogOut, Plus, Settings, PieChart, Wallet, Receipt } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface DashboardLayoutProps {
@@ -100,6 +100,17 @@ export function DashboardLayout({ children, onAddTransaction, onAddPocket }: Das
             >
               <Wallet className="h-4 w-4" />
               <span className="font-medium">Pockets</span>
+            </button>
+            <button 
+              onClick={() => navigate("/transactions")}
+              className={`flex items-center space-x-2 py-4 transition-colors cursor-pointer ${
+                location.pathname === "/transactions" 
+                  ? "text-primary border-b-2 border-primary" 
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Receipt className="h-4 w-4" />
+              <span className="font-medium">Transactions</span>
             </button>
             <button 
               onClick={() => navigate("/settings")}
