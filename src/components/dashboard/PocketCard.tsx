@@ -72,7 +72,10 @@ export function PocketCard({
             </div>
             <div className="flex items-center space-x-2">
               {is_featured && (
-                <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                <Badge variant="default" className="text-xs bg-yellow-500/20 text-yellow-700 border-yellow-500/30">
+                  <Star className="h-3 w-3 mr-1 fill-current" />
+                  Featured
+                </Badge>
               )}
               <Badge variant="secondary" className="text-xs">
                 {cycle_type}
