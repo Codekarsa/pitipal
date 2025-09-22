@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -14,16 +14,52 @@ import { SettingsPage } from "@/components/settings/SettingsPage";
 import { TransactionsPage } from "@/components/transactions/TransactionsPage";
 import { TransactionDialog } from "@/components/dashboard/TransactionDialog";
 import { CreatePocketDialog } from "@/components/dashboard/CreatePocketDialog";
+import { supabase } from "@/integrations/supabase/client";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
+
+interface BudgetPocket {
+  id: string;
+  name: string;
+  color: string;
+}
 
 function AppContent() {
   const { user, loading } = useAuth();
   const [showAuthForm, setShowAuthForm] = useState(false);
   const [showAddTransaction, setShowAddTransaction] = useState(false);
   const [showCreatePocket, setShowCreatePocket] = useState(false);
+  const [pockets, setPockets] = useState<BudgetPocket[]>([]);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user) {
+      fetchPockets();
+    }
+  }, [user]);
+
+  const fetchPockets = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('budget_pockets')
+        .select('id, name, color')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setPockets(data || []);
+    } catch (error) {
+      console.error('Error fetching pockets:', error);
+    }
+  };
+
+  const handleRefreshPockets = () => {
+    fetchPockets();
+  };
 
   if (loading) {
     return (
@@ -59,8 +95,11 @@ function AppContent() {
             <TransactionDialog
               open={showAddTransaction}
               onOpenChange={setShowAddTransaction}
-              onSuccess={() => setShowAddTransaction(false)}
-              pockets={[]}
+              onSuccess={() => {
+                setShowAddTransaction(false);
+                handleRefreshPockets();
+              }}
+              pockets={pockets}
             />
           </DashboardLayout>
         } 
@@ -76,8 +115,11 @@ function AppContent() {
             <TransactionDialog
               open={showAddTransaction}
               onOpenChange={setShowAddTransaction}
-              onSuccess={() => setShowAddTransaction(false)}
-              pockets={[]}
+              onSuccess={() => {
+                setShowAddTransaction(false);
+                handleRefreshPockets();
+              }}
+              pockets={pockets}
             />
             <CreatePocketDialog
               open={showCreatePocket}
@@ -98,8 +140,11 @@ function AppContent() {
             <TransactionDialog
               open={showAddTransaction}
               onOpenChange={setShowAddTransaction}
-              onSuccess={() => setShowAddTransaction(false)}
-              pockets={[]}
+              onSuccess={() => {
+                setShowAddTransaction(false);
+                handleRefreshPockets();
+              }}
+              pockets={pockets}
             />
           </DashboardLayout>
         } 
@@ -115,8 +160,11 @@ function AppContent() {
             <TransactionDialog
               open={showAddTransaction}
               onOpenChange={setShowAddTransaction}
-              onSuccess={() => setShowAddTransaction(false)}
-              pockets={[]}
+              onSuccess={() => {
+                setShowAddTransaction(false);
+                handleRefreshPockets();
+              }}
+              pockets={pockets}
             />
           </DashboardLayout>
         } 
