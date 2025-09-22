@@ -11,6 +11,7 @@ import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Dashboard } from "@/components/dashboard/Dashboard";
 import { PocketsPage } from "@/components/pockets/PocketsPage";
 import { SettingsPage } from "@/components/settings/SettingsPage";
+import { TransactionsPage } from "@/components/transactions/TransactionsPage";
 import { TransactionDialog } from "@/components/dashboard/TransactionDialog";
 import { CreatePocketDialog } from "@/components/dashboard/CreatePocketDialog";
 import NotFound from "./pages/NotFound";
@@ -82,6 +83,23 @@ function AppContent() {
               open={showCreatePocket}
               onOpenChange={setShowCreatePocket}
               onSuccess={() => setShowCreatePocket(false)}
+            />
+          </DashboardLayout>
+        } 
+      />
+      <Route 
+        path="/transactions" 
+        element={
+          <DashboardLayout 
+            onAddTransaction={() => setShowAddTransaction(true)}
+            onAddPocket={() => navigate("/pockets")}
+          >
+            <TransactionsPage />
+            <TransactionDialog
+              open={showAddTransaction}
+              onOpenChange={setShowAddTransaction}
+              onSuccess={() => setShowAddTransaction(false)}
+              pockets={[]}
             />
           </DashboardLayout>
         } 
