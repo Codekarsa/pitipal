@@ -18,6 +18,7 @@ interface BudgetPocket {
   current_amount: number;
   cycle_type: string;
   color: string;
+  is_featured: boolean;
 }
 
 export function Dashboard() {
@@ -107,6 +108,37 @@ export function Dashboard() {
       title: "Transaction added!",
       description: "Your transaction has been recorded successfully.",
     });
+  };
+
+  const handleToggleFeatured = async (pocketId: string) => {
+    try {
+      const pocket = pockets.find(p => p.id === pocketId);
+      if (!pocket) return;
+
+      const { error } = await supabase
+        .from("budget_pockets")
+        .update({ is_featured: !pocket.is_featured })
+        .eq("id", pocketId)
+        .eq("user_id", user?.id);
+
+      if (error) throw error;
+
+      fetchPockets();
+      
+      toast({
+        title: pocket.is_featured ? "Pocket unfeatured" : "Pocket featured",
+        description: pocket.is_featured 
+          ? "Pocket removed from dashboard" 
+          : "Pocket will now appear on dashboard",
+      });
+    } catch (error) {
+      console.error("Error toggling featured:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update pocket. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   if (loading) {
@@ -218,7 +250,7 @@ export function Dashboard() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {pockets.map((pocket) => (
+            {pockets.filter(pocket => pocket.is_featured).map((pocket) => (
               <PocketCard
                 key={pocket.id}
                 pocket={pocket}
@@ -229,6 +261,7 @@ export function Dashboard() {
                   // TODO: Open edit dialog
                 }}
                 onDelete={handleDeletePocket}
+                onToggleFeatured={handleToggleFeatured}
               />
             ))}
           </div>

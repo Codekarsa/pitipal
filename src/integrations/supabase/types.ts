@@ -27,6 +27,7 @@ export type Database = {
           icon: string | null
           id: string
           is_active: boolean | null
+          is_featured: boolean
           name: string
           updated_at: string
           user_id: string
@@ -43,6 +44,7 @@ export type Database = {
           icon?: string | null
           id?: string
           is_active?: boolean | null
+          is_featured?: boolean
           name: string
           updated_at?: string
           user_id: string
@@ -59,6 +61,7 @@ export type Database = {
           icon?: string | null
           id?: string
           is_active?: boolean | null
+          is_featured?: boolean
           name?: string
           updated_at?: string
           user_id?: string
