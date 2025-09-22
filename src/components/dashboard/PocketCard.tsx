@@ -26,6 +26,11 @@ export function PocketCard({
   onDelete,
   onClick,
 }: PocketCardProps) {
+  // Add defensive check for undefined pocket
+  if (!pocket) {
+    return null;
+  }
+
   const { id, name, description, budget_amount, current_amount, cycle_type, color } = pocket;
   const percentageUsed = budget_amount > 0 ? (current_amount / budget_amount) * 100 : 0;
   const remaining = budget_amount - current_amount;
