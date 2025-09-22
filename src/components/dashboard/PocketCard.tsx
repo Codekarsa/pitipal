@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { MoreHorizontal, TrendingUp, TrendingDown, Edit, Trash, Star } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useState } from "react";
+import { formatCurrency, formatNumber } from "@/lib/utils";
 
 interface PocketCardProps {
   pocket: {
@@ -114,10 +115,10 @@ export function PocketCard({
           <div className="flex justify-between items-end">
             <div>
               <p className="text-2xl font-bold">
-                ${current_amount.toFixed(2)}
+                {formatCurrency(current_amount)}
               </p>
               <p className="text-sm text-muted-foreground">
-                of ${budget_amount.toFixed(2)} budget
+                of {formatCurrency(budget_amount)} budget
               </p>
             </div>
             <div className="text-right">
@@ -125,12 +126,12 @@ export function PocketCard({
                 {isOverBudget ? (
                   <>
                     <TrendingUp className="inline w-4 h-4 mr-1" />
-                    ${Math.abs(remaining).toFixed(2)} over
+                    {formatCurrency(Math.abs(remaining))} over
                   </>
                 ) : (
                   <>
                     <TrendingDown className="inline w-4 h-4 mr-1" />
-                    ${remaining.toFixed(2)} left
+                    {formatCurrency(remaining)} left
                   </>
                 )}
               </p>
@@ -145,7 +146,7 @@ export function PocketCard({
             <div className="flex justify-between text-xs text-muted-foreground">
               <span>0%</span>
               <span className={isOverBudget ? 'text-destructive font-medium' : ''}>
-                {percentageUsed.toFixed(1)}%
+                {formatNumber(percentageUsed)}%
               </span>
               <span>100%</span>
             </div>
