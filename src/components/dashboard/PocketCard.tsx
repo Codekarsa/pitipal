@@ -81,9 +81,6 @@ export function PocketCard({
                   Featured
                 </Badge>
               )}
-              <Badge variant="secondary" className="text-xs">
-                {cycle_type}
-              </Badge>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
