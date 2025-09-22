@@ -29,6 +29,7 @@ export type Database = {
           is_active: boolean | null
           is_featured: boolean
           name: string
+          pocket_type: string
           updated_at: string
           user_id: string
         }
@@ -46,6 +47,7 @@ export type Database = {
           is_active?: boolean | null
           is_featured?: boolean
           name: string
+          pocket_type?: string
           updated_at?: string
           user_id: string
         }
@@ -63,6 +65,7 @@ export type Database = {
           is_active?: boolean | null
           is_featured?: boolean
           name?: string
+          pocket_type?: string
           updated_at?: string
           user_id?: string
         }
