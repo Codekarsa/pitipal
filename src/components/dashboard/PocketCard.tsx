@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, TrendingUp, TrendingDown, Edit, Trash } from "lucide-react";
+import { MoreHorizontal, TrendingUp, TrendingDown, Edit, Trash, Star } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useState } from "react";
 
@@ -16,9 +16,11 @@ interface PocketCardProps {
     current_amount: number;
     cycle_type: string;
     color: string;
+    is_featured: boolean;
   };
   onEdit?: () => void;
   onDelete?: (id: string) => void;
+  onToggleFeatured?: (id: string) => void;
   onClick?: () => void;
 }
 
@@ -26,6 +28,7 @@ export function PocketCard({
   pocket,
   onEdit,
   onDelete,
+  onToggleFeatured,
   onClick,
 }: PocketCardProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -35,7 +38,7 @@ export function PocketCard({
     return null;
   }
 
-  const { id, name, description, budget_amount, current_amount, cycle_type, color } = pocket;
+  const { id, name, description, budget_amount, current_amount, cycle_type, color, is_featured } = pocket;
   const percentageUsed = budget_amount > 0 ? (current_amount / budget_amount) * 100 : 0;
   const remaining = budget_amount - current_amount;
   const isOverBudget = current_amount > budget_amount;
@@ -68,6 +71,9 @@ export function PocketCard({
               </div>
             </div>
             <div className="flex items-center space-x-2">
+              {is_featured && (
+                <Star className="h-4 w-4 text-yellow-500 fill-current" />
+              )}
               <Badge variant="secondary" className="text-xs">
                 {cycle_type}
               </Badge>
@@ -78,6 +84,10 @@ export function PocketCard({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onToggleFeatured?.(id); }}>
+                    <Star className="mr-2 h-4 w-4" />
+                    {is_featured ? 'Unfeature' : 'Feature'}
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit?.(); }}>
                     <Edit className="mr-2 h-4 w-4" />
                     Edit
