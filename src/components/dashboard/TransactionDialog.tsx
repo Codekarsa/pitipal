@@ -98,17 +98,28 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
 
       // Update pocket current amount if pocket is selected
       if (pocketId && type === 'expense') {
-        const { error: updateError } = await supabase.rpc(
-          'update_pocket_amount',
-          {
-            pocket_id: pocketId,
-            amount_to_add: parseFloat(amount)
-          }
-        );
+        // Get current pocket amount first
+        const { data: pocketData, error: fetchError } = await supabase
+          .from('budget_pockets')
+          .select('current_amount')
+          .eq('id', pocketId)
+          .single();
 
-        if (updateError) {
-          console.error('Error updating pocket amount:', updateError);
-          // Don't throw here, transaction was successful
+        if (fetchError) {
+          console.error('Error fetching pocket data:', fetchError);
+        } else {
+          const newAmount = (pocketData.current_amount || 0) + parseFloat(amount);
+          const { error: updateError } = await supabase
+            .from('budget_pockets')
+            .update({ 
+              current_amount: newAmount,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', pocketId);
+
+          if (updateError) {
+            console.error('Error updating pocket amount:', updateError);
+          }
         }
       }
       

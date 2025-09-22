@@ -192,7 +192,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      update_pocket_amount: {
+        Args: { amount_to_add: number; pocket_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
