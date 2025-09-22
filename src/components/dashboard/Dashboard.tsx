@@ -21,6 +21,7 @@ interface BudgetPocket {
   color: string;
   is_featured: boolean;
   pocket_type: string;
+  budget_type: string;
 }
 
 export function Dashboard() {

@@ -17,6 +17,7 @@ export type Database = {
       budget_pockets: {
         Row: {
           budget_amount: number | null
+          budget_type: string
           color: string | null
           created_at: string
           current_amount: number | null
@@ -35,6 +36,7 @@ export type Database = {
         }
         Insert: {
           budget_amount?: number | null
+          budget_type?: string
           color?: string | null
           created_at?: string
           current_amount?: number | null
@@ -53,6 +55,7 @@ export type Database = {
         }
         Update: {
           budget_amount?: number | null
+          budget_type?: string
           color?: string | null
           created_at?: string
           current_amount?: number | null
