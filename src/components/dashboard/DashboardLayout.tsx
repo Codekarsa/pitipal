@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/components/auth/useAuth";
@@ -14,6 +15,8 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children, onAddTransaction, onAddPocket }: DashboardLayoutProps) {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const handleSignOut = async () => {
     try {
@@ -76,25 +79,35 @@ export function DashboardLayout({ children, onAddTransaction, onAddPocket }: Das
       <nav className="bg-card border-b border-border">
         <div className="container mx-auto px-4">
           <div className="flex space-x-8">
-            <button className="flex items-center space-x-2 py-4 text-primary border-b-2 border-primary">
+            <button 
+              onClick={() => navigate("/")}
+              className={`flex items-center space-x-2 py-4 transition-colors cursor-pointer ${
+                location.pathname === "/" 
+                  ? "text-primary border-b-2 border-primary" 
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
               <PieChart className="h-4 w-4" />
               <span className="font-medium">Dashboard</span>
             </button>
             <button 
-              onClick={onAddPocket}
-              className="flex items-center space-x-2 py-4 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              onClick={() => navigate("/pockets")}
+              className={`flex items-center space-x-2 py-4 transition-colors cursor-pointer ${
+                location.pathname === "/pockets" 
+                  ? "text-primary border-b-2 border-primary" 
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
             >
               <Wallet className="h-4 w-4" />
               <span className="font-medium">Pockets</span>
             </button>
             <button 
-              onClick={() => {
-                toast({
-                  title: "Settings",
-                  description: "Settings panel coming soon!",
-                });
-              }}
-              className="flex items-center space-x-2 py-4 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              onClick={() => navigate("/settings")}
+              className={`flex items-center space-x-2 py-4 transition-colors cursor-pointer ${
+                location.pathname === "/settings" 
+                  ? "text-primary border-b-2 border-primary" 
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
             >
               <Settings className="h-4 w-4" />
               <span className="font-medium">Settings</span>
