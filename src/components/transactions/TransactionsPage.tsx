@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/components/auth/useAuth";
+import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,8 @@ interface Transaction {
 export function TransactionsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { pocketId } = useParams();
+  const navigate = useNavigate();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -34,13 +37,17 @@ export function TransactionsPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("date_desc");
   const [userCurrency, setUserCurrency] = useState<string>('USD');
+  const [pocketName, setPocketName] = useState<string>('');
 
   useEffect(() => {
     if (user) {
       fetchTransactions();
       fetchUserProfile();
+      if (pocketId) {
+        fetchPocketName();
+      }
     }
-  }, [user]);
+  }, [user, pocketId]);
 
   const fetchUserProfile = async () => {
     try {
@@ -59,6 +66,25 @@ export function TransactionsPage() {
     }
   };
 
+  const fetchPocketName = async () => {
+    if (!pocketId) return;
+    try {
+      const { data, error } = await supabase
+        .from('budget_pockets')
+        .select('name')
+        .eq('id', pocketId)
+        .eq('user_id', user?.id)
+        .single();
+
+      if (error) throw error;
+      if (data?.name) {
+        setPocketName(data.name);
+      }
+    } catch (error) {
+      console.error('Error fetching pocket name:', error);
+    }
+  };
+
   const fetchTransactions = async () => {
     try {
       setLoading(true);
@@ -68,6 +94,10 @@ export function TransactionsPage() {
         .eq('user_id', user?.id);
 
       // Apply filters
+      if (pocketId) {
+        query = query.eq('pocket_id', pocketId);
+      }
+      
       if (typeFilter !== "all") {
         query = query.eq('type', typeFilter);
       }
@@ -178,8 +208,20 @@ export function TransactionsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Transactions</h1>
-          <p className="text-muted-foreground">Track and manage all your financial transactions</p>
+          <h1 className="text-3xl font-bold">
+            {pocketId ? `${pocketName} Transactions` : 'Transactions'}
+          </h1>
+          <p className="text-muted-foreground">
+            {pocketId ? `Transactions for ${pocketName} pocket` : 'Track and manage all your financial transactions'}
+          </p>
+          {pocketId && (
+            <button 
+              onClick={() => navigate('/transactions')}
+              className="text-sm text-primary hover:underline mt-1"
+            >
+              ← View all transactions
+            </button>
+          )}
         </div>
       </div>
 
