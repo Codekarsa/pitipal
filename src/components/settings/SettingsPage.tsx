@@ -11,6 +11,7 @@ import { CategoriesSection } from "./CategoriesSection";
 import { InvestmentAccountsSection } from "./InvestmentAccountsSection";
 import { SavingsAccountsSection } from "./SavingsAccountsSection";
 import { AssetsSection } from "./AssetsSection";
+import { HoldingsSection } from "../portfolio/HoldingsSection";
 
 const currencies = [
   { code: "USD", symbol: "$", name: "US Dollar", icon: DollarSign },
@@ -154,6 +155,8 @@ export function SettingsPage() {
           </div>
           
           <AssetsSection />
+          
+          <HoldingsSection />
 
         <Card>
           <CardHeader>
