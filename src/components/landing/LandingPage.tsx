@@ -19,7 +19,7 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
               <span className="text-lg font-bold text-primary-foreground">₿</span>
             </div>
             <span className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              ChromaBudget
+              Pitipal
             </span>
           </div>
           <Button onClick={onGetStarted} variant="hero">
@@ -70,7 +70,7 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
             <div className="absolute inset-0 bg-gradient-primary rounded-3xl blur-3xl opacity-20"></div>
             <img 
               src={heroImage} 
-              alt="ChromaBudget Dashboard" 
+              alt="Pitipal Dashboard" 
               className="relative rounded-3xl shadow-2xl w-full"
             />
           </div>
@@ -174,7 +174,7 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
               Ready to Transform Your Finances?
             </h2>
             <p className="text-xl text-primary-foreground/90 mb-8 max-w-2xl mx-auto">
-              Join thousands of users who have taken control of their money with ChromaBudget. 
+              Join thousands of users who have taken control of their money with Pitipal. 
               Start your journey to financial freedom today.
             </p>
             <Button 
@@ -196,10 +196,10 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
             <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
               <span className="text-sm font-bold text-primary-foreground">₿</span>
             </div>
-            <span className="font-semibold text-foreground">ChromaBudget</span>
+            <span className="font-semibold text-foreground">Pitipal</span>
           </div>
           <p className="text-sm text-muted-foreground">
-            © 2024 ChromaBudget. All rights reserved.
+            © 2024 Pitipal. All rights reserved.
           </p>
         </div>
       </footer>
