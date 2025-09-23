@@ -77,7 +77,6 @@ export function Combobox({
 
   const handleCreate = () => {
     const newValue = searchValue.trim()
-    console.log('Creating new payee:', newValue)
     onValueChange(newValue)
     setOpen(false)
     setSearchValue("")
@@ -92,7 +91,7 @@ export function Combobox({
           aria-expanded={open}
           className={cn("w-full justify-between", className)}
         >
-          {selectedOption ? selectedOption.label : (value || placeholder)}
+          {value ? (selectedOption ? selectedOption.label : value) : placeholder}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -105,7 +104,7 @@ export function Combobox({
           />
           <CommandList>
             <CommandEmpty>
-              {allowCreate && searchValue.trim() && !exactMatch ? (
+              {shouldShowCreate ? (
                 <div
                   className="px-2 py-1.5 text-sm cursor-pointer hover:bg-accent rounded-md text-primary flex items-center"
                   onClick={handleCreate}
