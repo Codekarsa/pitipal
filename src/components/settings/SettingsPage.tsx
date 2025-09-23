@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { DollarSign, Euro, PoundSterling, CircleDollarSign } from "lucide-react";
 import { CategoriesSection } from "./CategoriesSection";
+import { InvestmentAccountsSection } from "./InvestmentAccountsSection";
+import { AssetsSection } from "./AssetsSection";
 
 const currencies = [
   { code: "USD", symbol: "$", name: "US Dollar", icon: DollarSign },
@@ -134,7 +136,11 @@ export function SettingsPage() {
           </CardContent>
         </Card>
 
-        <CategoriesSection />
+          <CategoriesSection />
+          
+          <InvestmentAccountsSection />
+          
+          <AssetsSection />
 
         <Card>
           <CardHeader>
