@@ -214,6 +214,54 @@ export type Database = {
         }
         Relationships: []
       }
+      savings_accounts: {
+        Row: {
+          account_name: string
+          account_number: string | null
+          account_type: string
+          created_at: string
+          current_balance: number | null
+          id: string
+          institution_name: string
+          interest_rate: number | null
+          is_active: boolean | null
+          notes: string | null
+          routing_number: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_name: string
+          account_number?: string | null
+          account_type: string
+          created_at?: string
+          current_balance?: number | null
+          id?: string
+          institution_name: string
+          interest_rate?: number | null
+          is_active?: boolean | null
+          notes?: string | null
+          routing_number?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_name?: string
+          account_number?: string | null
+          account_type?: string
+          created_at?: string
+          current_balance?: number | null
+          id?: string
+          institution_name?: string
+          interest_rate?: number | null
+          is_active?: boolean | null
+          notes?: string | null
+          routing_number?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       transactions: {
         Row: {
           ai_categorized: boolean | null
