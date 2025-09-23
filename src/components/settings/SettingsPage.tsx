@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { DollarSign, Euro, PoundSterling, CircleDollarSign } from "lucide-react";
 import { CategoriesSection } from "./CategoriesSection";
 import { InvestmentAccountsSection } from "./InvestmentAccountsSection";
+import { SavingsAccountsSection } from "./SavingsAccountsSection";
 import { AssetsSection } from "./AssetsSection";
 
 const currencies = [
@@ -138,7 +139,19 @@ export function SettingsPage() {
 
           <CategoriesSection />
           
-          <InvestmentAccountsSection />
+          {/* Financial Accounts Section */}
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-xl font-semibold mb-2">Financial Accounts</h2>
+              <p className="text-sm text-muted-foreground mb-6">
+                Manage your investment and savings accounts to track your complete financial picture
+              </p>
+            </div>
+            <div className="grid gap-6 lg:grid-cols-2">
+              <InvestmentAccountsSection />
+              <SavingsAccountsSection />
+            </div>
+          </div>
           
           <AssetsSection />
 
