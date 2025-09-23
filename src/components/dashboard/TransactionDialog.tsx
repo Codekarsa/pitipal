@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Combobox } from "@/components/ui/combobox";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -22,6 +23,16 @@ interface Category {
   name: string;
   type: string;
   icon: string;
+  category_group_id?: string;
+  category_groups?: {
+    name: string;
+  };
+}
+
+interface ComboboxOption {
+  value: string;
+  label: string;
+  group?: string;
 }
 
 interface TransactionDialogProps {
@@ -36,9 +47,11 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("");
   const [pocketId, setPocketId] = useState("");
+  const [payee, setPayee] = useState("");
   const [description, setDescription] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [payees, setPayees] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
@@ -46,6 +59,7 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
   useEffect(() => {
     if (open) {
       fetchCategories();
+      fetchPayees();
     }
   }, [open, type]);
 
@@ -53,7 +67,12 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
     try {
       const { data, error } = await supabase
         .from('categories')
-        .select('*')
+        .select(`
+          *,
+          category_groups (
+            name
+          )
+        `)
         .eq('type', type)
         .order('name');
 
@@ -73,6 +92,30 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
     }
   };
 
+  const fetchPayees = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('description')
+        .eq('user_id', user?.id)
+        .not('description', 'is', null)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      // Extract unique payees from descriptions
+      const uniquePayees = [...new Set(
+        data
+          ?.map(t => t.description?.trim())
+          .filter(Boolean) || []
+      )].slice(0, 20); // Limit to 20 recent payees
+      
+      setPayees(uniquePayees);
+    } catch (error: any) {
+      console.error('Error loading payees:', error);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -89,7 +132,7 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
           amount: parseFloat(amount),
           type: type,
           category: category,
-          description: description.trim() || null,
+          description: payee.trim() || description.trim() || null,
           transaction_date: date,
           ai_categorized: false,
           ai_confidence: 0,
@@ -132,6 +175,7 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
       setAmount("");
       setCategory("");
       setPocketId("");
+      setPayee("");
       setDescription("");
       setDate(new Date().toISOString().split('T')[0]);
       
@@ -203,18 +247,33 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
 
           <div className="space-y-2">
             <Label htmlFor="category">Category *</Label>
-            <Select value={category} onValueChange={setCategory} required>
-              <SelectTrigger>
-                <SelectValue placeholder="Select category" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.name}>
-                    {cat.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Combobox
+              options={categories.map((cat) => ({
+                value: cat.name,
+                label: cat.name,
+                group: cat.category_groups?.name
+              }))}
+              value={category}
+              onValueChange={setCategory}
+              placeholder="Select category"
+              searchPlaceholder="Search categories..."
+              emptyText="No categories found."
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="payee">Payee</Label>
+            <Combobox
+              options={payees.map((p) => ({
+                value: p,
+                label: p
+              }))}
+              value={payee}
+              onValueChange={setPayee}
+              placeholder="Select or type payee"
+              searchPlaceholder="Search payees..."
+              emptyText="No payees found."
+            />
           </div>
 
           <div className="space-y-2">
