@@ -157,6 +157,48 @@ export type Database = {
         }
         Relationships: []
       }
+      investment_accounts: {
+        Row: {
+          account_name: string
+          account_number: string | null
+          account_type: string
+          created_at: string
+          id: string
+          institution_name: string
+          is_active: boolean | null
+          notes: string | null
+          total_value: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_name: string
+          account_number?: string | null
+          account_type: string
+          created_at?: string
+          id?: string
+          institution_name: string
+          is_active?: boolean | null
+          notes?: string | null
+          total_value?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_name?: string
+          account_number?: string | null
+          account_type?: string
+          created_at?: string
+          id?: string
+          institution_name?: string
+          is_active?: boolean | null
+          notes?: string | null
+          total_value?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       payees: {
         Row: {
           created_at: string
@@ -271,10 +313,12 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          investment_account_id: string | null
           is_recurring: boolean | null
           notes: string | null
           pocket_id: string | null
           recurring_frequency: string | null
+          savings_account_id: string | null
           transaction_date: string
           type: string
           updated_at: string
@@ -288,10 +332,12 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          investment_account_id?: string | null
           is_recurring?: boolean | null
           notes?: string | null
           pocket_id?: string | null
           recurring_frequency?: string | null
+          savings_account_id?: string | null
           transaction_date?: string
           type: string
           updated_at?: string
@@ -305,10 +351,12 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          investment_account_id?: string | null
           is_recurring?: boolean | null
           notes?: string | null
           pocket_id?: string | null
           recurring_frequency?: string | null
+          savings_account_id?: string | null
           transaction_date?: string
           type?: string
           updated_at?: string
@@ -316,10 +364,24 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "transactions_investment_account_id_fkey"
+            columns: ["investment_account_id"]
+            isOneToOne: false
+            referencedRelation: "investment_accounts"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "transactions_pocket_id_fkey"
             columns: ["pocket_id"]
             isOneToOne: false
             referencedRelation: "budget_pockets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_savings_account_id_fkey"
+            columns: ["savings_account_id"]
+            isOneToOne: false
+            referencedRelation: "savings_accounts"
             referencedColumns: ["id"]
           },
         ]
