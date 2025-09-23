@@ -249,7 +249,7 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px] bg-gradient-card border-0 shadow-xl">
+      <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto bg-gradient-card border-0 shadow-xl">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold">Add Transaction</DialogTitle>
           <DialogDescription>
