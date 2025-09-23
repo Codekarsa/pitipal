@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/useAuth";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { PocketCard } from "@/components/dashboard/PocketCard";
@@ -12,6 +13,7 @@ export function PocketsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   // Fetch user profile for currency preference
@@ -162,6 +164,7 @@ export function PocketsPage() {
               key={pocket.id}
               pocket={pocket}
               currency={userCurrency}
+              onClick={() => navigate(`/transactions/${pocket.id}`)}
               onDelete={handleDeletePocket}
               onToggleFeatured={handleToggleFeatured}
             />

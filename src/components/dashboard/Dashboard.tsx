@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { formatCurrency, formatNumber } from "@/lib/utils";
 
 interface BudgetPocket {
@@ -32,6 +33,7 @@ export function Dashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   // Fetch user profile for currency preference
   const { data: profile } = useQuery({
@@ -283,19 +285,17 @@ export function Dashboard() {
                 <h3 className="text-lg font-semibold">Featured Pockets</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {pockets.filter(pocket => pocket.is_featured).map((pocket) => (
-                     <PocketCard
-                       key={pocket.id}
-                       pocket={pocket}
-                       currency={userCurrency}
-                       onClick={() => {
-                         // TODO: Open pocket details
-                       }}
-                       onEdit={() => {
-                         // TODO: Open edit dialog
-                       }}
-                       onDelete={handleDeletePocket}
-                       onToggleFeatured={handleToggleFeatured}
-                     />
+                       <PocketCard
+                        key={pocket.id}
+                        pocket={pocket}
+                        currency={userCurrency}
+                        onClick={() => navigate(`/transactions/${pocket.id}`)}
+                        onEdit={() => {
+                          // TODO: Open edit dialog
+                        }}
+                        onDelete={handleDeletePocket}
+                        onToggleFeatured={handleToggleFeatured}
+                      />
                   ))}
                 </div>
               </div>

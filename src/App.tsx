@@ -152,6 +152,26 @@ function AppContent() {
         } 
       />
       <Route 
+        path="/transactions/:pocketId" 
+        element={
+          <DashboardLayout 
+            onAddTransaction={() => setShowAddTransaction(true)}
+            onAddPocket={() => navigate("/pockets")}
+          >
+            <TransactionsPage />
+            <TransactionDialog
+              open={showAddTransaction}
+              onOpenChange={setShowAddTransaction}
+              onSuccess={() => {
+                setShowAddTransaction(false);
+                handleRefreshPockets();
+              }}
+              pockets={pockets}
+            />
+          </DashboardLayout>
+        } 
+      />
+      <Route 
         path="/settings" 
         element={
           <DashboardLayout 
