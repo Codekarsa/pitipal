@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/useAuth";
 import { AddSavingsAccountDialog } from "./AddSavingsAccountDialog";
 import { toast } from "sonner";
+import { formatCurrency } from "@/lib/utils";
 
 type SavingsAccount = {
   id: string;
@@ -25,6 +26,23 @@ export function SavingsAccountsSection() {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<SavingsAccount | null>(null);
+
+  const { data: userProfile } = useQuery({
+    queryKey: ["user-profile", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("currency")
+        .eq("user_id", user.id)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id,
+  });
 
   const { data: accounts = [], isLoading } = useQuery({
     queryKey: ["savings-accounts", user?.id],
@@ -71,12 +89,7 @@ export function SavingsAccountsSection() {
     setEditingAccount(null);
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
-  };
+  const userCurrency = userProfile?.currency || 'USD';
 
   const getAccountTypeLabel = (type: string) => {
     switch (type) {
@@ -107,7 +120,7 @@ export function SavingsAccountsSection() {
           <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
             <div>
               <p className="font-semibold">Total Balance</p>
-              <p className="text-2xl font-bold text-primary">{formatCurrency(totalBalance)}</p>
+              <p className="text-2xl font-bold text-primary">{formatCurrency(totalBalance, userCurrency)}</p>
             </div>
             <div className="text-right">
               <p className="text-sm text-muted-foreground">{accounts.length} accounts</p>
@@ -135,7 +148,7 @@ export function SavingsAccountsSection() {
                       {!account.is_active && <Badge variant="secondary">Inactive</Badge>}
                     </div>
                     <p className="text-sm text-muted-foreground">{account.institution_name}</p>
-                    <p className="text-lg font-semibold text-primary">{formatCurrency(account.current_balance || 0)}</p>
+                    <p className="text-lg font-semibold text-primary">{formatCurrency(account.current_balance || 0, userCurrency)}</p>
                     {account.interest_rate && account.interest_rate > 0 && (
                       <p className="text-sm text-muted-foreground">APY: {account.interest_rate}%</p>
                     )}
