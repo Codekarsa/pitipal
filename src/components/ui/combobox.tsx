@@ -31,6 +31,7 @@ interface ComboboxProps {
   searchPlaceholder?: string
   emptyText?: string
   className?: string
+  allowCreate?: boolean
 }
 
 export function Combobox({
@@ -41,8 +42,10 @@ export function Combobox({
   searchPlaceholder = "Search...",
   emptyText = "No options found.",
   className,
+  allowCreate = false,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false)
+  const [searchValue, setSearchValue] = React.useState("")
 
   // Group options by group
   const groupedOptions = React.useMemo(() => {
@@ -80,9 +83,28 @@ export function Combobox({
       </PopoverTrigger>
       <PopoverContent className="w-full p-0" align="start">
         <Command>
-          <CommandInput placeholder={searchPlaceholder} />
+          <CommandInput 
+            placeholder={searchPlaceholder} 
+            value={searchValue}
+            onValueChange={setSearchValue}
+          />
           <CommandList>
-            <CommandEmpty>{emptyText}</CommandEmpty>
+            <CommandEmpty>
+              {allowCreate && searchValue.trim() ? (
+                <div 
+                  className="px-2 py-1.5 text-sm cursor-pointer hover:bg-accent rounded-md"
+                  onClick={() => {
+                    onValueChange(searchValue.trim())
+                    setOpen(false)
+                    setSearchValue("")
+                  }}
+                >
+                  Create "{searchValue.trim()}"
+                </div>
+              ) : (
+                emptyText
+              )}
+            </CommandEmpty>
             
             {groupedOptions.ungrouped.length > 0 && (
               <CommandGroup>
