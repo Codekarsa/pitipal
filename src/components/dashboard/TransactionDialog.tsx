@@ -171,6 +171,11 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
         }
       }
       
+      // If a new payee was created, add it to the list immediately
+      if (payee.trim() && !payees.includes(payee.trim())) {
+        setPayees(prev => [payee.trim(), ...prev]);
+      }
+      
       // Reset form
       setAmount("");
       setCategory("");
@@ -179,10 +184,12 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
       setDescription("");
       setDate(new Date().toISOString().split('T')[0]);
       
-      // Refresh payees list to include newly created payee
-      fetchPayees();
-      
       onSuccess();
+      
+      // Refresh payees list after a delay to ensure transaction is committed
+      setTimeout(() => {
+        fetchPayees();
+      }, 100);
     } catch (error: any) {
       toast({
         title: "Error adding transaction",
