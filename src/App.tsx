@@ -70,7 +70,7 @@ function AppContent() {
           <div className="w-16 h-16 bg-gradient-primary rounded-2xl flex items-center justify-center shadow-glow mx-auto animate-pulse">
             <span className="text-2xl font-bold text-primary-foreground">₿</span>
           </div>
-          <p className="text-muted-foreground">Loading ChromaBudget...</p>
+          <p className="text-muted-foreground">Loading Pitipal...</p>
         </div>
       </div>
     );
