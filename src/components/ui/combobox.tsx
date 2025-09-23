@@ -67,6 +67,20 @@ export function Combobox({
   }, [options])
 
   const selectedOption = options.find((option) => option.value === value)
+  
+  // Check if search value exactly matches an existing option
+  const exactMatch = options.some(option => 
+    option.value.toLowerCase() === searchValue.toLowerCase()
+  )
+  
+  const shouldShowCreate = allowCreate && searchValue.trim() && !exactMatch
+
+  const handleCreate = () => {
+    const newValue = searchValue.trim()
+    onValueChange(newValue)
+    setOpen(false)
+    setSearchValue("")
+  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -89,22 +103,7 @@ export function Combobox({
             onValueChange={setSearchValue}
           />
           <CommandList>
-            <CommandEmpty>
-              {allowCreate && searchValue.trim() ? (
-                <div 
-                  className="px-2 py-1.5 text-sm cursor-pointer hover:bg-accent rounded-md"
-                  onClick={() => {
-                    onValueChange(searchValue.trim())
-                    setOpen(false)
-                    setSearchValue("")
-                  }}
-                >
-                  Create "{searchValue.trim()}"
-                </div>
-              ) : (
-                emptyText
-              )}
-            </CommandEmpty>
+            <CommandEmpty>{emptyText}</CommandEmpty>
             
             {groupedOptions.ungrouped.length > 0 && (
               <CommandGroup>
@@ -115,6 +114,7 @@ export function Combobox({
                     onSelect={(currentValue) => {
                       onValueChange(currentValue === value ? "" : currentValue)
                       setOpen(false)
+                      setSearchValue("")
                     }}
                   >
                     <Check
@@ -140,6 +140,7 @@ export function Combobox({
                       onSelect={(currentValue) => {
                         onValueChange(currentValue === value ? "" : currentValue)
                         setOpen(false)
+                        setSearchValue("")
                       }}
                     >
                       <Check
@@ -153,6 +154,19 @@ export function Combobox({
                   ))}
                 </CommandGroup>
               ))}
+              
+            {shouldShowCreate && (
+              <CommandGroup>
+                <CommandItem
+                  value={`create-${searchValue}`}
+                  onSelect={handleCreate}
+                  className="text-primary"
+                >
+                  <span className="mr-2">+</span>
+                  Create "{searchValue.trim()}"
+                </CommandItem>
+              </CommandGroup>
+            )}
           </CommandList>
         </Command>
       </PopoverContent>
