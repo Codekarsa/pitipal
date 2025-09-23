@@ -45,9 +45,16 @@ interface Asset {
 
 interface InvestmentAccount {
   id: string;
-  name: string;
+  account_name: string;
   account_type: string;
-  institution: string;
+  institution_name: string;
+}
+
+interface SavingsAccount {
+  id: string;
+  account_name: string;
+  institution_name: string;
+  account_type: string;
 }
 
 interface TransactionDialogProps {
@@ -67,6 +74,10 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [payees, setPayees] = useState<string[]>([]);
+  const [savingsAccountId, setSavingsAccountId] = useState("");
+  const [investmentAccountId, setInvestmentAccountId] = useState("");
+  const [savingsAccounts, setSavingsAccounts] = useState<SavingsAccount[]>([]);
+  const [investmentAccounts, setInvestmentAccounts] = useState<InvestmentAccount[]>([]);
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
@@ -75,6 +86,7 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
     if (open) {
       fetchCategories();
       fetchPayees();
+      fetchAccounts();
     }
   }, [open, type]);
 
@@ -125,6 +137,32 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
     }
   };
 
+  const fetchAccounts = async () => {
+    try {
+      // Fetch savings accounts
+      const { data: savingsData, error: savingsError } = await supabase
+        .from('savings_accounts')
+        .select('id, account_name, institution_name, account_type')
+        .eq('user_id', user?.id)
+        .eq('is_active', true);
+
+      // Fetch investment accounts
+      const { data: investmentData, error: investmentError } = await supabase
+        .from('investment_accounts')
+        .select('id, account_name, institution_name, account_type')
+        .eq('user_id', user?.id)
+        .eq('is_active', true);
+
+      if (savingsError) throw savingsError;
+      if (investmentError) throw investmentError;
+
+      setSavingsAccounts(savingsData || []);
+      setInvestmentAccounts(investmentData || []);
+    } catch (error: any) {
+      console.error('Error loading accounts:', error);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -138,6 +176,8 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
         .insert({
           user_id: user.id,
           pocket_id: pocketId || null,
+          savings_account_id: savingsAccountId || null,
+          investment_account_id: investmentAccountId || null,
           amount: parseFloat(amount),
           type: type,
           category: category,
@@ -184,6 +224,8 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
       setAmount("");
       setCategory("");
       setPocketId("");
+      setSavingsAccountId("");
+      setInvestmentAccountId("");
       setPayee("");
       setDescription("");
       setDate(new Date().toISOString().split('T')[0]);
@@ -320,6 +362,43 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
               emptyText="Type to add new payee"
               allowCreate={true}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="account">Account</Label>
+            <Select 
+              value={savingsAccountId || investmentAccountId} 
+              onValueChange={(value) => {
+                const [accountType, accountId] = value.split(':');
+                if (accountType === 'savings') {
+                  setSavingsAccountId(accountId);
+                  setInvestmentAccountId("");
+                } else if (accountType === 'investment') {
+                  setInvestmentAccountId(accountId);
+                  setSavingsAccountId("");
+                } else {
+                  setSavingsAccountId("");
+                  setInvestmentAccountId("");
+                }
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select account (optional)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">No Account</SelectItem>
+                {savingsAccounts.map((account) => (
+                  <SelectItem key={account.id} value={`savings:${account.id}`}>
+                    {account.account_name} ({account.institution_name})
+                  </SelectItem>
+                ))}
+                {investmentAccounts.map((account) => (
+                  <SelectItem key={account.id} value={`investment:${account.id}`}>
+                    {account.account_name} ({account.institution_name})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
