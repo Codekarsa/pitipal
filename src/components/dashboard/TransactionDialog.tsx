@@ -272,7 +272,8 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
               onValueChange={setPayee}
               placeholder="Select or type payee"
               searchPlaceholder="Search payees..."
-              emptyText="No payees found."
+              emptyText="Type to add new payee"
+              allowCreate={true}
             />
           </div>
 
