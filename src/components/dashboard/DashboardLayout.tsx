@@ -46,7 +46,7 @@ export function DashboardLayout({ children, onAddTransaction, onAddPocket }: Das
               </div>
               <div>
                 <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                  ChromaBudget
+                  Pitipal
                 </h1>
                 <p className="text-sm text-muted-foreground">Smart Financial Management</p>
               </div>

@@ -415,7 +415,7 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
       case 'signup': return 'Create Your Account';
       case 'signin': return 'Welcome Back';
       case 'forgot': return 'Reset Password';
-      default: return 'Welcome to ChromaBudget';
+      default: return 'Welcome to Pitipal';
     }
   };
 
