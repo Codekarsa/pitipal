@@ -367,8 +367,13 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
           <div className="space-y-2">
             <Label htmlFor="account">Account</Label>
             <Select 
-              value={savingsAccountId || investmentAccountId} 
+              value={savingsAccountId || investmentAccountId || "none"} 
               onValueChange={(value) => {
+                if (value === "none") {
+                  setSavingsAccountId("");
+                  setInvestmentAccountId("");
+                  return;
+                }
                 const [accountType, accountId] = value.split(':');
                 if (accountType === 'savings') {
                   setSavingsAccountId(accountId);
@@ -386,7 +391,7 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
                 <SelectValue placeholder="Select account (optional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No Account</SelectItem>
+                <SelectItem value="none">No Account</SelectItem>
                 {savingsAccounts.map((account) => (
                   <SelectItem key={account.id} value={`savings:${account.id}`}>
                     {account.account_name} ({account.institution_name})
