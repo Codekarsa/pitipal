@@ -281,7 +281,13 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
                 label: p
               }))}
               value={payee}
-              onValueChange={setPayee}
+              onValueChange={(newValue) => {
+                // If it's a new payee that doesn't exist in the list, add it immediately
+                if (newValue && !payees.includes(newValue)) {
+                  setPayees(prev => [newValue, ...prev])
+                }
+                setPayee(newValue)
+              }}
               placeholder="Select or type payee"
               searchPlaceholder="Search payees..."
               emptyText="Type to add new payee"
