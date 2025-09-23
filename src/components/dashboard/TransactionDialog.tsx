@@ -95,22 +95,16 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
   const fetchPayees = async () => {
     try {
       const { data, error } = await supabase
-        .from('transactions')
-        .select('description')
+        .from('payees')
+        .select('name')
         .eq('user_id', user?.id)
-        .not('description', 'is', null)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       
-      // Extract unique payees from descriptions
-      const uniquePayees = [...new Set(
-        data
-          ?.map(t => t.description?.trim())
-          .filter(Boolean) || []
-      )].slice(0, 20); // Limit to 20 recent payees
-      
-      setPayees(uniquePayees);
+      // Extract payee names
+      const payeeNames = data?.map(p => p.name) || [];
+      setPayees(payeeNames);
     } catch (error: any) {
       console.error('Error loading payees:', error);
     }
@@ -171,11 +165,6 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
         }
       }
       
-      // If a new payee was created, add it to the list immediately
-      if (payee.trim() && !payees.includes(payee.trim())) {
-        setPayees(prev => [payee.trim(), ...prev]);
-      }
-      
       // Reset form
       setAmount("");
       setCategory("");
@@ -186,7 +175,7 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
       
       onSuccess();
       
-      // Refresh payees list after a delay to ensure transaction is committed
+      // Refresh payees list to get latest from database
       setTimeout(() => {
         fetchPayees();
       }, 100);
@@ -281,10 +270,29 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
                 label: p
               }))}
               value={payee}
-              onValueChange={(newValue) => {
-                // If it's a new payee that doesn't exist in the list, add it immediately
+              onValueChange={async (newValue) => {
+                // If it's a new payee that doesn't exist in the list, save it to database
                 if (newValue && !payees.includes(newValue)) {
-                  setPayees(prev => [newValue, ...prev])
+                  try {
+                    const { error } = await supabase
+                      .from('payees')
+                      .insert({
+                        user_id: user?.id,
+                        name: newValue.trim()
+                      });
+                    
+                    if (error) {
+                      // If error is due to unique constraint (payee already exists), ignore it
+                      if (!error.message.includes('duplicate key value')) {
+                        console.error('Error creating payee:', error);
+                      }
+                    } else {
+                      // Add to local state immediately
+                      setPayees(prev => [newValue, ...prev]);
+                    }
+                  } catch (error) {
+                    console.error('Error creating payee:', error);
+                  }
                 }
                 setPayee(newValue)
               }}
