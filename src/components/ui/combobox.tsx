@@ -104,7 +104,19 @@ export function Combobox({
             onValueChange={setSearchValue}
           />
           <CommandList>
-            <CommandEmpty>{emptyText}</CommandEmpty>
+            <CommandEmpty>
+              {allowCreate && searchValue.trim() && !exactMatch ? (
+                <div
+                  className="px-2 py-1.5 text-sm cursor-pointer hover:bg-accent rounded-md text-primary flex items-center"
+                  onClick={handleCreate}
+                >
+                  <span className="mr-2">+</span>
+                  Create "{searchValue.trim()}"
+                </div>
+              ) : (
+                emptyText
+              )}
+            </CommandEmpty>
             
             {groupedOptions.ungrouped.length > 0 && (
               <CommandGroup>
@@ -155,18 +167,6 @@ export function Combobox({
                   ))}
                 </CommandGroup>
               ))}
-              
-            {shouldShowCreate && (
-              <CommandGroup>
-                <div
-                  className="px-2 py-1.5 text-sm cursor-pointer hover:bg-accent rounded-md text-primary flex items-center"
-                  onClick={handleCreate}
-                >
-                  <span className="mr-2">+</span>
-                  Create "{searchValue.trim()}"
-                </div>
-              </CommandGroup>
-            )}
           </CommandList>
         </Command>
       </PopoverContent>

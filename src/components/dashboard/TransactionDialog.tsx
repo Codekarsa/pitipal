@@ -179,6 +179,9 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
       setDescription("");
       setDate(new Date().toISOString().split('T')[0]);
       
+      // Refresh payees list to include newly created payee
+      fetchPayees();
+      
       onSuccess();
     } catch (error: any) {
       toast({
