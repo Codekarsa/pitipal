@@ -35,6 +35,21 @@ interface ComboboxOption {
   group?: string;
 }
 
+interface Asset {
+  id: string;
+  symbol: string;
+  name: string;
+  asset_type: string;
+  exchange: string | null;
+}
+
+interface InvestmentAccount {
+  id: string;
+  name: string;
+  account_type: string;
+  institution: string;
+}
+
 interface TransactionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -43,7 +58,7 @@ interface TransactionDialogProps {
 }
 
 export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: TransactionDialogProps) {
-  const [type, setType] = useState<"income" | "expense">("expense");
+  const [type, setType] = useState<"income" | "expense" | "investment">("expense");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("");
   const [pocketId, setPocketId] = useState("");
@@ -202,7 +217,7 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-3">
             <Label>Transaction Type</Label>
-            <RadioGroup value={type} onValueChange={(value: "income" | "expense") => {
+            <RadioGroup value={type} onValueChange={(value: "income" | "expense" | "investment") => {
               setType(value);
               setCategory(""); // Reset category when type changes
             }}>
@@ -210,11 +225,15 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
                 <RadioGroupItem value="expense" id="expense" />
                 <Label htmlFor="expense">Expense</Label>
               </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="income" id="income" />
-                <Label htmlFor="income">Income</Label>
-              </div>
-            </RadioGroup>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="income" id="income" />
+                  <Label htmlFor="income">Income</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="investment" id="investment" />
+                  <Label htmlFor="investment">Investment</Label>
+                </div>
+              </RadioGroup>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
