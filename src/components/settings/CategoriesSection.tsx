@@ -64,14 +64,14 @@ export function CategoriesSection() {
     description: "",
     color: categoryColors[0],
     icon: "folder",
-    type: "expense" as "expense" | "income"
+    type: "expense" as "expense" | "income" | "investment"
   });
 
   const [categoryForm, setCategoryForm] = useState({
     name: "",
     color: categoryColors[0],
     icon: "tag",
-    type: "expense" as "expense" | "income",
+    type: "expense" as "expense" | "income" | "investment",
     category_group_id: ""
   });
 
@@ -266,7 +266,7 @@ export function CategoriesSection() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold">Expense & Income Categories</h3>
+          <h3 className="text-lg font-semibold">Transaction Categories</h3>
           <p className="text-sm text-muted-foreground">
             Organize your transactions with custom category groups and categories
           </p>
@@ -274,7 +274,7 @@ export function CategoriesSection() {
       </div>
 
       <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="expense" className="flex items-center gap-2">
             <TrendingDown className="h-4 w-4" />
             Expenses
@@ -282,6 +282,10 @@ export function CategoriesSection() {
           <TabsTrigger value="income" className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4" />
             Income
+          </TabsTrigger>
+          <TabsTrigger value="investment" className="flex items-center gap-2">
+            <DollarSign className="h-4 w-4" />
+            Investments
           </TabsTrigger>
         </TabsList>
 
