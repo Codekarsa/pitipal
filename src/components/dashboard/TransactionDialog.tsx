@@ -248,11 +248,13 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
           <div className="space-y-2">
             <Label htmlFor="category">Category *</Label>
             <Combobox
-              options={categories.map((cat) => ({
-                value: cat.name,
-                label: cat.name,
-                group: cat.category_groups?.name
-              }))}
+              options={categories
+                .filter(cat => cat.category_groups?.name) // Only show categories that have groups
+                .map((cat) => ({
+                  value: cat.name,
+                  label: cat.name,
+                  group: cat.category_groups?.name
+                }))}
               value={category}
               onValueChange={setCategory}
               placeholder="Select category"
