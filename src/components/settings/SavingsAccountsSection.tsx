@@ -1,66 +1,67 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Building2, Plus, Edit2, Trash2 } from "lucide-react";
+import { Banknote, Plus, Edit2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/useAuth";
-import { AddInvestmentAccountDialog } from "./AddInvestmentAccountDialog";
+import { AddSavingsAccountDialog } from "./AddSavingsAccountDialog";
 import { toast } from "sonner";
 
-type InvestmentAccount = {
+type SavingsAccount = {
   id: string;
   account_name: string;
   institution_name: string;
   account_type: string;
-  total_value: number;
+  current_balance: number;
+  interest_rate: number;
   is_active: boolean;
   notes?: string;
 };
 
-export function InvestmentAccountsSection() {
+export function SavingsAccountsSection() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingAccount, setEditingAccount] = useState<InvestmentAccount | null>(null);
+  const [editingAccount, setEditingAccount] = useState<SavingsAccount | null>(null);
 
   const { data: accounts = [], isLoading } = useQuery({
-    queryKey: ["investment-accounts", user?.id],
+    queryKey: ["savings-accounts", user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
       
-      const { data, error } = await (supabase as any)
-        .from("investment_accounts")
+      const { data, error } = await supabase
+        .from("savings_accounts")
         .select("*")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
       
       if (error) throw error;
-      return data as InvestmentAccount[];
+      return data as SavingsAccount[];
     },
     enabled: !!user?.id,
   });
 
   const deleteAccountMutation = useMutation({
     mutationFn: async (accountId: string) => {
-      const { error } = await (supabase as any)
-        .from("investment_accounts")
+      const { error } = await supabase
+        .from("savings_accounts")
         .delete()
         .eq("id", accountId);
       
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["investment-accounts"] });
-      toast.success("Investment account deleted successfully");
+      queryClient.invalidateQueries({ queryKey: ["savings-accounts"] });
+      toast.success("Savings account deleted successfully");
     },
     onError: () => {
-      toast.error("Failed to delete investment account");
+      toast.error("Failed to delete savings account");
     },
   });
 
-  const handleEdit = (account: InvestmentAccount) => {
+  const handleEdit = (account: SavingsAccount) => {
     setEditingAccount(account);
     setDialogOpen(true);
   };
@@ -79,37 +80,34 @@ export function InvestmentAccountsSection() {
 
   const getAccountTypeLabel = (type: string) => {
     switch (type) {
-      case 'brokerage': return 'Brokerage';
-      case '401k': return '401(k)';
-      case 'traditional_ira': return 'Traditional IRA';
-      case 'roth_ira': return 'Roth IRA';
-      case 'sep_ira': return 'SEP IRA';
-      case 'simple_ira': return 'SIMPLE IRA';
-      case 'crypto_exchange': return 'Crypto Exchange';
-      case 'pension': return 'Pension';
+      case 'checking': return 'Checking';
+      case 'savings': return 'Savings';
+      case 'cd': return 'CD';
+      case 'money_market': return 'Money Market';
+      case 'high_yield_savings': return 'High Yield Savings';
       default: return type;
     }
   };
 
-  const totalValue = accounts.reduce((sum, account) => sum + (account.total_value || 0), 0);
+  const totalBalance = accounts.reduce((sum, account) => sum + (account.current_balance || 0), 0);
 
   return (
     <>
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Building2 className="h-5 w-5" />
-            Investment Accounts
+            <Banknote className="h-5 w-5" />
+            Savings Accounts
           </CardTitle>
           <CardDescription>
-            Manage your brokerage accounts, 401k, IRA, and other investment accounts
+            Manage your checking, savings, CDs, and money market accounts
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
             <div>
-              <p className="font-semibold">Total Portfolio Value</p>
-              <p className="text-2xl font-bold text-primary">{formatCurrency(totalValue)}</p>
+              <p className="font-semibold">Total Balance</p>
+              <p className="text-2xl font-bold text-primary">{formatCurrency(totalBalance)}</p>
             </div>
             <div className="text-right">
               <p className="text-sm text-muted-foreground">{accounts.length} accounts</p>
@@ -122,9 +120,9 @@ export function InvestmentAccountsSection() {
             </div>
           ) : accounts.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              <Building2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-              <p className="font-medium">No investment accounts yet</p>
-              <p className="text-sm">Add your first account to start tracking your investments</p>
+              <Banknote className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+              <p className="font-medium">No savings accounts yet</p>
+              <p className="text-sm">Add your first account to start tracking your savings</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -137,7 +135,10 @@ export function InvestmentAccountsSection() {
                       {!account.is_active && <Badge variant="secondary">Inactive</Badge>}
                     </div>
                     <p className="text-sm text-muted-foreground">{account.institution_name}</p>
-                    <p className="text-lg font-semibold text-primary">{formatCurrency(account.total_value || 0)}</p>
+                    <p className="text-lg font-semibold text-primary">{formatCurrency(account.current_balance || 0)}</p>
+                    {account.interest_rate && account.interest_rate > 0 && (
+                      <p className="text-sm text-muted-foreground">APY: {account.interest_rate}%</p>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
@@ -162,12 +163,12 @@ export function InvestmentAccountsSection() {
 
           <Button onClick={() => setDialogOpen(true)} className="w-full">
             <Plus className="h-4 w-4 mr-2" />
-            Add Investment Account
+            Add Savings Account
           </Button>
         </CardContent>
       </Card>
 
-      <AddInvestmentAccountDialog
+      <AddSavingsAccountDialog
         open={dialogOpen}
         onOpenChange={handleDialogClose}
         editingAccount={editingAccount}
