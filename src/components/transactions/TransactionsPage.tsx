@@ -20,9 +20,20 @@ interface Transaction {
   description: string | null;
   transaction_date: string;
   pocket_id: string | null;
+  savings_account_id: string | null;
+  investment_account_id: string | null;
   is_recurring: boolean | null;
   ai_categorized: boolean | null;
   created_at: string;
+}
+
+interface Account {
+  id: string;
+  account_name: string;
+  institution_name: string;
+  account_type: string;
+  current_balance?: number;
+  total_value?: number;
 }
 
 export function TransactionsPage() {
@@ -35,14 +46,18 @@ export function TransactionsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [accountFilter, setAccountFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("date_desc");
   const [userCurrency, setUserCurrency] = useState<string>('USD');
   const [pocketName, setPocketName] = useState<string>('');
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [totalAccountBalance, setTotalAccountBalance] = useState<number>(0);
 
   useEffect(() => {
     if (user) {
       fetchTransactions();
       fetchUserProfile();
+      fetchAccounts();
       if (pocketId) {
         fetchPocketName();
       }
@@ -85,6 +100,41 @@ export function TransactionsPage() {
     }
   };
 
+  const fetchAccounts = async () => {
+    try {
+      // Fetch savings accounts
+      const { data: savingsData, error: savingsError } = await supabase
+        .from('savings_accounts')
+        .select('id, account_name, institution_name, account_type, current_balance')
+        .eq('user_id', user?.id)
+        .eq('is_active', true);
+
+      // Fetch investment accounts  
+      const { data: investmentData, error: investmentError } = await supabase
+        .from('investment_accounts')
+        .select('id, account_name, institution_name, account_type, total_value')
+        .eq('user_id', user?.id)
+        .eq('is_active', true);
+
+      if (savingsError) throw savingsError;
+      if (investmentError) throw investmentError;
+
+      const allAccounts: Account[] = [
+        ...(savingsData || []).map(acc => ({ ...acc, current_balance: acc.current_balance })),
+        ...(investmentData || []).map(acc => ({ ...acc, total_value: acc.total_value }))
+      ];
+
+      setAccounts(allAccounts);
+      
+      // Calculate total balance
+      const totalBalance = allAccounts.reduce((sum, acc) => 
+        sum + (acc.current_balance || acc.total_value || 0), 0);
+      setTotalAccountBalance(totalBalance);
+    } catch (error) {
+      console.error('Error fetching accounts:', error);
+    }
+  };
+
   const fetchTransactions = async () => {
     try {
       setLoading(true);
@@ -104,6 +154,15 @@ export function TransactionsPage() {
       
       if (categoryFilter !== "all") {
         query = query.eq('category', categoryFilter);
+      }
+
+      if (accountFilter !== "all") {
+        const [accountType, accountId] = accountFilter.split(':');
+        if (accountType === 'savings') {
+          query = query.eq('savings_account_id', accountId);
+        } else if (accountType === 'investment') {
+          query = query.eq('investment_account_id', accountId);
+        }
       }
 
       // Apply sorting
@@ -132,10 +191,24 @@ export function TransactionsPage() {
 
       // Apply search filter
       if (searchTerm) {
-        filteredData = filteredData.filter(transaction =>
-          transaction.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          transaction.category.toLowerCase().includes(searchTerm.toLowerCase())
-        );
+        filteredData = filteredData.filter(transaction => {
+          const matchesDescription = transaction.description?.toLowerCase().includes(searchTerm.toLowerCase());
+          const matchesCategory = transaction.category.toLowerCase().includes(searchTerm.toLowerCase());
+          
+          // Also search in account names
+          let matchesAccount = false;
+          if (transaction.savings_account_id || transaction.investment_account_id) {
+            const account = accounts.find(acc => 
+              acc.id === transaction.savings_account_id || acc.id === transaction.investment_account_id
+            );
+            if (account) {
+              matchesAccount = account.account_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                             account.institution_name.toLowerCase().includes(searchTerm.toLowerCase());
+            }
+          }
+          
+          return matchesDescription || matchesCategory || matchesAccount;
+        });
       }
 
       setTransactions(filteredData);
@@ -155,7 +228,7 @@ export function TransactionsPage() {
     if (user) {
       fetchTransactions();
     }
-  }, [typeFilter, categoryFilter, sortBy, searchTerm]);
+  }, [typeFilter, categoryFilter, accountFilter, sortBy, searchTerm]);
 
   const getUniqueCategories = () => {
     const categories = [...new Set(transactions.map(t => t.category))];
@@ -180,6 +253,18 @@ export function TransactionsPage() {
       .reduce((sum, t) => sum + t.amount, 0);
 
     return { income, expenses, net: income - expenses };
+  };
+
+  const getAccountName = (transaction: Transaction) => {
+    if (transaction.savings_account_id) {
+      const account = accounts.find(acc => acc.id === transaction.savings_account_id);
+      return account ? `${account.account_name} (${account.institution_name})` : 'Unknown Account';
+    }
+    if (transaction.investment_account_id) {
+      const account = accounts.find(acc => acc.id === transaction.investment_account_id);
+      return account ? `${account.account_name} (${account.institution_name})` : 'Unknown Account';
+    }
+    return null;
   };
 
   const stats = getTotalStats();
@@ -226,7 +311,7 @@ export function TransactionsPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card className="bg-gradient-card border-0 shadow-sm">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -275,6 +360,20 @@ export function TransactionsPage() {
             </div>
           </CardContent>
         </Card>
+
+        <Card className="bg-gradient-card border-0 shadow-sm">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Total Account Balance</p>
+                <p className="text-2xl font-bold text-primary">{formatCurrency(totalAccountBalance, userCurrency)}</p>
+              </div>
+              <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
+                <div className="h-6 w-6 rounded-full bg-primary/20 border-2 border-primary"></div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Filters */}
@@ -286,7 +385,7 @@ export function TransactionsPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -316,6 +415,23 @@ export function TransactionsPage() {
                 <SelectItem value="all">All Categories</SelectItem>
                 {getUniqueCategories().map((category) => (
                   <SelectItem key={category} value={category}>{category}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={accountFilter} onValueChange={setAccountFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="All Accounts" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Accounts</SelectItem>
+                {accounts.map((account) => (
+                  <SelectItem 
+                    key={account.id} 
+                    value={`${account.current_balance !== undefined ? 'savings' : 'investment'}:${account.id}`}
+                  >
+                    {account.account_name} ({account.institution_name})
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -361,6 +477,7 @@ export function TransactionsPage() {
                   <TableHead>Date</TableHead>
                   <TableHead>Description</TableHead>
                   <TableHead>Category</TableHead>
+                  <TableHead>Account</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead className="text-right">Amount</TableHead>
                   <TableHead>Status</TableHead>
@@ -381,6 +498,18 @@ export function TransactionsPage() {
                     </TableCell>
                     <TableCell>
                       <Badge variant="secondary">{transaction.category}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      {getAccountName(transaction) ? (
+                        <div className="text-sm">
+                          <div className="font-medium">{getAccountName(transaction)?.split(' (')[0]}</div>
+                          <div className="text-muted-foreground text-xs">
+                            {getAccountName(transaction)?.split(' (')[1]?.replace(')', '')}
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">No account</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Badge 
