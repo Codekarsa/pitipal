@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      assets: {
+        Row: {
+          asset_type: string
+          created_at: string
+          created_by: string | null
+          currency: string | null
+          exchange: string | null
+          id: string
+          is_active: boolean | null
+          is_custom: boolean | null
+          name: string
+          sector: string | null
+          symbol: string
+          updated_at: string
+        }
+        Insert: {
+          asset_type: string
+          created_at?: string
+          created_by?: string | null
+          currency?: string | null
+          exchange?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_custom?: boolean | null
+          name: string
+          sector?: string | null
+          symbol: string
+          updated_at?: string
+        }
+        Update: {
+          asset_type?: string
+          created_at?: string
+          created_by?: string | null
+          currency?: string | null
+          exchange?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_custom?: boolean | null
+          name?: string
+          sector?: string | null
+          symbol?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       budget_pockets: {
         Row: {
           budget_amount: number | null
@@ -157,6 +202,57 @@ export type Database = {
         }
         Relationships: []
       }
+      holdings: {
+        Row: {
+          asset_id: string
+          average_cost: number
+          created_at: string
+          current_value: number | null
+          id: string
+          investment_account_id: string
+          quantity: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          asset_id: string
+          average_cost?: number
+          created_at?: string
+          current_value?: number | null
+          id?: string
+          investment_account_id: string
+          quantity?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          asset_id?: string
+          average_cost?: number
+          created_at?: string
+          current_value?: number | null
+          id?: string
+          investment_account_id?: string
+          quantity?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "holdings_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "holdings_investment_account_id_fkey"
+            columns: ["investment_account_id"]
+            isOneToOne: false
+            referencedRelation: "investment_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       investment_accounts: {
         Row: {
           account_name: string
@@ -198,6 +294,57 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      investment_transactions: {
+        Row: {
+          asset_id: string
+          created_at: string
+          fees: number | null
+          id: string
+          price_per_unit: number
+          quantity: number
+          transaction_id: string
+          transaction_type: string
+          updated_at: string
+        }
+        Insert: {
+          asset_id: string
+          created_at?: string
+          fees?: number | null
+          id?: string
+          price_per_unit: number
+          quantity: number
+          transaction_id: string
+          transaction_type: string
+          updated_at?: string
+        }
+        Update: {
+          asset_id?: string
+          created_at?: string
+          fees?: number | null
+          id?: string
+          price_per_unit?: number
+          quantity?: number
+          transaction_id?: string
+          transaction_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "investment_transactions_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "investment_transactions_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payees: {
         Row: {
