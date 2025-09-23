@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/useAuth";
 import { AddInvestmentAccountDialog } from "./AddInvestmentAccountDialog";
 import { toast } from "sonner";
+import { formatCurrency } from "@/lib/utils";
 
 type InvestmentAccount = {
   id: string;
@@ -24,6 +25,23 @@ export function InvestmentAccountsSection() {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<InvestmentAccount | null>(null);
+
+  const { data: userProfile } = useQuery({
+    queryKey: ["user-profile", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("currency")
+        .eq("user_id", user.id)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id,
+  });
 
   const { data: accounts = [], isLoading } = useQuery({
     queryKey: ["investment-accounts", user?.id],
@@ -70,12 +88,7 @@ export function InvestmentAccountsSection() {
     setEditingAccount(null);
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
-  };
+  const userCurrency = userProfile?.currency || 'USD';
 
   const getAccountTypeLabel = (type: string) => {
     switch (type) {
@@ -109,7 +122,7 @@ export function InvestmentAccountsSection() {
           <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
             <div>
               <p className="font-semibold">Total Portfolio Value</p>
-              <p className="text-2xl font-bold text-primary">{formatCurrency(totalValue)}</p>
+              <p className="text-2xl font-bold text-primary">{formatCurrency(totalValue, userCurrency)}</p>
             </div>
             <div className="text-right">
               <p className="text-sm text-muted-foreground">{accounts.length} accounts</p>
@@ -137,7 +150,7 @@ export function InvestmentAccountsSection() {
                       {!account.is_active && <Badge variant="secondary">Inactive</Badge>}
                     </div>
                     <p className="text-sm text-muted-foreground">{account.institution_name}</p>
-                    <p className="text-lg font-semibold text-primary">{formatCurrency(account.total_value || 0)}</p>
+                    <p className="text-lg font-semibold text-primary">{formatCurrency(account.total_value || 0, userCurrency)}</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
