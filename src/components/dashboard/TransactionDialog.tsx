@@ -248,7 +248,7 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
             <Label htmlFor="category">Category *</Label>
             <Combobox
               options={categories
-                .filter(cat => cat.category_groups?.name && cat.name !== cat.category_groups.name) // Only show categories that have groups and are not the same as group name
+                .filter(cat => cat.category_groups?.name && cat.category_groups.name !== "Other Expenses" && cat.name !== cat.category_groups.name) // Exclude "Other Expenses" group and duplicate names
                 .map((cat) => ({
                   value: cat.name,
                   label: cat.name,
