@@ -79,6 +79,15 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
   const [savingsAccounts, setSavingsAccounts] = useState<SavingsAccount[]>([]);
   const [investmentAccounts, setInvestmentAccounts] = useState<InvestmentAccount[]>([]);
   const [loading, setLoading] = useState(false);
+  
+  // Investment-specific fields
+  const [assets, setAssets] = useState<Asset[]>([]);
+  const [selectedAssetId, setSelectedAssetId] = useState("");
+  const [quantity, setQuantity] = useState("");
+  const [pricePerUnit, setPricePerUnit] = useState("");
+  const [fees, setFees] = useState("");
+  const [investmentType, setInvestmentType] = useState<"buy" | "sell">("buy");
+  
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -87,6 +96,9 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
       fetchCategories();
       fetchPayees();
       fetchAccounts();
+      if (type === 'investment') {
+        fetchAssets();
+      }
     }
   }, [open, type]);
 
@@ -163,6 +175,21 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
     }
   };
 
+  const fetchAssets = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('assets')
+        .select('id, symbol, name, asset_type, exchange')
+        .eq('is_active', true)
+        .order('symbol');
+
+      if (error) throw error;
+      setAssets(data || []);
+    } catch (error: any) {
+      console.error('Error loading assets:', error);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -170,24 +197,49 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
     try {
       setLoading(true);
       
+      // Calculate total amount for investment transactions
+      const totalAmount = type === 'investment' 
+        ? (parseFloat(quantity) * parseFloat(pricePerUnit)) + (parseFloat(fees) || 0)
+        : parseFloat(amount);
+      
       // Create transaction
-      const { error: transactionError } = await supabase
+      const { data: transactionData, error: transactionError } = await supabase
         .from('transactions')
         .insert({
           user_id: user.id,
           pocket_id: pocketId || null,
-          savings_account_id: savingsAccountId || null,
-          investment_account_id: investmentAccountId || null,
-          amount: parseFloat(amount),
+          savings_account_id: type === 'investment' ? null : (savingsAccountId || null),
+          investment_account_id: type === 'investment' ? (investmentAccountId || null) : null,
+          amount: totalAmount,
           type: type,
           category: category,
-          description: payee.trim() || description.trim() || null,
+          description: type === 'investment' 
+            ? `${investmentType.toUpperCase()} ${quantity} shares of ${assets.find(a => a.id === selectedAssetId)?.symbol || 'Unknown'} @ ${pricePerUnit}`
+            : (payee.trim() || description.trim() || null),
           transaction_date: date,
           ai_categorized: false,
           ai_confidence: 0,
-        });
+        })
+        .select()
+        .single();
 
       if (transactionError) throw transactionError;
+
+      // For investment transactions, create investment transaction details
+      if (type === 'investment' && transactionData && selectedAssetId) {
+        const { error: investmentError } = await supabase
+          .from('investment_transactions')
+          .insert({
+            transaction_id: transactionData.id,
+            asset_id: selectedAssetId,
+            quantity: parseFloat(quantity),
+            price_per_unit: parseFloat(pricePerUnit),
+            fees: parseFloat(fees) || 0,
+            transaction_type: investmentType,
+          });
+
+        if (investmentError) throw investmentError;
+      }
 
       // Update pocket current amount if pocket is selected
       if (pocketId) {
@@ -229,6 +281,13 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
       setPayee("");
       setDescription("");
       setDate(new Date().toISOString().split('T')[0]);
+      
+      // Reset investment fields
+      setSelectedAssetId("");
+      setQuantity("");
+      setPricePerUnit("");
+      setFees("");
+      setInvestmentType("buy");
       
       onSuccess();
       
@@ -278,32 +337,129 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
               </RadioGroup>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="amount">Amount *</Label>
-              <Input
-                id="amount"
-                type="number"
-                step="0.01"
-                min="0"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="0.00"
-                required
-              />
-            </div>
+          {type === 'investment' ? (
+            <>
+              <div className="space-y-2">
+                <Label>Investment Type</Label>
+                <RadioGroup value={investmentType} onValueChange={(value: "buy" | "sell") => setInvestmentType(value)}>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="buy" id="buy" />
+                    <Label htmlFor="buy">Buy</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="sell" id="sell" />
+                    <Label htmlFor="sell">Sell</Label>
+                  </div>
+                </RadioGroup>
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="date">Date</Label>
-              <Input
-                id="date"
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                required
-              />
+              <div className="space-y-2">
+                <Label htmlFor="asset">Asset *</Label>
+                <Combobox
+                  options={assets.map((asset) => ({
+                    value: asset.id,
+                    label: `${asset.symbol} - ${asset.name}`,
+                    group: asset.asset_type
+                  }))}
+                  value={selectedAssetId}
+                  onValueChange={setSelectedAssetId}
+                  placeholder="Select asset"
+                  searchPlaceholder="Search assets..."
+                  emptyText="No assets found."
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="quantity">Quantity *</Label>
+                  <Input
+                    id="quantity"
+                    type="number"
+                    step="0.00001"
+                    min="0"
+                    value={quantity}
+                    onChange={(e) => setQuantity(e.target.value)}
+                    placeholder="0"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="pricePerUnit">Price per Unit *</Label>
+                  <Input
+                    id="pricePerUnit"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={pricePerUnit}
+                    onChange={(e) => setPricePerUnit(e.target.value)}
+                    placeholder="0.00"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="fees">Fees</Label>
+                  <Input
+                    id="fees"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={fees}
+                    onChange={(e) => setFees(e.target.value)}
+                    placeholder="0.00"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="date">Date</Label>
+                  <Input
+                    id="date"
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              {quantity && pricePerUnit && (
+                <div className="p-3 bg-muted rounded-md">
+                  <div className="text-sm text-muted-foreground">Total Amount:</div>
+                  <div className="font-medium">
+                    ${((parseFloat(quantity) * parseFloat(pricePerUnit)) + (parseFloat(fees) || 0)).toFixed(2)}
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="amount">Amount *</Label>
+                <Input
+                  id="amount"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="0.00"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="date">Date</Label>
+                <Input
+                  id="date"
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  required
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="category">Category *</Label>
@@ -463,7 +619,11 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
             >
               Cancel
             </Button>
-            <Button type="submit" variant="hero" disabled={loading || !amount || !category}>
+            <Button type="submit" variant="hero" disabled={
+              loading || 
+              !category || 
+              (type === 'investment' ? (!selectedAssetId || !quantity || !pricePerUnit) : !amount)
+            }>
               {loading ? "Adding..." : "Add Transaction"}
             </Button>
           </DialogFooter>
