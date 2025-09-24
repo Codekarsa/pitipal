@@ -124,6 +124,28 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
         setSavingsAccountId(editingTransaction.savings_account_id || "");
         setInvestmentAccountId(editingTransaction.investment_account_id || "");
         setCreditCardAccountId(editingTransaction.credit_card_account_id || "");
+        
+        // Handle payee for editing
+        if (editingTransaction.payee_id) {
+          // Fetch payee name
+          const fetchPayeeName = async () => {
+            try {
+              const { data, error } = await supabase
+                .from('payees')
+                .select('name')
+                .eq('id', editingTransaction.payee_id)
+                .single();
+              
+              if (error) throw error;
+              setPayee(data?.name || "");
+            } catch (error) {
+              console.error('Error fetching payee name:', error);
+            }
+          };
+          fetchPayeeName();
+        } else {
+          setPayee("");
+        }
       }
     }
   }, [open, type, editingTransaction]);
@@ -250,6 +272,41 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
       
       let transactionData;
       let transactionError;
+      let payeeId = null;
+
+      // Handle payee creation/lookup for non-investment transactions
+      if (type !== 'investment' && payee.trim()) {
+        // First, try to find existing payee
+        const { data: existingPayee, error: payeeSearchError } = await supabase
+          .from('payees')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('name', payee.trim())
+          .maybeSingle();
+
+        if (payeeSearchError && !payeeSearchError.message.includes('not found')) {
+          throw payeeSearchError;
+        }
+
+        if (existingPayee) {
+          payeeId = existingPayee.id;
+        } else {
+          // Create new payee
+          const { data: newPayee, error: payeeCreateError } = await supabase
+            .from('payees')
+            .insert({
+              user_id: user.id,
+              name: payee.trim()
+            })
+            .select('id')
+            .single();
+
+          if (payeeCreateError) {
+            throw payeeCreateError;
+          }
+          payeeId = newPayee.id;
+        }
+      }
 
       if (editingTransaction) {
         // Update existing transaction
@@ -260,12 +317,13 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
             savings_account_id: savingsAccountId || null,
             investment_account_id: investmentAccountId || null,
             credit_card_account_id: creditCardAccountId || null,
+            payee_id: payeeId,
             amount: totalAmount,
             type: type,
             category: category,
             description: type === 'investment' 
               ? `${investmentType.toUpperCase()} ${quantity} shares of ${assets.find(a => a.id === selectedAssetId)?.symbol || 'Unknown'} @ ${pricePerUnit}`
-              : (payee.trim() || description.trim() || null),
+              : description.trim() || null,
             transaction_date: date,
             updated_at: new Date().toISOString(),
           })
@@ -286,12 +344,13 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
             savings_account_id: savingsAccountId || null,
             investment_account_id: investmentAccountId || null,
             credit_card_account_id: creditCardAccountId || null,
+            payee_id: payeeId,
             amount: totalAmount,
             type: type,
             category: category,
             description: type === 'investment' 
               ? `${investmentType.toUpperCase()} ${quantity} shares of ${assets.find(a => a.id === selectedAssetId)?.symbol || 'Unknown'} @ ${pricePerUnit}`
-              : (payee.trim() || description.trim() || null),
+              : description.trim() || null,
             transaction_date: date,
             ai_categorized: false,
             ai_confidence: 0,

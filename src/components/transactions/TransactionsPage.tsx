@@ -24,9 +24,14 @@ interface Transaction {
   pocket_id: string | null;
   savings_account_id: string | null;
   investment_account_id: string | null;
+  credit_card_account_id: string | null;
+  payee_id: string | null;
   is_recurring: boolean | null;
   ai_categorized: boolean | null;
   created_at: string;
+  payees?: {
+    name: string;
+  } | null;
 }
 
 interface Account {
@@ -145,7 +150,10 @@ export function TransactionsPage() {
       setLoading(true);
       let query = supabase
         .from('transactions')
-        .select('*')
+        .select(`
+          *,
+          payees(name)
+        `)
         .eq('user_id', user?.id);
 
       // Apply filters
@@ -199,6 +207,7 @@ export function TransactionsPage() {
         filteredData = filteredData.filter(transaction => {
           const matchesDescription = transaction.description?.toLowerCase().includes(searchTerm.toLowerCase());
           const matchesCategory = transaction.category.toLowerCase().includes(searchTerm.toLowerCase());
+          const matchesPayee = transaction.payees?.name?.toLowerCase().includes(searchTerm.toLowerCase());
           
           // Also search in account names
           let matchesAccount = false;
@@ -212,7 +221,7 @@ export function TransactionsPage() {
             }
           }
           
-          return matchesDescription || matchesCategory || matchesAccount;
+          return matchesDescription || matchesCategory || matchesPayee || matchesAccount;
         });
       }
 
@@ -519,6 +528,7 @@ export function TransactionsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Date</TableHead>
+                  <TableHead>Payee</TableHead>
                   <TableHead>Description</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>Account</TableHead>
@@ -535,11 +545,22 @@ export function TransactionsPage() {
                       {formatDate(transaction.transaction_date)}
                     </TableCell>
                     <TableCell>
-                      <div>
-                        <p className="font-medium">
-                          {transaction.description || 'No description'}
-                        </p>
-                      </div>
+                      {transaction.payees?.name ? (
+                        <span className="font-medium text-foreground">
+                          {transaction.payees.name}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">No payee</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {transaction.description ? (
+                        <span className="text-sm">
+                          {transaction.description}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">No description</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Badge variant="secondary">{transaction.category}</Badge>
