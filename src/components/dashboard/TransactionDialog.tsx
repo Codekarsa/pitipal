@@ -291,6 +291,67 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
           }
         }
       }
+
+      // Update credit card balance if credit card payment
+      if (creditCardAccountId && category === 'Credit Card Payment') {
+        try {
+          const { data: cardData, error: fetchError } = await supabase
+            .from('credit_card_accounts')
+            .select('current_balance')
+            .eq('id', creditCardAccountId)
+            .single();
+
+          if (fetchError) {
+            console.error('Error fetching credit card data:', fetchError);
+          } else {
+            // Credit card payments reduce the balance
+            const newBalance = (cardData.current_balance || 0) - parseFloat(amount);
+            
+            const { error: updateError } = await supabase
+              .from('credit_card_accounts')
+              .update({ 
+                current_balance: Math.max(0, newBalance), // Don't allow negative balances
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', creditCardAccountId);
+
+            if (updateError) {
+              console.error('Error updating credit card balance:', updateError);
+            }
+          }
+        } catch (error) {
+          console.error('Error processing credit card payment:', error);
+        }
+      } else if (creditCardAccountId && type === 'expense') {
+        // Regular purchases on credit card increase the balance
+        try {
+          const { data: cardData, error: fetchError } = await supabase
+            .from('credit_card_accounts')
+            .select('current_balance')
+            .eq('id', creditCardAccountId)
+            .single();
+
+          if (fetchError) {
+            console.error('Error fetching credit card data:', fetchError);
+          } else {
+            const newBalance = (cardData.current_balance || 0) + parseFloat(amount);
+            
+            const { error: updateError } = await supabase
+              .from('credit_card_accounts')
+              .update({ 
+                current_balance: newBalance,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', creditCardAccountId);
+
+            if (updateError) {
+              console.error('Error updating credit card balance:', updateError);
+            }
+          }
+        } catch (error) {
+          console.error('Error processing credit card purchase:', error);
+        }
+      }
       
       // Reset form
       setAmount("");

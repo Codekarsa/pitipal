@@ -6,6 +6,7 @@ import { PocketCard } from "./PocketCard";
 import { CreatePocketDialog } from "./CreatePocketDialog";
 import { TransactionDialog } from "./TransactionDialog";
 import { DebtOverviewCard } from "./DebtOverviewCard";
+import { QuickActionsCard } from "./QuickActionsCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -299,11 +300,21 @@ export function Dashboard() {
                       />
                   ))}
                   <DebtOverviewCard />
+                  <QuickActionsCard 
+                    pockets={pockets}
+                    onTransactionAdded={handleTransactionAdded}
+                    onPocketCreated={handlePocketCreated}
+                  />
                 </div>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <DebtOverviewCard />
+                <QuickActionsCard 
+                  pockets={pockets}
+                  onTransactionAdded={handleTransactionAdded}
+                  onPocketCreated={handlePocketCreated}
+                />
               </div>
             )}
 
