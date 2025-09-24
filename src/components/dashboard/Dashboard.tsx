@@ -1,18 +1,21 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, TrendingUp, TrendingDown, DollarSign, PiggyBank } from "lucide-react";
+import { Plus, TrendingUp, TrendingDown, DollarSign, PiggyBank, Settings } from "lucide-react";
 import { PocketCard } from "./PocketCard";
 import { CreatePocketDialog } from "./CreatePocketDialog";
 import { TransactionDialog } from "./TransactionDialog";
 import { DebtOverviewCard } from "./DebtOverviewCard";
 import { QuickActionsCard } from "./QuickActionsCard";
+import { MonthNavigator } from "./MonthNavigator";
+import { TemplateManagementDialog } from "./TemplateManagementDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { formatCurrency, formatNumber } from "@/lib/utils";
+import { format } from "date-fns";
 
 interface BudgetPocket {
   id: string;
@@ -25,13 +28,20 @@ interface BudgetPocket {
   is_featured: boolean;
   pocket_type: string;
   budget_type: string;
+  is_template: boolean;
+  month_year: string | null;
+  parent_pocket_id: string | null;
+  auto_renew: boolean;
+  recurring_rule: any;
 }
 
 export function Dashboard() {
   const [pockets, setPockets] = useState<BudgetPocket[]>([]);
   const [showCreatePocket, setShowCreatePocket] = useState(false);
   const [showAddTransaction, setShowAddTransaction] = useState(false);
+  const [showTemplateManagement, setShowTemplateManagement] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [selectedMonth, setSelectedMonth] = useState<string>(format(new Date(), "yyyy-MM"));
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -71,7 +81,7 @@ export function Dashboard() {
     if (user) {
       fetchPockets();
     }
-  }, [user]);
+  }, [user, selectedMonth]);
 
   const fetchPockets = async () => {
     try {
@@ -81,6 +91,8 @@ export function Dashboard() {
         .select('*')
         .eq('user_id', user?.id)
         .eq('is_active', true)
+        .eq('is_template', false)
+        .eq('month_year', selectedMonth)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -257,14 +269,30 @@ export function Dashboard() {
       {/* Budget Pockets */}
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold">Budget Pockets</h2>
-            <p className="text-muted-foreground">Organize your spending into customizable categories</p>
+          <div className="flex items-center gap-6">
+            <div>
+              <h2 className="text-2xl font-bold">Budget Pockets</h2>
+              <p className="text-muted-foreground">Organize your spending into customizable categories</p>
+            </div>
+            <MonthNavigator
+              selectedMonth={selectedMonth}
+              onMonthChange={setSelectedMonth}
+            />
           </div>
-          <Button onClick={() => setShowCreatePocket(true)} variant="hero">
-            <Plus className="mr-2 h-4 w-4" />
-            Create Pocket
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowTemplateManagement(true)}
+              className="gap-2"
+            >
+              <Settings className="h-4 w-4" />
+              Templates
+            </Button>
+            <Button onClick={() => setShowCreatePocket(true)} variant="hero">
+              <Plus className="mr-2 h-4 w-4" />
+              Create Pocket
+            </Button>
+          </div>
         </div>
 
         {pockets.length === 0 ? (
@@ -335,6 +363,11 @@ export function Dashboard() {
         onOpenChange={setShowAddTransaction}
         onSuccess={handleTransactionAdded}
         pockets={pockets}
+      />
+      
+      <TemplateManagementDialog
+        open={showTemplateManagement}
+        onOpenChange={setShowTemplateManagement}
       />
     </div>
   );
