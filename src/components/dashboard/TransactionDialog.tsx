@@ -611,6 +611,7 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
             <Select 
               value={savingsAccountId || investmentAccountId || creditCardAccountId || "none"} 
               onValueChange={(value) => {
+                console.log('Account selection changed to:', value);
                 if (value === "none") {
                   setSavingsAccountId("");
                   setInvestmentAccountId("");
@@ -618,6 +619,7 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
                   return;
                 }
                 const [accountType, accountId] = value.split(':');
+                console.log('Parsed account type:', accountType, 'ID:', accountId);
                 if (accountType === 'savings') {
                   setSavingsAccountId(accountId);
                   setInvestmentAccountId("");
@@ -642,34 +644,21 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">No Account</SelectItem>
-                {(() => {
-                  console.log('Rendering accounts - Savings:', savingsAccounts.length, 'Investment:', investmentAccounts.length, 'Credit:', creditCardAccounts.length);
-                  return null;
-                })()}
-                {savingsAccounts.map((account) => {
-                  console.log('Rendering savings account:', account.account_name);
-                  return (
-                    <SelectItem key={account.id} value={`savings:${account.id}`}>
-                      💰 {account.account_name} ({account.institution_name})
-                    </SelectItem>
-                  );
-                })}
-                {investmentAccounts.map((account) => {
-                  console.log('Rendering investment account:', account.account_name);
-                  return (
-                    <SelectItem key={account.id} value={`investment:${account.id}`}>
-                      📈 {account.account_name} ({account.institution_name})
-                    </SelectItem>
-                  );
-                })}
-                {creditCardAccounts.map((account) => {
-                  console.log('Rendering credit card account:', account.account_name);
-                  return (
-                    <SelectItem key={account.id} value={`credit:${account.id}`}>
-                      💳 {account.account_name} ({account.institution_name})
-                    </SelectItem>
-                  );
-                })}
+                {savingsAccounts.map((account) => (
+                  <SelectItem key={account.id} value={`savings:${account.id}`}>
+                    💰 {account.account_name} ({account.institution_name})
+                  </SelectItem>
+                ))}
+                {investmentAccounts.map((account) => (
+                  <SelectItem key={account.id} value={`investment:${account.id}`}>
+                    📈 {account.account_name} ({account.institution_name})
+                  </SelectItem>
+                ))}
+                {creditCardAccounts.map((account) => (
+                  <SelectItem key={account.id} value={`credit:${account.id}`}>
+                    💳 {account.account_name} ({account.institution_name})
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
