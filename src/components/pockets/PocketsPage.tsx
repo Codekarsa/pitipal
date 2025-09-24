@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { PocketCard } from "@/components/dashboard/PocketCard";
 import { CreatePocketDialog } from "@/components/dashboard/CreatePocketDialog";
+import { EditPocketDialog } from "@/components/dashboard/EditPocketDialog";
 import { useToast } from "@/hooks/use-toast";
 
 export function PocketsPage() {
@@ -15,6 +16,8 @@ export function PocketsPage() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [selectedPocket, setSelectedPocket] = useState(null);
 
   // Fetch user profile for currency preference
   const { data: profile } = useQuery({
@@ -115,6 +118,17 @@ export function PocketsPage() {
     }
   };
 
+  const handleEditPocket = (pocket: any) => {
+    setSelectedPocket(pocket);
+    setShowEditDialog(true);
+  };
+
+  const handleEditSuccess = () => {
+    setShowEditDialog(false);
+    setSelectedPocket(null);
+    queryClient.invalidateQueries({ queryKey: ["pockets"] });
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -165,6 +179,7 @@ export function PocketsPage() {
               pocket={pocket}
               currency={userCurrency}
               onClick={() => navigate(`/transactions/${pocket.id}`)}
+              onEdit={() => handleEditPocket(pocket)}
               onDelete={handleDeletePocket}
               onToggleFeatured={handleToggleFeatured}
             />
@@ -190,6 +205,13 @@ export function PocketsPage() {
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}
         onSuccess={() => setShowCreateDialog(false)}
+      />
+
+      <EditPocketDialog
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+        onSuccess={handleEditSuccess}
+        pocket={selectedPocket}
       />
     </div>
   );
