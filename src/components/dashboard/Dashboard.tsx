@@ -5,6 +5,7 @@ import { Plus, TrendingUp, TrendingDown, DollarSign, PiggyBank } from "lucide-re
 import { PocketCard } from "./PocketCard";
 import { CreatePocketDialog } from "./CreatePocketDialog";
 import { TransactionDialog } from "./TransactionDialog";
+import { DebtOverviewCard } from "./DebtOverviewCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -280,7 +281,7 @@ export function Dashboard() {
         ) : (
           <>
             {/* Featured Pockets */}
-            {pockets.filter(pocket => pocket.is_featured).length > 0 && (
+            {pockets.filter(pocket => pocket.is_featured).length > 0 ? (
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Featured Pockets</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -297,7 +298,12 @@ export function Dashboard() {
                         onToggleFeatured={handleToggleFeatured}
                       />
                   ))}
+                  <DebtOverviewCard />
                 </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <DebtOverviewCard />
               </div>
             )}
 
