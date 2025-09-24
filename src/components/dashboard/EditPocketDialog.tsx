@@ -133,7 +133,7 @@ export function EditPocketDialog({ open, onOpenChange, onSuccess, pocket }: Edit
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px] bg-gradient-card border-0 shadow-xl">
+      <DialogContent className="sm:max-w-[425px] bg-gradient-card border-0 shadow-xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold">Edit Budget Pocket</DialogTitle>
           <DialogDescription>
