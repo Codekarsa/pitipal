@@ -223,6 +223,7 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Form submitted - this should only happen when Add Transaction is clicked');
     if (!user) return;
 
     try {
@@ -366,6 +367,7 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
       }
       
       // Reset form
+      console.log('Resetting form after successful submission');
       setAmount("");
       setCategory("");
       setPocketId("");
@@ -639,23 +641,40 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
                 }
               }}
             >
-              <SelectTrigger>
+              <SelectTrigger onClick={() => console.log('SelectTrigger clicked')}>
                 <SelectValue placeholder="Select account (optional)" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">No Account</SelectItem>
+              <SelectContent className="z-[200]">
+                <SelectItem 
+                  value="none"
+                  onSelect={() => console.log('None selected')}
+                >
+                  No Account
+                </SelectItem>
                 {savingsAccounts.map((account) => (
-                  <SelectItem key={account.id} value={`savings:${account.id}`}>
+                  <SelectItem 
+                    key={account.id} 
+                    value={`savings:${account.id}`}
+                    onSelect={() => console.log('Savings account selected:', account.account_name)}
+                  >
                     💰 {account.account_name} ({account.institution_name})
                   </SelectItem>
                 ))}
                 {investmentAccounts.map((account) => (
-                  <SelectItem key={account.id} value={`investment:${account.id}`}>
+                  <SelectItem 
+                    key={account.id} 
+                    value={`investment:${account.id}`}
+                    onSelect={() => console.log('Investment account selected:', account.account_name)}
+                  >
                     📈 {account.account_name} ({account.institution_name})
                   </SelectItem>
                 ))}
                 {creditCardAccounts.map((account) => (
-                  <SelectItem key={account.id} value={`credit:${account.id}`}>
+                  <SelectItem 
+                    key={account.id} 
+                    value={`credit:${account.id}`}
+                    onSelect={() => console.log('Credit card selected:', account.account_name)}
+                  >
                     💳 {account.account_name} ({account.institution_name})
                   </SelectItem>
                 ))}
