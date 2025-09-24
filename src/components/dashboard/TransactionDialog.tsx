@@ -161,12 +161,16 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
 
   const fetchAccounts = async () => {
     try {
+      console.log('Fetching accounts for user:', user?.id);
+      
       // Fetch savings accounts
       const { data: savingsData, error: savingsError } = await supabase
         .from('savings_accounts')
         .select('id, account_name, institution_name, account_type')
         .eq('user_id', user?.id)
         .eq('is_active', true);
+
+      console.log('Savings accounts:', savingsData, 'Error:', savingsError);
 
       // Fetch investment accounts
       const { data: investmentData, error: investmentError } = await supabase
@@ -175,12 +179,16 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
         .eq('user_id', user?.id)
         .eq('is_active', true);
 
+      console.log('Investment accounts:', investmentData, 'Error:', investmentError);
+
       // Fetch credit card accounts
       const { data: creditCardData, error: creditCardError } = await supabase
         .from('credit_card_accounts')
         .select('id, account_name, institution_name, card_type')
         .eq('user_id', user?.id)
         .eq('is_active', true);
+
+      console.log('Credit card accounts:', creditCardData, 'Error:', creditCardError);
 
       if (savingsError) throw savingsError;
       if (investmentError) throw investmentError;
@@ -189,6 +197,8 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
       setSavingsAccounts(savingsData || []);
       setInvestmentAccounts(investmentData || []);
       setCreditCardAccounts(creditCardData || []);
+      
+      console.log('Account states set - Savings:', savingsData?.length || 0, 'Investment:', investmentData?.length || 0, 'Credit:', creditCardData?.length || 0);
     } catch (error: any) {
       console.error('Error loading accounts:', error);
     }
