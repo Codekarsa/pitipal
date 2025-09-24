@@ -146,17 +146,30 @@ export function CategoriesSection() {
   // Category mutation  
   const categoryMutation = useMutation({
     mutationFn: async (category: any) => {
+      console.log("Creating category with data:", category);
+      console.log("User ID:", user?.id);
+      console.log("Editing category:", editingCategory);
+      
       if (editingCategory) {
         const { error } = await supabase
           .from("categories")
           .update(category)
           .eq("id", editingCategory.id);
-        if (error) throw error;
+        if (error) {
+          console.error("Update error:", error);
+          throw error;
+        }
       } else {
+        const categoryData = { ...category, user_id: user?.id, is_default: false };
+        console.log("Final category data to insert:", categoryData);
+        
         const { error } = await supabase
           .from("categories")
-          .insert({ ...category, user_id: user?.id, is_default: false });
-        if (error) throw error;
+          .insert(categoryData);
+        if (error) {
+          console.error("Insert error:", error);
+          throw error;
+        }
       }
     },
     onSuccess: () => {
@@ -468,10 +481,19 @@ export function CategoriesSection() {
                   <div className="flex gap-2 pt-4">
                     <Button
                       onClick={() => {
-                        categoryMutation.mutate({
+                        console.log("Button clicked!");
+                        console.log("Category form state:", categoryForm);
+                        console.log("Selected tab:", selectedTab);
+                        console.log("Category form category_group_id:", categoryForm.category_group_id);
+                        console.log("Category form name:", categoryForm.name);
+                        
+                        const formData = {
                           ...categoryForm,
                           type: selectedTab
-                        });
+                        };
+                        console.log("Final form data being sent:", formData);
+                        
+                        categoryMutation.mutate(formData);
                       }}
                       disabled={!categoryForm.name || !categoryForm.category_group_id || categoryMutation.isPending}
                       className="flex-1"
