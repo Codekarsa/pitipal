@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -385,13 +386,10 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="pricePerUnit">Price per Unit *</Label>
-                  <Input
+                  <CurrencyInput
                     id="pricePerUnit"
-                    type="number"
-                    step="0.01"
-                    min="0"
                     value={pricePerUnit}
-                    onChange={(e) => setPricePerUnit(e.target.value)}
+                    onChange={setPricePerUnit}
                     placeholder="0.00"
                     required
                   />
@@ -401,13 +399,10 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="fees">Fees</Label>
-                  <Input
+                  <CurrencyInput
                     id="fees"
-                    type="number"
-                    step="0.01"
-                    min="0"
                     value={fees}
-                    onChange={(e) => setFees(e.target.value)}
+                    onChange={setFees}
                     placeholder="0.00"
                   />
                 </div>
@@ -436,14 +431,12 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="amount">Amount *</Label>
-                <Input
+                <CurrencyInput
                   id="amount"
-                  type="number"
-                  step="0.01"
-                  min="0"
                   value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
+                  onChange={setAmount}
                   placeholder="0.00"
+                  allowNegative={true}
                   required
                 />
               </div>

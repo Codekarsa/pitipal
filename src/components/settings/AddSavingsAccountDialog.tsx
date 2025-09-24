@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -189,12 +190,10 @@ export function AddSavingsAccountDialog({ open, onOpenChange, editingAccount }: 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="current_balance">Current Balance</Label>
-              <Input
+              <CurrencyInput
                 id="current_balance"
-                type="number"
-                step="0.01"
                 value={formData.current_balance}
-                onChange={(e) => setFormData({ ...formData, current_balance: e.target.value })}
+                onChange={(value) => setFormData({ ...formData, current_balance: value })}
                 placeholder="0.00"
               />
             </div>
