@@ -611,7 +611,12 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
           <div className="space-y-2">
             <Label htmlFor="account">Account</Label>
             <Select 
-              value={savingsAccountId || investmentAccountId || creditCardAccountId || "none"} 
+              value={
+                savingsAccountId ? `savings:${savingsAccountId}` :
+                investmentAccountId ? `investment:${investmentAccountId}` :
+                creditCardAccountId ? `credit:${creditCardAccountId}` :
+                "none"
+              }
               onValueChange={(value) => {
                 console.log('Account selection changed to:', value);
                 if (value === "none") {
