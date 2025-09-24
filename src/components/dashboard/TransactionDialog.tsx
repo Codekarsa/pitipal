@@ -58,6 +58,13 @@ interface SavingsAccount {
   account_type: string;
 }
 
+interface CreditCardAccount {
+  id: string;
+  account_name: string;
+  institution_name: string;
+  card_type: string;
+}
+
 interface TransactionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -77,8 +84,10 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
   const [payees, setPayees] = useState<string[]>([]);
   const [savingsAccountId, setSavingsAccountId] = useState("");
   const [investmentAccountId, setInvestmentAccountId] = useState("");
+  const [creditCardAccountId, setCreditCardAccountId] = useState("");
   const [savingsAccounts, setSavingsAccounts] = useState<SavingsAccount[]>([]);
   const [investmentAccounts, setInvestmentAccounts] = useState<InvestmentAccount[]>([]);
+  const [creditCardAccounts, setCreditCardAccounts] = useState<CreditCardAccount[]>([]);
   const [loading, setLoading] = useState(false);
   
   // Investment-specific fields
@@ -166,11 +175,20 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
         .eq('user_id', user?.id)
         .eq('is_active', true);
 
+      // Fetch credit card accounts
+      const { data: creditCardData, error: creditCardError } = await supabase
+        .from('credit_card_accounts')
+        .select('id, account_name, institution_name, card_type')
+        .eq('user_id', user?.id)
+        .eq('is_active', true);
+
       if (savingsError) throw savingsError;
       if (investmentError) throw investmentError;
+      if (creditCardError) throw creditCardError;
 
       setSavingsAccounts(savingsData || []);
       setInvestmentAccounts(investmentData || []);
+      setCreditCardAccounts(creditCardData || []);
     } catch (error: any) {
       console.error('Error loading accounts:', error);
     }
@@ -211,6 +229,7 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
           pocket_id: pocketId || null,
           savings_account_id: type === 'investment' ? null : (savingsAccountId || null),
           investment_account_id: type === 'investment' ? (investmentAccountId || null) : null,
+          credit_card_account_id: creditCardAccountId || null,
           amount: totalAmount,
           type: type,
           category: category,
@@ -279,6 +298,7 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
       setPocketId("");
       setSavingsAccountId("");
       setInvestmentAccountId("");
+      setCreditCardAccountId("");
       setPayee("");
       setDescription("");
       setDate(new Date().toISOString().split('T')[0]);
@@ -516,23 +536,31 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
           <div className="space-y-2">
             <Label htmlFor="account">Account</Label>
             <Select 
-              value={savingsAccountId || investmentAccountId || "none"} 
+              value={savingsAccountId || investmentAccountId || creditCardAccountId || "none"} 
               onValueChange={(value) => {
                 if (value === "none") {
                   setSavingsAccountId("");
                   setInvestmentAccountId("");
+                  setCreditCardAccountId("");
                   return;
                 }
                 const [accountType, accountId] = value.split(':');
                 if (accountType === 'savings') {
                   setSavingsAccountId(accountId);
                   setInvestmentAccountId("");
+                  setCreditCardAccountId("");
                 } else if (accountType === 'investment') {
                   setInvestmentAccountId(accountId);
                   setSavingsAccountId("");
+                  setCreditCardAccountId("");
+                } else if (accountType === 'credit') {
+                  setCreditCardAccountId(accountId);
+                  setSavingsAccountId("");
+                  setInvestmentAccountId("");
                 } else {
                   setSavingsAccountId("");
                   setInvestmentAccountId("");
+                  setCreditCardAccountId("");
                 }
               }}
             >
@@ -549,6 +577,11 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
                 {investmentAccounts.map((account) => (
                   <SelectItem key={account.id} value={`investment:${account.id}`}>
                     {account.account_name} ({account.institution_name})
+                  </SelectItem>
+                ))}
+                {creditCardAccounts.map((account) => (
+                  <SelectItem key={account.id} value={`credit:${account.id}`}>
+                    💳 {account.account_name} ({account.institution_name})
                   </SelectItem>
                 ))}
               </SelectContent>
