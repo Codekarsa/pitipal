@@ -1,1 +1,4 @@
 project_id = "nhqlaikoiyqmwsxqjorn"
+
+[functions.monthly-rollover]
+verify_jwt = false

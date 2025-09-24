@@ -49,6 +49,9 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
   const [loading, setLoading] = useState(false);
   const [isTemplate, setIsTemplate] = useState(false);
   const [autoRenew, setAutoRenew] = useState(true);
+  const [rolloverType, setRolloverType] = useState<'reset' | 'carry_over' | 'percentage'>('reset');
+  const [rolloverPercentage, setRolloverPercentage] = useState(100);
+  const [maxCarryOver, setMaxCarryOver] = useState<number | undefined>();
   
   // Additional fields for different budget types
   const [targetDate, setTargetDate] = useState("");
@@ -126,6 +129,11 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
         color: color,
         is_template: isTemplate,
         auto_renew: autoRenew,
+        recurring_rule: isTemplate && autoRenew ? {
+          type: rolloverType,
+          ...(rolloverType === 'percentage' && { percentage: rolloverPercentage }),
+          ...(rolloverType === 'carry_over' && maxCarryOver && { max_carry_over: maxCarryOver })
+        } : null,
         month_year: isTemplate ? null : currentMonth,
         cycle_start_date: isTemplate ? null : new Date(currentMonth + '-01').toISOString().split('T')[0],
         cycle_end_date: isTemplate ? null : new Date(new Date(currentMonth + '-01').getFullYear(), new Date(currentMonth + '-01').getMonth() + 1, 0).toISOString().split('T')[0],
@@ -146,6 +154,9 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
       setColor("#8b5cf6");
       setIsTemplate(false);
       setAutoRenew(true);
+      setRolloverType('reset');
+      setRolloverPercentage(100);
+      setMaxCarryOver(undefined);
       setTargetDate("");
       setTotalAmount("");
       setFrequency("");
@@ -374,6 +385,53 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
                   checked={autoRenew}
                   onCheckedChange={setAutoRenew}
                 />
+              </div>
+            )}
+
+            {isTemplate && autoRenew && (
+              <div className="space-y-4">
+                <h4 className="font-medium">Rollover Rules</h4>
+                <div className="space-y-3">
+                  <div>
+                    <Label htmlFor="rollover-type">When unused budget remains</Label>
+                    <Select value={rolloverType} onValueChange={(value: 'reset' | 'carry_over' | 'percentage') => setRolloverType(value)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="reset">Reset to zero (don't carry over)</SelectItem>
+                        <SelectItem value="carry_over">Carry over full unused amount</SelectItem>
+                        <SelectItem value="percentage">Carry over percentage of unused</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {rolloverType === 'percentage' && (
+                    <div>
+                      <Label htmlFor="rollover-percentage">Percentage to carry over (%)</Label>
+                      <Input
+                        id="rollover-percentage"
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={rolloverPercentage}
+                        onChange={(e) => setRolloverPercentage(Number(e.target.value))}
+                      />
+                    </div>
+                  )}
+
+                  {rolloverType === 'carry_over' && (
+                    <div>
+                      <Label htmlFor="max-carry-over">Maximum carry over amount (optional)</Label>
+                      <CurrencyInput
+                        id="max-carry-over"
+                        value={maxCarryOver?.toString() || ""}
+                        onChange={(value) => setMaxCarryOver(value ? parseFloat(value) : undefined)}
+                        placeholder="No limit"
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
