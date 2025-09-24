@@ -212,7 +212,7 @@ export function CategoriesSection() {
   };
 
   const resetCategoryForm = () => {
-    setCategoryForm({ name: "", color: categoryColors[0], icon: "tag", type: "expense", category_group_id: "" });
+    setCategoryForm({ name: "", color: categoryColors[0], icon: "tag", type: selectedTab as "expense" | "income" | "investment", category_group_id: "" });
     setEditingCategory(null);
   };
 
