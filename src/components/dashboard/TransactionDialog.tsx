@@ -70,9 +70,10 @@ interface TransactionDialogProps {
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
   pockets: BudgetPocket[];
+  editingTransaction?: any;
 }
 
-export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: TransactionDialogProps) {
+export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, editingTransaction }: TransactionDialogProps) {
   const [type, setType] = useState<"income" | "expense" | "investment">("expense");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("");
@@ -111,8 +112,21 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
       if (type === 'investment') {
         fetchAssets();
       }
+      
+      // If editing, populate fields
+      if (editingTransaction) {
+        setType(editingTransaction.type);
+        setAmount(editingTransaction.amount.toString());
+        setCategory(editingTransaction.category);
+        setDescription(editingTransaction.description || "");
+        setDate(editingTransaction.transaction_date);
+        setPocketId(editingTransaction.pocket_id || "");
+        setSavingsAccountId(editingTransaction.savings_account_id || "");
+        setInvestmentAccountId(editingTransaction.investment_account_id || "");
+        setCreditCardAccountId(editingTransaction.credit_card_account_id || "");
+      }
     }
-  }, [open, type]);
+  }, [open, type, editingTransaction]);
 
   const fetchCategories = async () => {
     try {
@@ -234,27 +248,60 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
         ? (parseFloat(quantity) * parseFloat(pricePerUnit)) + (parseFloat(fees) || 0)
         : parseFloat(amount);
       
-      // Create transaction
-      const { data: transactionData, error: transactionError } = await supabase
-        .from('transactions')
-        .insert({
-          user_id: user.id,
-          pocket_id: pocketId || null,
-          savings_account_id: type === 'investment' ? null : (savingsAccountId || null),
-          investment_account_id: type === 'investment' ? (investmentAccountId || null) : null,
-          credit_card_account_id: creditCardAccountId || null,
-          amount: totalAmount,
-          type: type,
-          category: category,
-          description: type === 'investment' 
-            ? `${investmentType.toUpperCase()} ${quantity} shares of ${assets.find(a => a.id === selectedAssetId)?.symbol || 'Unknown'} @ ${pricePerUnit}`
-            : (payee.trim() || description.trim() || null),
-          transaction_date: date,
-          ai_categorized: false,
-          ai_confidence: 0,
-        })
-        .select()
-        .single();
+      let transactionData;
+      let transactionError;
+
+      if (editingTransaction) {
+        // Update existing transaction
+        const result = await supabase
+          .from('transactions')
+          .update({
+            pocket_id: pocketId || null,
+            savings_account_id: type === 'investment' ? null : (savingsAccountId || null),
+            investment_account_id: type === 'investment' ? (investmentAccountId || null) : null,
+            credit_card_account_id: creditCardAccountId || null,
+            amount: totalAmount,
+            type: type,
+            category: category,
+            description: type === 'investment' 
+              ? `${investmentType.toUpperCase()} ${quantity} shares of ${assets.find(a => a.id === selectedAssetId)?.symbol || 'Unknown'} @ ${pricePerUnit}`
+              : (payee.trim() || description.trim() || null),
+            transaction_date: date,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', editingTransaction.id)
+          .eq('user_id', user.id)
+          .select()
+          .single();
+        
+        transactionData = result.data;
+        transactionError = result.error;
+      } else {
+        // Create new transaction
+        const result = await supabase
+          .from('transactions')
+          .insert({
+            user_id: user.id,
+            pocket_id: pocketId || null,
+            savings_account_id: type === 'investment' ? null : (savingsAccountId || null),
+            investment_account_id: type === 'investment' ? (investmentAccountId || null) : null,
+            credit_card_account_id: creditCardAccountId || null,
+            amount: totalAmount,
+            type: type,
+            category: category,
+            description: type === 'investment' 
+              ? `${investmentType.toUpperCase()} ${quantity} shares of ${assets.find(a => a.id === selectedAssetId)?.symbol || 'Unknown'} @ ${pricePerUnit}`
+              : (payee.trim() || description.trim() || null),
+            transaction_date: date,
+            ai_categorized: false,
+            ai_confidence: 0,
+          })
+          .select()
+          .single();
+        
+        transactionData = result.data;
+        transactionError = result.error;
+      }
 
       if (transactionError) throw transactionError;
 
@@ -368,22 +415,7 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
       
       // Reset form
       console.log('Resetting form after successful submission');
-      setAmount("");
-      setCategory("");
-      setPocketId("");
-      setSavingsAccountId("");
-      setInvestmentAccountId("");
-      setCreditCardAccountId("");
-      setPayee("");
-      setDescription("");
-      setDate(new Date().toISOString().split('T')[0]);
-      
-      // Reset investment fields
-      setSelectedAssetId("");
-      setQuantity("");
-      setPricePerUnit("");
-      setFees("");
-      setInvestmentType("buy");
+      resetForm();
       
       onSuccess();
       
@@ -402,13 +434,41 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
     }
   };
 
+  const resetForm = () => {
+    setAmount("");
+    setCategory("");
+    setPocketId("");
+    setSavingsAccountId("");
+    setInvestmentAccountId("");
+    setCreditCardAccountId("");
+    setPayee("");
+    setDescription("");
+    setDate(new Date().toISOString().split('T')[0]);
+    
+    // Reset investment fields
+    setSelectedAssetId("");
+    setQuantity("");
+    setPricePerUnit("");
+    setFees("");
+    setInvestmentType("buy");
+  };
+
+  const handleDialogOpenChange = (open: boolean) => {
+    if (!open && !editingTransaction) {
+      resetForm();
+    }
+    onOpenChange(open);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleDialogOpenChange}>
       <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto bg-gradient-card border-0 shadow-xl">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold">Add Transaction</DialogTitle>
+          <DialogTitle className="text-xl font-bold">
+            {editingTransaction ? 'Edit Transaction' : 'Add Transaction'}
+          </DialogTitle>
           <DialogDescription>
-            Record a new income or expense transaction.
+            {editingTransaction ? 'Update transaction details.' : 'Record a new income or expense transaction.'}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -749,7 +809,7 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets }: Tr
               !category || 
               (type === 'investment' ? (!selectedAssetId || !quantity || !pricePerUnit) : !amount)
             }>
-              {loading ? "Adding..." : "Add Transaction"}
+              {loading ? (editingTransaction ? "Updating..." : "Adding...") : (editingTransaction ? "Update Transaction" : "Add Transaction")}
             </Button>
           </DialogFooter>
         </form>

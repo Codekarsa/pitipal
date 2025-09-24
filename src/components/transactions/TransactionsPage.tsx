@@ -8,9 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Filter, ArrowUpDown, TrendingUp, TrendingDown } from "lucide-react";
+import { Search, Filter, ArrowUpDown, TrendingUp, TrendingDown, Edit, Trash2 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { TransactionDialog } from "@/components/dashboard/TransactionDialog";
 
 interface Transaction {
   id: string;
@@ -52,6 +54,9 @@ export function TransactionsPage() {
   const [pocketName, setPocketName] = useState<string>('');
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [totalAccountBalance, setTotalAccountBalance] = useState<number>(0);
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [transactionDialogOpen, setTransactionDialogOpen] = useState(false);
+  const [deletingTransactionId, setDeletingTransactionId] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -265,6 +270,45 @@ export function TransactionsPage() {
       return account ? `${account.account_name} (${account.institution_name})` : 'Unknown Account';
     }
     return null;
+  };
+
+  const handleEditTransaction = (transaction: Transaction) => {
+    setEditingTransaction(transaction);
+    setTransactionDialogOpen(true);
+  };
+
+  const handleDeleteTransaction = async (transactionId: string) => {
+    try {
+      const { error } = await supabase
+        .from('transactions')
+        .delete()
+        .eq('id', transactionId)
+        .eq('user_id', user?.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Transaction deleted",
+        description: "The transaction has been successfully deleted.",
+      });
+
+      // Refresh transactions
+      fetchTransactions();
+      fetchAccounts();
+    } catch (error: any) {
+      toast({
+        title: "Error deleting transaction",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleTransactionSuccess = () => {
+    setTransactionDialogOpen(false);
+    setEditingTransaction(null);
+    fetchTransactions();
+    fetchAccounts();
   };
 
   const stats = getTotalStats();
@@ -481,6 +525,7 @@ export function TransactionsPage() {
                   <TableHead>Type</TableHead>
                   <TableHead className="text-right">Amount</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -539,6 +584,46 @@ export function TransactionsPage() {
                         )}
                       </div>
                     </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex gap-2 justify-end">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditTransaction(transaction)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Transaction</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete this transaction? This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteTransaction(transaction.id)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -546,6 +631,14 @@ export function TransactionsPage() {
           )}
         </CardContent>
       </Card>
+      
+      <TransactionDialog
+        open={transactionDialogOpen}
+        onOpenChange={setTransactionDialogOpen}
+        onSuccess={handleTransactionSuccess}
+        pockets={[]}
+        editingTransaction={editingTransaction}
+      />
     </div>
   );
 }
