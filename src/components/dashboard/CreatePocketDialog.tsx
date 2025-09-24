@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -71,24 +72,6 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
     }
   };
 
-  const handleBudgetAmountChange = (value: string) => {
-    // Remove any non-numeric characters except decimal point
-    const cleanValue = value.replace(/[^\d.]/g, '');
-    
-    // Ensure only one decimal point
-    const parts = cleanValue.split('.');
-    if (parts.length > 2) {
-      return;
-    }
-    
-    // Format with thousands separator for display
-    const numericValue = parseFloat(cleanValue);
-    if (!isNaN(numericValue)) {
-      setBudgetAmount(cleanValue);
-    } else if (cleanValue === '') {
-      setBudgetAmount('');
-    }
-  };
 
   const calculateBudgetAmount = (): number => {
     switch (budgetType) {
@@ -225,11 +208,10 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
           {budgetType === 'regular_monthly' || budgetType === 'emergency_irregular' || budgetType === 'seasonal' ? (
             <div className="space-y-2">
               <Label htmlFor="budget">Monthly Budget Amount</Label>
-              <Input
+              <CurrencyInput
                 id="budget"
-                type="text"
                 value={budgetAmount}
-                onChange={(e) => handleBudgetAmountChange(e.target.value)}
+                onChange={setBudgetAmount}
                 placeholder="0.00"
               />
             </div>
@@ -239,11 +221,10 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="totalAmount">Total Amount</Label>
-                <Input
+                <CurrencyInput
                   id="totalAmount"
-                  type="text"
                   value={totalAmount}
-                  onChange={(e) => setTotalAmount(e.target.value.replace(/[^\d.]/g, ''))}
+                  onChange={setTotalAmount}
                   placeholder="0.00"
                 />
               </div>
@@ -264,11 +245,10 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="targetAmount">Target Amount</Label>
-                <Input
+                <CurrencyInput
                   id="targetAmount"
-                  type="text"
                   value={totalAmount}
-                  onChange={(e) => setTotalAmount(e.target.value.replace(/[^\d.]/g, ''))}
+                  onChange={setTotalAmount}
                   placeholder="0.00"
                 />
               </div>
@@ -288,11 +268,10 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="projectCost">Total Project Cost</Label>
-                <Input
+                <CurrencyInput
                   id="projectCost"
-                  type="text"
                   value={totalAmount}
-                  onChange={(e) => setTotalAmount(e.target.value.replace(/[^\d.]/g, ''))}
+                  onChange={setTotalAmount}
                   placeholder="0.00"
                 />
               </div>
@@ -313,21 +292,19 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="minPayment">Minimum Payment</Label>
-                <Input
+                <CurrencyInput
                   id="minPayment"
-                  type="text"
                   value={minimumPayment}
-                  onChange={(e) => setMinimumPayment(e.target.value.replace(/[^\d.]/g, ''))}
+                  onChange={setMinimumPayment}
                   placeholder="0.00"
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="extraPayment">Extra Payment</Label>
-                <Input
+                <CurrencyInput
                   id="extraPayment"
-                  type="text"
                   value={extraPayment}
-                  onChange={(e) => setExtraPayment(e.target.value.replace(/[^\d.]/g, ''))}
+                  onChange={setExtraPayment}
                   placeholder="0.00"
                 />
               </div>
