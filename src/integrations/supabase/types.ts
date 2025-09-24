@@ -202,6 +202,60 @@ export type Database = {
         }
         Relationships: []
       }
+      credit_card_accounts: {
+        Row: {
+          account_name: string
+          account_number: string | null
+          apr: number
+          card_type: string
+          created_at: string
+          credit_limit: number
+          current_balance: number
+          due_date: number
+          id: string
+          institution_name: string
+          is_active: boolean | null
+          minimum_payment: number
+          notes: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_name: string
+          account_number?: string | null
+          apr?: number
+          card_type?: string
+          created_at?: string
+          credit_limit?: number
+          current_balance?: number
+          due_date?: number
+          id?: string
+          institution_name: string
+          is_active?: boolean | null
+          minimum_payment?: number
+          notes?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_name?: string
+          account_number?: string | null
+          apr?: number
+          card_type?: string
+          created_at?: string
+          credit_limit?: number
+          current_balance?: number
+          due_date?: number
+          id?: string
+          institution_name?: string
+          is_active?: boolean | null
+          minimum_payment?: number
+          notes?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       holdings: {
         Row: {
           asset_id: string
@@ -458,6 +512,7 @@ export type Database = {
           amount: number
           category: string
           created_at: string
+          credit_card_account_id: string | null
           description: string | null
           id: string
           investment_account_id: string | null
@@ -477,6 +532,7 @@ export type Database = {
           amount: number
           category: string
           created_at?: string
+          credit_card_account_id?: string | null
           description?: string | null
           id?: string
           investment_account_id?: string | null
@@ -496,6 +552,7 @@ export type Database = {
           amount?: number
           category?: string
           created_at?: string
+          credit_card_account_id?: string | null
           description?: string | null
           id?: string
           investment_account_id?: string | null
@@ -510,6 +567,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "transactions_credit_card_account_id_fkey"
+            columns: ["credit_card_account_id"]
+            isOneToOne: false
+            referencedRelation: "credit_card_accounts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "transactions_investment_account_id_fkey"
             columns: ["investment_account_id"]
