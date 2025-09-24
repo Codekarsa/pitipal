@@ -9,6 +9,7 @@ import { DebtOverviewCard } from "./DebtOverviewCard";
 import { QuickActionsCard } from "./QuickActionsCard";
 import { MonthNavigator } from "./MonthNavigator";
 import { TemplateManagementDialog } from "./TemplateManagementDialog";
+import { EditPocketDialog } from "./EditPocketDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -40,6 +41,8 @@ export function Dashboard() {
   const [showCreatePocket, setShowCreatePocket] = useState(false);
   const [showAddTransaction, setShowAddTransaction] = useState(false);
   const [showTemplateManagement, setShowTemplateManagement] = useState(false);
+  const [showEditPocket, setShowEditPocket] = useState(false);
+  const [selectedPocketForEdit, setSelectedPocketForEdit] = useState<BudgetPocket | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState<string>(format(new Date(), "yyyy-MM"));
   const { user } = useAuth();
@@ -106,6 +109,21 @@ export function Dashboard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleEditPocket = (pocket: BudgetPocket) => {
+    setSelectedPocketForEdit(pocket);
+    setShowEditPocket(true);
+  };
+
+  const handlePocketUpdated = () => {
+    setShowEditPocket(false);
+    setSelectedPocketForEdit(null);
+    fetchPockets();
+    toast({
+      title: "Pocket updated!",
+      description: "Your budget pocket has been updated successfully.",
+    });
   };
 
   const handlePocketCreated = () => {
@@ -329,9 +347,7 @@ export function Dashboard() {
                         pocket={pocket}
                         currency={userCurrency}
                         onClick={() => navigate(`/transactions/${pocket.id}`)}
-                        onEdit={() => {
-                          // TODO: Open edit dialog
-                        }}
+                        onEdit={() => handleEditPocket(pocket)}
                         onDelete={handleDeletePocket}
                         onToggleFeatured={handleToggleFeatured}
                        />
@@ -374,6 +390,13 @@ export function Dashboard() {
       <TemplateManagementDialog
         open={showTemplateManagement}
         onOpenChange={setShowTemplateManagement}
+      />
+      
+      <EditPocketDialog
+        open={showEditPocket}
+        onOpenChange={setShowEditPocket}
+        onSuccess={handlePocketUpdated}
+        pocket={selectedPocketForEdit}
       />
     </div>
   );
