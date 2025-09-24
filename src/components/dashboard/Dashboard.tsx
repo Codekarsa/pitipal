@@ -206,6 +206,18 @@ export function Dashboard() {
 
   return (
     <div className="space-y-8">
+      {/* Month Filter */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Dashboard</h1>
+          <p className="text-muted-foreground">Overview of your financial activity</p>
+        </div>
+        <MonthNavigator
+          selectedMonth={selectedMonth}
+          onMonthChange={setSelectedMonth}
+        />
+      </div>
+
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="bg-gradient-card border-0 shadow-lg">
@@ -269,15 +281,9 @@ export function Dashboard() {
       {/* Budget Pockets */}
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <div>
-              <h2 className="text-2xl font-bold">Budget Pockets</h2>
-              <p className="text-muted-foreground">Organize your spending into customizable categories</p>
-            </div>
-            <MonthNavigator
-              selectedMonth={selectedMonth}
-              onMonthChange={setSelectedMonth}
-            />
+          <div>
+            <h2 className="text-2xl font-bold">Budget Pockets</h2>
+            <p className="text-muted-foreground">Organize your spending into customizable categories</p>
           </div>
           <div className="flex items-center gap-2">
             <Button 
