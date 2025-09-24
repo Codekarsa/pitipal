@@ -61,6 +61,7 @@ export type Database = {
       }
       budget_pockets: {
         Row: {
+          auto_renew: boolean | null
           budget_amount: number | null
           budget_type: string
           color: string | null
@@ -74,12 +75,17 @@ export type Database = {
           id: string
           is_active: boolean | null
           is_featured: boolean
+          is_template: boolean | null
+          month_year: string | null
           name: string
+          parent_pocket_id: string | null
           pocket_type: string
+          recurring_rule: Json | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          auto_renew?: boolean | null
           budget_amount?: number | null
           budget_type?: string
           color?: string | null
@@ -93,12 +99,17 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           is_featured?: boolean
+          is_template?: boolean | null
+          month_year?: string | null
           name: string
+          parent_pocket_id?: string | null
           pocket_type?: string
+          recurring_rule?: Json | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          auto_renew?: boolean | null
           budget_amount?: number | null
           budget_type?: string
           color?: string | null
@@ -112,12 +123,24 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           is_featured?: boolean
+          is_template?: boolean | null
+          month_year?: string | null
           name?: string
+          parent_pocket_id?: string | null
           pocket_type?: string
+          recurring_rule?: Json | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "budget_pockets_parent_pocket_id_fkey"
+            columns: ["parent_pocket_id"]
+            isOneToOne: false
+            referencedRelation: "budget_pockets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       categories: {
         Row: {
@@ -602,6 +625,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_monthly_pocket_instance: {
+        Args: { target_month: string; template_pocket_id: string }
+        Returns: string
+      }
       update_pocket_amount: {
         Args: { amount_to_add: number; pocket_id: string }
         Returns: undefined
