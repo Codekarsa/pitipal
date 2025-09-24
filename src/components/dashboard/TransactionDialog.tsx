@@ -257,8 +257,8 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
           .from('transactions')
           .update({
             pocket_id: pocketId || null,
-            savings_account_id: type === 'investment' ? null : (savingsAccountId || null),
-            investment_account_id: type === 'investment' ? (investmentAccountId || null) : null,
+            savings_account_id: savingsAccountId || null,
+            investment_account_id: investmentAccountId || null,
             credit_card_account_id: creditCardAccountId || null,
             amount: totalAmount,
             type: type,
@@ -283,8 +283,8 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
           .insert({
             user_id: user.id,
             pocket_id: pocketId || null,
-            savings_account_id: type === 'investment' ? null : (savingsAccountId || null),
-            investment_account_id: type === 'investment' ? (investmentAccountId || null) : null,
+            savings_account_id: savingsAccountId || null,
+            investment_account_id: investmentAccountId || null,
             credit_card_account_id: creditCardAccountId || null,
             amount: totalAmount,
             type: type,
