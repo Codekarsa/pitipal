@@ -541,6 +541,7 @@ export type Database = {
           investment_account_id: string | null
           is_recurring: boolean | null
           notes: string | null
+          payee_id: string | null
           pocket_id: string | null
           recurring_frequency: string | null
           savings_account_id: string | null
@@ -561,6 +562,7 @@ export type Database = {
           investment_account_id?: string | null
           is_recurring?: boolean | null
           notes?: string | null
+          payee_id?: string | null
           pocket_id?: string | null
           recurring_frequency?: string | null
           savings_account_id?: string | null
@@ -581,6 +583,7 @@ export type Database = {
           investment_account_id?: string | null
           is_recurring?: boolean | null
           notes?: string | null
+          payee_id?: string | null
           pocket_id?: string | null
           recurring_frequency?: string | null
           savings_account_id?: string | null
@@ -602,6 +605,13 @@ export type Database = {
             columns: ["investment_account_id"]
             isOneToOne: false
             referencedRelation: "investment_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_payee_id_fkey"
+            columns: ["payee_id"]
+            isOneToOne: false
+            referencedRelation: "payees"
             referencedColumns: ["id"]
           },
           {
