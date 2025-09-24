@@ -6,9 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
 
 interface CreatePocketDialogProps {
   open: boolean;
@@ -45,6 +47,8 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
   const [budgetType, setBudgetType] = useState("regular_monthly");
   const [color, setColor] = useState("#8b5cf6");
   const [loading, setLoading] = useState(false);
+  const [isTemplate, setIsTemplate] = useState(false);
+  const [autoRenew, setAutoRenew] = useState(true);
   
   // Additional fields for different budget types
   const [targetDate, setTargetDate] = useState("");
@@ -110,18 +114,26 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
     try {
       setLoading(true);
       const calculatedBudget = calculateBudgetAmount();
+      const currentMonth = format(new Date(), "yyyy-MM");
+      
+      const insertData = {
+        user_id: user.id,
+        name: name.trim(),
+        description: description.trim() || null,
+        budget_amount: calculatedBudget,
+        cycle_type: cycleType,
+        budget_type: budgetType,
+        color: color,
+        is_template: isTemplate,
+        auto_renew: autoRenew,
+        month_year: isTemplate ? null : currentMonth,
+        cycle_start_date: isTemplate ? null : new Date(currentMonth + '-01').toISOString().split('T')[0],
+        cycle_end_date: isTemplate ? null : new Date(new Date(currentMonth + '-01').getFullYear(), new Date(currentMonth + '-01').getMonth() + 1, 0).toISOString().split('T')[0],
+      };
       
       const { error } = await supabase
         .from('budget_pockets')
-        .insert({
-          user_id: user.id,
-          name: name.trim(),
-          description: description.trim() || null,
-          budget_amount: calculatedBudget,
-          cycle_type: cycleType,
-          budget_type: budgetType,
-          color: color,
-        });
+        .insert(insertData);
 
       if (error) throw error;
       
@@ -132,6 +144,8 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
       setCycleType("monthly");
       setBudgetType("regular_monthly");
       setColor("#8b5cf6");
+      setIsTemplate(false);
+      setAutoRenew(true);
       setTargetDate("");
       setTotalAmount("");
       setFrequency("");
@@ -329,6 +343,41 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
             </div>
           </div>
 
+          {/* Template Options */}
+          <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
+            <h4 className="text-sm font-medium">Recurring Options</h4>
+            
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="is-template" className="text-sm">Create as Template</Label>
+                <p className="text-xs text-muted-foreground">
+                  Templates can be used to generate monthly pockets automatically
+                </p>
+              </div>
+              <Switch
+                id="is-template"
+                checked={isTemplate}
+                onCheckedChange={setIsTemplate}
+              />
+            </div>
+
+            {isTemplate && (
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="auto-renew" className="text-sm">Auto-renewal</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Automatically create new instances each month
+                  </p>
+                </div>
+                <Switch
+                  id="auto-renew"
+                  checked={autoRenew}
+                  onCheckedChange={setAutoRenew}
+                />
+              </div>
+            )}
+          </div>
+
           <DialogFooter className="gap-2">
             <Button
               type="button"
@@ -339,7 +388,7 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
               Cancel
             </Button>
             <Button type="submit" variant="hero" disabled={loading || !name.trim() || !isFormValid()}>
-              {loading ? "Creating..." : "Create Pocket"}
+              {loading ? "Creating..." : isTemplate ? "Create Template" : "Create Pocket"}
             </Button>
           </DialogFooter>
         </form>
