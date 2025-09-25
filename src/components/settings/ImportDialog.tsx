@@ -132,7 +132,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-[95vw] sm:max-w-2xl lg:max-w-4xl max-h-[85vh] sm:max-h-[80vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Upload className="h-5 w-5" />
@@ -146,18 +146,22 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
         <div className="flex-1 overflow-hidden">
           <Tabs value={importType} onValueChange={setImportType} className="space-y-4">
             {/* Import Type Selection */}
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="transactions" className="text-xs">
-                Transactions
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-1">
+              <TabsTrigger value="transactions" className="text-xs px-2">
+                <span className="hidden sm:inline">Transactions</span>
+                <span className="sm:hidden">Trans.</span>
               </TabsTrigger>
-              <TabsTrigger value="pockets" className="text-xs">
-                Budget Pockets
+              <TabsTrigger value="pockets" className="text-xs px-2">
+                <span className="hidden sm:inline">Budget Pockets</span>
+                <span className="sm:hidden">Pockets</span>
               </TabsTrigger>
-              <TabsTrigger value="categories" className="text-xs">
-                Categories
+              <TabsTrigger value="categories" className="text-xs px-2">
+                <span className="hidden sm:inline">Categories</span>
+                <span className="sm:hidden">Categ.</span>
               </TabsTrigger>
-              <TabsTrigger value="accounts" className="text-xs">
-                Accounts
+              <TabsTrigger value="accounts" className="text-xs px-2">
+                <span className="hidden sm:inline">Accounts</span>
+                <span className="sm:hidden">Acc.</span>
               </TabsTrigger>
             </TabsList>
 
@@ -282,12 +286,14 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
                               </div>
                             </div>
                             <div className="overflow-auto max-h-40">
-                              <table className="w-full text-sm">
+                              <table className="w-full text-xs sm:text-sm min-w-[500px]">
                                 <thead className="bg-muted/50">
                                   <tr>
                                     {parsedData.headers.map((header, index) => (
-                                      <th key={index} className="p-2 text-left border-r">
-                                        {header}
+                                      <th key={index} className="p-1 sm:p-2 text-left border-r text-xs">
+                                        <span className="truncate block max-w-[100px]" title={header}>
+                                          {header}
+                                        </span>
                                       </th>
                                     ))}
                                   </tr>
@@ -296,8 +302,10 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
                                   {parsedData.rows.slice(0, 5).map((row, rowIndex) => (
                                     <tr key={rowIndex} className="border-b">
                                       {row.map((cell, cellIndex) => (
-                                        <td key={cellIndex} className="p-2 border-r">
-                                          {cell}
+                                        <td key={cellIndex} className="p-1 sm:p-2 border-r">
+                                          <span className="truncate block max-w-[100px]" title={cell}>
+                                            {cell}
+                                          </span>
                                         </td>
                                       ))}
                                     </tr>
