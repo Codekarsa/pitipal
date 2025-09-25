@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
+import { formatCurrency } from "@/lib/utils";
 
 interface CreditCardAccount {
   id: string;
@@ -53,6 +54,24 @@ export function CreditCardPaymentDialog({ open, onOpenChange, onSuccess }: Credi
     enabled: open,
   });
 
+  const { data: userProfile } = useQuery({
+    queryKey: ['user-profile-currency'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not authenticated");
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('currency')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: open,
+  });
+
   // Reset form when dialog opens
   useEffect(() => {
     if (open) {
@@ -63,6 +82,7 @@ export function CreditCardPaymentDialog({ open, onOpenChange, onSuccess }: Credi
   }, [open]);
 
   const selectedCard = creditCards?.find(card => card.id === selectedCardId);
+  const currency = userProfile?.currency || 'USD';
 
   const handleQuickAmount = (type: 'minimum' | 'balance') => {
     if (!selectedCard) return;
@@ -135,12 +155,6 @@ export function CreditCardPaymentDialog({ open, onOpenChange, onSuccess }: Credi
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -162,7 +176,7 @@ export function CreditCardPaymentDialog({ open, onOpenChange, onSuccess }: Credi
                     <div className="flex flex-col">
                       <span className="font-medium">{card.account_name}</span>
                       <span className="text-sm text-muted-foreground">
-                        Balance: {formatCurrency(card.current_balance)}
+                        Balance: {formatCurrency(card.current_balance, currency)}
                       </span>
                     </div>
                   </SelectItem>
@@ -176,13 +190,13 @@ export function CreditCardPaymentDialog({ open, onOpenChange, onSuccess }: Credi
               <div className="flex justify-between text-sm">
                 <span>Current Balance:</span>
                 <span className="font-medium text-destructive">
-                  {formatCurrency(selectedCard.current_balance)}
+                  {formatCurrency(selectedCard.current_balance, currency)}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span>Minimum Payment:</span>
                 <span className="font-medium">
-                  {formatCurrency(selectedCard.minimum_payment)}
+                  {formatCurrency(selectedCard.minimum_payment, currency)}
                 </span>
               </div>
               <div className="flex gap-2 pt-2">
