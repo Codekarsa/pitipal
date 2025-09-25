@@ -11,6 +11,7 @@ import { Combobox } from "@/components/ui/combobox";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { withRetry, handleError, showSuccessMessage } from "@/lib/error-utils";
 
 interface BudgetPocket {
   id: string;
@@ -178,11 +179,7 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
         setCategory(data[0].name);
       }
     } catch (error: any) {
-      toast({
-        title: "Error loading categories",
-        description: error.message,
-        variant: "destructive",
-      });
+      handleError(error, "Failed to load categories. Please try again.");
     }
   };
 
@@ -317,32 +314,37 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
 
       if (editingTransaction) {
         // Update existing transaction
-        const result = await supabase
-          .from('transactions')
-          .update({
-            pocket_id: pocketId || null,
-            savings_account_id: savingsAccountId || null,
-            investment_account_id: investmentAccountId || null,
-            credit_card_account_id: creditCardAccountId || null,
-            payee_id: payeeId,
-            amount: totalAmount,
-            type: type,
-            category: category,
-            description: type === 'investment' 
-              ? `${investmentType.toUpperCase()} ${quantity} shares of ${assets.find(a => a.id === selectedAssetId)?.symbol || 'Unknown'} @ ${pricePerUnit}`
-              : description.trim() || null,
-            transaction_date: date,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', editingTransaction.id)
-          .eq('user_id', user.id)
-          .select()
-          .single();
-        
-        transactionData = result.data;
-        transactionError = result.error;
+        await withRetry(async () => {
+          const result = await supabase
+            .from('transactions')
+            .update({
+              pocket_id: pocketId || null,
+              savings_account_id: savingsAccountId || null,
+              investment_account_id: investmentAccountId || null,
+              credit_card_account_id: creditCardAccountId || null,
+              payee_id: payeeId,
+              amount: totalAmount,
+              type: type,
+              category: category,
+              description: type === 'investment' 
+                ? `${investmentType.toUpperCase()} ${quantity} shares of ${assets.find(a => a.id === selectedAssetId)?.symbol || 'Unknown'} @ ${pricePerUnit}`
+                : description.trim() || null,
+              transaction_date: date,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', editingTransaction.id)
+            .eq('user_id', user.id)
+            .select()
+            .single();
+          
+          transactionData = result.data;
+          transactionError = result.error;
+          
+          if (transactionError) throw transactionError;
+        }, 3);
       } else {
-        // Create new transaction
+      // Create new transaction
+      await withRetry(async () => {
         const result = await supabase
           .from('transactions')
           .insert({
@@ -367,9 +369,13 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
         
         transactionData = result.data;
         transactionError = result.error;
+        
+        if (transactionError) throw transactionError;
+      }, 3);
       }
 
-      if (transactionError) throw transactionError;
+      // Remove the old error check since we handle errors with withRetry
+      // if (transactionError) throw transactionError;
 
       // For investment transactions, create investment transaction details
       if (type === 'investment' && transactionData && selectedAssetId) {
@@ -483,6 +489,8 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
       console.log('Resetting form after successful submission');
       resetForm();
       
+      showSuccessMessage(editingTransaction ? "Transaction updated successfully" : "Transaction added successfully");
+      
       onSuccess();
       
       // Refresh payees list to get latest from database
@@ -490,11 +498,7 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
         fetchPayees();
       }, 100);
     } catch (error: any) {
-      toast({
-        title: "Error adding transaction",
-        description: error.message,
-        variant: "destructive",
-      });
+      handleError(error, "Failed to add transaction. Please check your inputs and try again.");
     } finally {
       setLoading(false);
     }
