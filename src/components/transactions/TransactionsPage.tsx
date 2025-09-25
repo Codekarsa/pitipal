@@ -41,6 +41,7 @@ interface Account {
   account_type: string;
   current_balance?: number;
   total_value?: number;
+  card_type?: string;
 }
 
 export function TransactionsPage() {
@@ -126,19 +127,33 @@ export function TransactionsPage() {
         .eq('user_id', user?.id)
         .eq('is_active', true);
 
+      // Fetch credit card accounts
+      const { data: creditCardData, error: creditCardError } = await supabase
+        .from('credit_card_accounts')
+        .select('id, account_name, institution_name, card_type, current_balance')
+        .eq('user_id', user?.id)
+        .eq('is_active', true);
+
       if (savingsError) throw savingsError;
       if (investmentError) throw investmentError;
+      if (creditCardError) throw creditCardError;
 
       const allAccounts: Account[] = [
         ...(savingsData || []).map(acc => ({ ...acc, current_balance: acc.current_balance })),
-        ...(investmentData || []).map(acc => ({ ...acc, total_value: acc.total_value }))
+        ...(investmentData || []).map(acc => ({ ...acc, total_value: acc.total_value })),
+        ...(creditCardData || []).map(acc => ({ ...acc, current_balance: acc.current_balance, account_type: acc.card_type }))
       ];
 
       setAccounts(allAccounts);
       
-      // Calculate total balance
-      const totalBalance = allAccounts.reduce((sum, acc) => 
-        sum + (acc.current_balance || acc.total_value || 0), 0);
+      // Calculate total balance (note: credit card balances are debt, so they reduce net worth)
+      const totalBalance = allAccounts.reduce((sum, acc) => {
+        if (acc.card_type) {
+          // Credit card balance is debt, so subtract it
+          return sum - (acc.current_balance || 0);
+        }
+        return sum + (acc.current_balance || acc.total_value || 0);
+      }, 0);
       setTotalAccountBalance(totalBalance);
     } catch (error) {
       console.error('Error fetching accounts:', error);
@@ -175,6 +190,8 @@ export function TransactionsPage() {
           query = query.eq('savings_account_id', accountId);
         } else if (accountType === 'investment') {
           query = query.eq('investment_account_id', accountId);
+        } else if (accountType === 'credit') {
+          query = query.eq('credit_card_account_id', accountId);
         }
       }
 
@@ -211,9 +228,11 @@ export function TransactionsPage() {
           
           // Also search in account names
           let matchesAccount = false;
-          if (transaction.savings_account_id || transaction.investment_account_id) {
+          if (transaction.savings_account_id || transaction.investment_account_id || transaction.credit_card_account_id) {
             const account = accounts.find(acc => 
-              acc.id === transaction.savings_account_id || acc.id === transaction.investment_account_id
+              acc.id === transaction.savings_account_id || 
+              acc.id === transaction.investment_account_id ||
+              acc.id === transaction.credit_card_account_id
             );
             if (account) {
               matchesAccount = account.account_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -276,6 +295,10 @@ export function TransactionsPage() {
     }
     if (transaction.investment_account_id) {
       const account = accounts.find(acc => acc.id === transaction.investment_account_id);
+      return account ? `${account.account_name} (${account.institution_name})` : 'Unknown Account';
+    }
+    if (transaction.credit_card_account_id) {
+      const account = accounts.find(acc => acc.id === transaction.credit_card_account_id);
       return account ? `${account.account_name} (${account.institution_name})` : 'Unknown Account';
     }
     return null;
@@ -478,14 +501,23 @@ export function TransactionsPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Accounts</SelectItem>
-                {accounts.map((account) => (
-                  <SelectItem 
-                    key={account.id} 
-                    value={`${account.current_balance !== undefined ? 'savings' : 'investment'}:${account.id}`}
-                  >
-                    {account.account_name} ({account.institution_name})
-                  </SelectItem>
-                ))}
+                {accounts.map((account) => {
+                  let accountType = 'investment'; // default
+                  if (account.current_balance !== undefined && !account.card_type) {
+                    accountType = 'savings';
+                  } else if (account.card_type) {
+                    accountType = 'credit';
+                  }
+                  
+                  return (
+                    <SelectItem 
+                      key={account.id} 
+                      value={`${accountType}:${account.id}`}
+                    >
+                      {account.card_type ? '💳' : (accountType === 'savings' ? '💰' : '📈')} {account.account_name} ({account.institution_name})
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
 
