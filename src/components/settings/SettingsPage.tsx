@@ -156,32 +156,32 @@ export function SettingsPage() {
 
       {/* Main Tabs */}
       <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5 lg:w-fit lg:grid-cols-5">
-          <TabsTrigger value="overview" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            <span className="hidden sm:inline">Overview</span>
+        <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:grid-cols-5">
+          <TabsTrigger value="overview" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+            <Settings className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden md:inline">Overview</span>
           </TabsTrigger>
-          <TabsTrigger value="general" className="flex items-center gap-2">
-            <User className="h-4 w-4" />
-            <span className="hidden sm:inline">General</span>
+          <TabsTrigger value="general" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+            <User className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden md:inline">General</span>
           </TabsTrigger>
-          <TabsTrigger value="categories" className="flex items-center gap-2">
-            <Tag className="h-4 w-4" />
-            <span className="hidden sm:inline">Categories</span>
+          <TabsTrigger value="categories" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+            <Tag className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden md:inline">Categories</span>
           </TabsTrigger>
-          <TabsTrigger value="accounts" className="flex items-center gap-2">
-            <Building2 className="h-4 w-4" />
-            <span className="hidden sm:inline">Accounts</span>
+          <TabsTrigger value="accounts" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+            <Building2 className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden md:inline">Accounts</span>
           </TabsTrigger>
-          <TabsTrigger value="data" className="flex items-center gap-2">
-            <Database className="h-4 w-4" />
-            <span className="hidden sm:inline">Data</span>
+          <TabsTrigger value="data" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+            <Database className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden md:inline">Data</span>
           </TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
-        <TabsContent value="overview" className="space-y-6">
-          <div className="grid gap-6 md:grid-cols-2">
+        <TabsContent value="overview" className="space-y-4 sm:space-y-6">
+          <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
             {/* Setup Progress */}
             <Card>
               <CardHeader>
@@ -284,50 +284,50 @@ export function SettingsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                 <button
                   onClick={() => setSelectedTab("general")}
-                  className="p-4 text-left border rounded-lg hover:bg-muted/50 transition-colors"
+                  className="p-3 sm:p-4 text-left border rounded-lg hover:bg-muted/50 transition-colors"
                 >
-                  <User className="h-5 w-5 text-primary mb-2" />
-                  <p className="font-medium">Profile Settings</p>
-                  <p className="text-sm text-muted-foreground">Update currency and preferences</p>
+                  <User className="h-4 w-4 sm:h-5 sm:w-5 text-primary mb-2" />
+                  <p className="font-medium text-sm sm:text-base">Profile Settings</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Update currency and preferences</p>
                 </button>
                 
                 <button
                   onClick={() => setSelectedTab("categories")}
-                  className="p-4 text-left border rounded-lg hover:bg-muted/50 transition-colors"
+                  className="p-3 sm:p-4 text-left border rounded-lg hover:bg-muted/50 transition-colors"
                 >
-                  <Tag className="h-5 w-5 text-primary mb-2" />
-                  <p className="font-medium">Manage Categories</p>
-                  <p className="text-sm text-muted-foreground">Organize transaction categories</p>
+                  <Tag className="h-4 w-4 sm:h-5 sm:w-5 text-primary mb-2" />
+                  <p className="font-medium text-sm sm:text-base">Manage Categories</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Organize transaction categories</p>
                 </button>
                 
                 <button
                   onClick={() => setSelectedTab("accounts")}
-                  className="p-4 text-left border rounded-lg hover:bg-muted/50 transition-colors"
+                  className="p-3 sm:p-4 text-left border rounded-lg hover:bg-muted/50 transition-colors"
                 >
-                  <Building2 className="h-5 w-5 text-primary mb-2" />
-                  <p className="font-medium">Financial Accounts</p>
-                  <p className="text-sm text-muted-foreground">Add investment and savings accounts</p>
+                  <Building2 className="h-4 w-4 sm:h-5 sm:w-5 text-primary mb-2" />
+                  <p className="font-medium text-sm sm:text-base">Financial Accounts</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Add investment and savings accounts</p>
                 </button>
 
                 <button
                   onClick={() => setSelectedTab("accounts")}
-                  className="p-4 text-left border rounded-lg hover:bg-muted/50 transition-colors"
+                  className="p-3 sm:p-4 text-left border rounded-lg hover:bg-muted/50 transition-colors"
                 >
-                  <CircleDollarSign className="h-5 w-5 text-primary mb-2" />
-                  <p className="font-medium">Credit Cards</p>
-                  <p className="text-sm text-muted-foreground">Manage credit card accounts</p>
+                  <CircleDollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-primary mb-2" />
+                  <p className="font-medium text-sm sm:text-base">Credit Cards</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Manage credit card accounts</p>
                 </button>
                 
                 <button
                   onClick={() => setSelectedTab("data")}
-                  className="p-4 text-left border rounded-lg hover:bg-muted/50 transition-colors"
+                  className="p-3 sm:p-4 text-left border rounded-lg hover:bg-muted/50 transition-colors"
                 >
-                  <Database className="h-5 w-5 text-primary mb-2" />
-                  <p className="font-medium">Import & Export</p>
-                  <p className="text-sm text-muted-foreground">Manage your financial data</p>
+                  <Database className="h-4 w-4 sm:h-5 sm:w-5 text-primary mb-2" />
+                  <p className="font-medium text-sm sm:text-base">Import & Export</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Manage your financial data</p>
                 </button>
               </div>
             </CardContent>

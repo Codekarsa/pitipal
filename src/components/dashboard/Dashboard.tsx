@@ -303,18 +303,20 @@ export function Dashboard() {
             <h2 className="text-2xl font-bold">Budget Pockets</h2>
             <p className="text-muted-foreground">Organize your spending into customizable categories</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Button 
               variant="outline" 
               onClick={() => setShowTemplateManagement(true)}
-              className="gap-2"
+              className="gap-2 text-xs sm:text-sm"
+              size="sm"
             >
               <Settings className="h-4 w-4" />
-              Templates
+              <span className="hidden sm:inline">Templates</span>
             </Button>
-            <Button onClick={() => setShowCreatePocket(true)} variant="hero">
-              <Plus className="mr-2 h-4 w-4" />
-              Create Pocket
+            <Button onClick={() => setShowCreatePocket(true)} variant="hero" size="sm" className="text-xs sm:text-sm">
+              <Plus className="mr-1 sm:mr-2 h-4 w-4" />
+              <span className="hidden sm:inline">Create Pocket</span>
+              <span className="sm:hidden">Create</span>
             </Button>
           </div>
         </div>
