@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, CreditCard, ArrowUpDown, PiggyBank } from "lucide-react";
+import { Plus, CreditCard, ArrowUpDown, PiggyBank, DollarSign } from "lucide-react";
 import { TransactionDialog } from "./TransactionDialog";
 import { CreatePocketDialog } from "./CreatePocketDialog";
+import { CreditCardPaymentDialog } from "./CreditCardPaymentDialog";
 
 interface BudgetPocket {
   id: string;
@@ -21,6 +22,7 @@ interface QuickActionsCardProps {
 export function QuickActionsCard({ pockets, onTransactionAdded, onPocketCreated }: QuickActionsCardProps) {
   const [showTransactionDialog, setShowTransactionDialog] = useState(false);
   const [showCreatePocket, setShowCreatePocket] = useState(false);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [transactionType, setTransactionType] = useState<"income" | "expense" | "investment">("expense");
 
   const handleQuickTransaction = (type: "income" | "expense" | "investment") => {
@@ -36,6 +38,11 @@ export function QuickActionsCard({ pockets, onTransactionAdded, onPocketCreated 
   const handlePocketSuccess = () => {
     setShowCreatePocket(false);
     onPocketCreated();
+  };
+
+  const handlePaymentSuccess = () => {
+    setShowPaymentDialog(false);
+    onTransactionAdded(); // Refresh data
   };
 
   return (
@@ -69,6 +76,15 @@ export function QuickActionsCard({ pockets, onTransactionAdded, onPocketCreated 
           <Button 
             variant="outline" 
             className="w-full justify-start"
+            onClick={() => setShowPaymentDialog(true)}
+          >
+            <DollarSign className="h-4 w-4 mr-2" />
+            Pay Credit Card
+          </Button>
+          
+          <Button 
+            variant="outline" 
+            className="w-full justify-start"
             onClick={() => setShowCreatePocket(true)}
           >
             <PiggyBank className="h-4 w-4 mr-2" />
@@ -88,6 +104,12 @@ export function QuickActionsCard({ pockets, onTransactionAdded, onPocketCreated 
         open={showCreatePocket}
         onOpenChange={setShowCreatePocket}
         onSuccess={handlePocketSuccess}
+      />
+      
+      <CreditCardPaymentDialog
+        open={showPaymentDialog}
+        onOpenChange={setShowPaymentDialog}
+        onSuccess={handlePaymentSuccess}
       />
     </>
   );
