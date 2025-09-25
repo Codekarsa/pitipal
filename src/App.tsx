@@ -8,6 +8,7 @@ import { useAuth } from "@/components/auth/useAuth";
 import { ErrorBoundary } from "@/components/error/ErrorBoundary";
 import { AuthForm } from "@/components/auth/AuthForm";
 import { LandingPage } from "@/components/landing/LandingPage";
+import { AboutPage } from "@/components/landing/AboutPage";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Dashboard } from "@/components/dashboard/Dashboard";
 import { PocketsPage } from "@/components/pockets/PocketsPage";
@@ -32,6 +33,7 @@ interface BudgetPocket {
 function AppContent() {
   const { user, loading } = useAuth();
   const [showAuthForm, setShowAuthForm] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
   const [showAddTransaction, setShowAddTransaction] = useState(false);
   const [showCreatePocket, setShowCreatePocket] = useState(false);
   const [pockets, setPockets] = useState<BudgetPocket[]>([]);
@@ -79,10 +81,19 @@ function AppContent() {
   }
 
   if (!user) {
-    return showAuthForm ? (
-      <AuthForm onSuccess={() => setShowAuthForm(false)} />
-    ) : (
-      <LandingPage onGetStarted={() => setShowAuthForm(true)} />
+    if (showAuthForm) {
+      return <AuthForm onSuccess={() => setShowAuthForm(false)} />;
+    }
+    
+    if (showAbout) {
+      return <AboutPage onBack={() => setShowAbout(false)} />;
+    }
+    
+    return (
+      <LandingPage 
+        onGetStarted={() => setShowAuthForm(true)}
+        onAbout={() => setShowAbout(true)}
+      />
     );
   }
 
