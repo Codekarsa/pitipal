@@ -387,50 +387,54 @@ export function TransactionsPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
         <Card className="bg-gradient-card border-0 shadow-sm">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Income</p>
-                <p className="text-2xl font-bold text-green-600">{formatCurrency(stats.income, userCurrency)}</p>
+          <CardContent className="p-4 lg:p-6">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs lg:text-sm font-medium text-muted-foreground truncate">Total Income</p>
+                <p className="text-lg lg:text-xl xl:text-2xl font-bold text-green-600 truncate" title={formatCurrency(stats.income, userCurrency)}>
+                  {formatCurrency(stats.income, userCurrency)}
+                </p>
               </div>
-              <div className="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center">
-                <TrendingUp className="h-6 w-6 text-green-600" />
+              <div className="w-10 h-10 lg:w-12 lg:h-12 bg-green-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                <TrendingUp className="h-5 w-5 lg:h-6 lg:w-6 text-green-600" />
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-gradient-card border-0 shadow-sm">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Expenses</p>
-                <p className="text-2xl font-bold text-red-600">{formatCurrency(stats.expenses, userCurrency)}</p>
+          <CardContent className="p-4 lg:p-6">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs lg:text-sm font-medium text-muted-foreground truncate">Total Expenses</p>
+                <p className="text-lg lg:text-xl xl:text-2xl font-bold text-red-600 truncate" title={formatCurrency(stats.expenses, userCurrency)}>
+                  {formatCurrency(stats.expenses, userCurrency)}
+                </p>
               </div>
-              <div className="w-12 h-12 bg-red-500/10 rounded-xl flex items-center justify-center">
-                <TrendingDown className="h-6 w-6 text-red-600" />
+              <div className="w-10 h-10 lg:w-12 lg:h-12 bg-red-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                <TrendingDown className="h-5 w-5 lg:h-6 lg:w-6 text-red-600" />
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-gradient-card border-0 shadow-sm">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Net Amount</p>
-                <p className={`text-2xl font-bold ${stats.net >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+          <CardContent className="p-4 lg:p-6">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs lg:text-sm font-medium text-muted-foreground truncate">Net Amount</p>
+                <p className={`text-lg lg:text-xl xl:text-2xl font-bold truncate ${stats.net >= 0 ? 'text-green-600' : 'text-red-600'}`} title={formatCurrency(stats.net, userCurrency)}>
                   {formatCurrency(stats.net, userCurrency)}
                 </p>
               </div>
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+              <div className={`w-10 h-10 lg:w-12 lg:h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
                 stats.net >= 0 ? 'bg-green-500/10' : 'bg-red-500/10'
               }`}>
                 {stats.net >= 0 ? 
-                  <TrendingUp className="h-6 w-6 text-green-600" /> :
-                  <TrendingDown className="h-6 w-6 text-red-600" />
+                  <TrendingUp className="h-5 w-5 lg:h-6 lg:w-6 text-green-600" /> :
+                  <TrendingDown className="h-5 w-5 lg:h-6 lg:w-6 text-red-600" />
                 }
               </div>
             </div>
@@ -438,14 +442,16 @@ export function TransactionsPage() {
         </Card>
 
         <Card className="bg-gradient-card border-0 shadow-sm">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Account Balance</p>
-                <p className="text-2xl font-bold text-primary">{formatCurrency(totalAccountBalance, userCurrency)}</p>
+          <CardContent className="p-4 lg:p-6">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs lg:text-sm font-medium text-muted-foreground truncate">Total Account Balance</p>
+                <p className="text-lg lg:text-xl xl:text-2xl font-bold text-primary truncate" title={formatCurrency(totalAccountBalance, userCurrency)}>
+                  {formatCurrency(totalAccountBalance, userCurrency)}
+                </p>
               </div>
-              <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
-                <div className="h-6 w-6 rounded-full bg-primary/20 border-2 border-primary"></div>
+              <div className="w-10 h-10 lg:w-12 lg:h-12 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                <div className="h-5 w-5 lg:h-6 lg:w-6 rounded-full bg-primary/20 border-2 border-primary"></div>
               </div>
             </div>
           </CardContent>
