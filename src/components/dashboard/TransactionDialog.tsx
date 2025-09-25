@@ -150,6 +150,13 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
     }
   }, [open, type, editingTransaction]);
 
+  // Auto-suggest "Credit Card Payment" category when credit card is selected
+  useEffect(() => {
+    if (creditCardAccountId && type === "expense" && !editingTransaction) {
+      setCategory("Credit Card Payment");
+    }
+  }, [creditCardAccountId, type, editingTransaction]);
+
   const fetchCategories = async () => {
     try {
       const { data, error } = await supabase
