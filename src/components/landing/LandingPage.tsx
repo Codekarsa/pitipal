@@ -1,14 +1,30 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { PiggyBank, TrendingUp, Zap, Shield, Smartphone, Brain } from "lucide-react";
+import { 
+  PiggyBank, 
+  TrendingUp, 
+  Zap, 
+  Shield, 
+  Smartphone, 
+  Brain, 
+  Download, 
+  Upload, 
+  RefreshCw, 
+  CreditCard, 
+  PieChart, 
+  Settings,
+  Users,
+  ArrowRight
+} from "lucide-react";
 import heroImage from "@/assets/hero-image.jpg";
 
 interface LandingPageProps {
   onGetStarted: () => void;
+  onAbout?: () => void;
 }
 
-export function LandingPage({ onGetStarted }: LandingPageProps) {
+export function LandingPage({ onGetStarted, onAbout }: LandingPageProps) {
   return (
     <div className="min-h-screen bg-gradient-subtle">
       {/* Header */}
@@ -22,9 +38,16 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
               Pitipal
             </span>
           </div>
-          <Button onClick={onGetStarted} variant="hero">
-            Get Started
-          </Button>
+          <div className="flex items-center space-x-4">
+            {onAbout && (
+              <Button onClick={onAbout} variant="ghost">
+                About
+              </Button>
+            )}
+            <Button onClick={onGetStarted} variant="hero">
+              Get Started
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -43,8 +66,9 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
                 </span>
               </h1>
               <p className="text-xl text-muted-foreground leading-relaxed">
-                Take control of your finances with unlimited customizable budget pockets, 
-                AI-driven categorization, and intelligent insights that help you save more and spend smarter.
+                Transform your financial life with unlimited budget pockets, AI-powered categorization, 
+                seamless data import/export, and intelligent insights. Built for the modern user who 
+                demands both simplicity and powerful features.
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-4">
@@ -92,77 +116,155 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          <Card className="bg-gradient-card border-0 shadow-lg hover:shadow-xl transition-smooth">
+          <Card className="bg-gradient-card border-0 shadow-lg hover:shadow-xl transition-smooth group">
             <CardHeader>
-              <div className="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center mb-4">
+              <div className="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-smooth">
                 <PiggyBank className="h-6 w-6 text-primary-foreground" />
               </div>
               <CardTitle>Unlimited Budget Pockets</CardTitle>
               <CardDescription>
-                Create unlimited customizable budget categories with personalized colors, icons, and goals
+                Create unlimited customizable budget categories with personalized colors, icons, and flexible budgeting cycles
               </CardDescription>
             </CardHeader>
           </Card>
 
-          <Card className="bg-gradient-card border-0 shadow-lg hover:shadow-xl transition-smooth">
+          <Card className="bg-gradient-card border-0 shadow-lg hover:shadow-xl transition-smooth group">
             <CardHeader>
-              <div className="w-12 h-12 bg-gradient-secondary rounded-xl flex items-center justify-center mb-4">
+              <div className="w-12 h-12 bg-gradient-secondary rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-smooth">
                 <Brain className="h-6 w-6 text-secondary-foreground" />
               </div>
-              <CardTitle>AI-Powered Categorization</CardTitle>
+              <CardTitle>AI-Powered Intelligence</CardTitle>
               <CardDescription>
-                Smart AI automatically categorizes your transactions and learns from your preferences
+                Smart categorization, transaction insights, and personalized recommendations that learn from your behavior
               </CardDescription>
             </CardHeader>
           </Card>
 
-          <Card className="bg-gradient-card border-0 shadow-lg hover:shadow-xl transition-smooth">
+          <Card className="bg-gradient-card border-0 shadow-lg hover:shadow-xl transition-smooth group">
             <CardHeader>
-              <div className="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center mb-4">
-                <TrendingUp className="h-6 w-6 text-primary-foreground" />
+              <div className="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-smooth">
+                <Upload className="h-6 w-6 text-primary-foreground" />
               </div>
-              <CardTitle>Rich Analytics</CardTitle>
+              <CardTitle>Smart Import/Export</CardTitle>
               <CardDescription>
-                Interactive dashboards with spending insights, trends, and personalized recommendations
+                Seamless CSV import with templates, data validation, and comprehensive export options for all your financial data
               </CardDescription>
             </CardHeader>
           </Card>
 
-          <Card className="bg-gradient-card border-0 shadow-lg hover:shadow-xl transition-smooth">
+          <Card className="bg-gradient-card border-0 shadow-lg hover:shadow-xl transition-smooth group">
             <CardHeader>
-              <div className="w-12 h-12 bg-gradient-secondary rounded-xl flex items-center justify-center mb-4">
+              <div className="w-12 h-12 bg-gradient-secondary rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-smooth">
+                <CreditCard className="h-6 w-6 text-secondary-foreground" />
+              </div>
+              <CardTitle>Multi-Account Management</CardTitle>
+              <CardDescription>
+                Manage savings, investment, and credit card accounts with automatic categorization and portfolio tracking
+              </CardDescription>
+            </CardHeader>
+          </Card>
+
+          <Card className="bg-gradient-card border-0 shadow-lg hover:shadow-xl transition-smooth group">
+            <CardHeader>
+              <div className="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-smooth">
+                <RefreshCw className="h-6 w-6 text-primary-foreground" />
+              </div>
+              <CardTitle>Robust Error Handling</CardTitle>
+              <CardDescription>
+                Advanced error recovery with automatic retries, comprehensive feedback, and seamless user experience
+              </CardDescription>
+            </CardHeader>
+          </Card>
+
+          <Card className="bg-gradient-card border-0 shadow-lg hover:shadow-xl transition-smooth group">
+            <CardHeader>
+              <div className="w-12 h-12 bg-gradient-secondary rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-smooth">
                 <Smartphone className="h-6 w-6 text-secondary-foreground" />
               </div>
               <CardTitle>Mobile-First Design</CardTitle>
               <CardDescription>
-                Optimized for mobile with big buttons, fast input, and seamless touch experience
+                Fully responsive interface optimized for mobile with intuitive gestures and lightning-fast performance
               </CardDescription>
             </CardHeader>
           </Card>
+        </div>
 
-          <Card className="bg-gradient-card border-0 shadow-lg hover:shadow-xl transition-smooth">
-            <CardHeader>
-              <div className="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center mb-4">
-                <Zap className="h-6 w-6 text-primary-foreground" />
-              </div>
-              <CardTitle>Flexible Cycles</CardTitle>
-              <CardDescription>
-                Support for weekly, monthly, quarterly, yearly, and custom budgeting cycles
-              </CardDescription>
-            </CardHeader>
-          </Card>
+        {/* Additional Features Section */}
+        <div className="mt-20">
+          <div className="text-center space-y-4 mb-12">
+            <h3 className="text-2xl lg:text-3xl font-bold">
+              Advanced Features for Power Users
+            </h3>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Professional-grade tools designed to handle complex financial scenarios
+            </p>
+          </div>
 
-          <Card className="bg-gradient-card border-0 shadow-lg hover:shadow-xl transition-smooth">
-            <CardHeader>
-              <div className="w-12 h-12 bg-gradient-secondary rounded-xl flex items-center justify-center mb-4">
-                <Shield className="h-6 w-6 text-secondary-foreground" />
-              </div>
-              <CardTitle>Secure & Private</CardTitle>
-              <CardDescription>
-                Bank-level encryption, secure Google Auth, and complete data privacy protection
-              </CardDescription>
-            </CardHeader>
-          </Card>
+          <div className="grid md:grid-cols-2 gap-8">
+            <Card className="bg-gradient-card border-0 shadow-lg hover:shadow-xl transition-smooth">
+              <CardContent className="p-8">
+                <div className="flex items-start space-x-4">
+                  <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center flex-shrink-0">
+                    <PieChart className="h-5 w-5 text-primary-foreground" />
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-semibold mb-2">Rich Analytics Dashboard</h4>
+                    <p className="text-muted-foreground">
+                      Interactive charts, spending trends, category breakdowns, and predictive insights to optimize your financial decisions.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-card border-0 shadow-lg hover:shadow-xl transition-smooth">
+              <CardContent className="p-8">
+                <div className="flex items-start space-x-4">
+                  <div className="w-10 h-10 bg-gradient-secondary rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Settings className="h-5 w-5 text-secondary-foreground" />
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-semibold mb-2">Advanced Settings</h4>
+                    <p className="text-muted-foreground">
+                      Customize categories, manage templates, configure automatic rules, and personalize your budgeting experience.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-card border-0 shadow-lg hover:shadow-xl transition-smooth">
+              <CardContent className="p-8">
+                <div className="flex items-start space-x-4">
+                  <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Shield className="h-5 w-5 text-primary-foreground" />
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-semibold mb-2">Bank-Level Security</h4>
+                    <p className="text-muted-foreground">
+                      End-to-end encryption, secure authentication, and complete data privacy with Google Auth integration.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-card border-0 shadow-lg hover:shadow-xl transition-smooth">
+              <CardContent className="p-8">
+                <div className="flex items-start space-x-4">
+                  <div className="w-10 h-10 bg-gradient-secondary rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Download className="h-5 w-5 text-secondary-foreground" />
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-semibold mb-2">Data Portability</h4>
+                    <p className="text-muted-foreground">
+                      Complete control over your data with comprehensive export options and easy migration tools.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </section>
 
@@ -174,17 +276,30 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
               Ready to Transform Your Finances?
             </h2>
             <p className="text-xl text-primary-foreground/90 mb-8 max-w-2xl mx-auto">
-              Join thousands of users who have taken control of their money with Pitipal. 
-              Start your journey to financial freedom today.
+              Join thousands of users who have transformed their financial habits with Pitipal. 
+              Start your journey to financial freedom with our comprehensive budgeting platform.
             </p>
-            <Button 
-              onClick={onGetStarted} 
-              variant="secondary" 
-              size="lg"
-              className="shadow-lg"
-            >
-              Get Started for Free
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button 
+                onClick={onGetStarted} 
+                variant="secondary" 
+                size="lg"
+                className="shadow-lg group"
+              >
+                Get Started for Free
+                <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-smooth" />
+              </Button>
+              {onAbout && (
+                <Button 
+                  onClick={onAbout} 
+                  variant="outline" 
+                  size="lg"
+                  className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                >
+                  Learn More
+                </Button>
+              )}
+            </div>
           </CardContent>
         </Card>
       </section>
