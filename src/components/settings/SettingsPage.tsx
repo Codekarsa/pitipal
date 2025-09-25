@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { 
   Settings, User, Tag, Building2, TrendingUp, 
   DollarSign, Euro, PoundSterling, CircleDollarSign,
-  CheckCircle, AlertCircle, Clock
+  CheckCircle, AlertCircle, Clock, Database
 } from "lucide-react";
 
 // Import sections
@@ -18,6 +18,7 @@ import { GeneralSettings } from "./GeneralSettings";
 import { CategoriesSection } from "./CategoriesSection";
 import { AccountsSection } from "./AccountsSection";
 import { PortfolioSection } from "./PortfolioSection";
+import { DataManagementSection } from "./DataManagementSection";
 
 const currencies = [
   { code: "USD", symbol: "$", name: "US Dollar", icon: DollarSign },
@@ -155,7 +156,7 @@ export function SettingsPage() {
 
       {/* Main Tabs */}
       <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 lg:w-fit lg:grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5 lg:w-fit lg:grid-cols-5">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
             <span className="hidden sm:inline">Overview</span>
@@ -171,6 +172,10 @@ export function SettingsPage() {
           <TabsTrigger value="accounts" className="flex items-center gap-2">
             <Building2 className="h-4 w-4" />
             <span className="hidden sm:inline">Accounts</span>
+          </TabsTrigger>
+          <TabsTrigger value="data" className="flex items-center gap-2">
+            <Database className="h-4 w-4" />
+            <span className="hidden sm:inline">Data</span>
           </TabsTrigger>
         </TabsList>
 
@@ -315,6 +320,15 @@ export function SettingsPage() {
                   <p className="font-medium">Credit Cards</p>
                   <p className="text-sm text-muted-foreground">Manage credit card accounts</p>
                 </button>
+                
+                <button
+                  onClick={() => setSelectedTab("data")}
+                  className="p-4 text-left border rounded-lg hover:bg-muted/50 transition-colors"
+                >
+                  <Database className="h-5 w-5 text-primary mb-2" />
+                  <p className="font-medium">Import & Export</p>
+                  <p className="text-sm text-muted-foreground">Manage your financial data</p>
+                </button>
               </div>
             </CardContent>
           </Card>
@@ -346,6 +360,11 @@ export function SettingsPage() {
         {/* Accounts Tab */}
         <TabsContent value="accounts">
           <AccountsSection />
+        </TabsContent>
+
+        {/* Data Management Tab */}
+        <TabsContent value="data">
+          <DataManagementSection />
         </TabsContent>
       </Tabs>
     </div>
