@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { withRetry, handleError } from "@/lib/error-utils";
 import { format } from "date-fns";
 
 interface CreatePocketDialogProps {
@@ -138,12 +139,14 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
         cycle_start_date: isTemplate ? null : new Date(currentMonth + '-01').toISOString().split('T')[0],
         cycle_end_date: isTemplate ? null : new Date(new Date(currentMonth + '-01').getFullYear(), new Date(currentMonth + '-01').getMonth() + 1, 0).toISOString().split('T')[0],
       };
-      
-      const { error } = await supabase
-        .from('budget_pockets')
-        .insert(insertData);
 
-      if (error) throw error;
+      await withRetry(async () => {
+        const { error } = await supabase
+          .from('budget_pockets')
+          .insert(insertData);
+
+        if (error) throw error;
+      }, 3);
       
       // Reset form
       setName("");
@@ -163,14 +166,15 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
       setProjectDuration("");
       setMinimumPayment("");
       setExtraPayment("");
+
+      toast({
+        title: "Success",
+        description: isTemplate ? "Template created successfully" : "Budget pocket created successfully",
+      });
       
       onSuccess();
     } catch (error: any) {
-      toast({
-        title: "Error creating pocket",
-        description: error.message,
-        variant: "destructive",
-      });
+      handleError(error, "Failed to create pocket. Please check your inputs and try again.");
     } finally {
       setLoading(false);
     }
