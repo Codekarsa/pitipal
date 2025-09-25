@@ -133,17 +133,17 @@ export function DataManagementSection() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
             {dataItems.map((item) => {
               const Icon = item.icon;
               return (
-                <div key={item.title} className="flex items-center gap-3 p-4 border rounded-lg">
+                <div key={item.title} className="flex items-center gap-3 p-3 sm:p-4 border rounded-lg">
                   <div className={`p-2 rounded-lg ${item.bgColor}`}>
-                    <Icon className={`h-5 w-5 ${item.color}`} />
+                    <Icon className={`h-4 w-4 sm:h-5 sm:w-5 ${item.color}`} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm">{item.title}</p>
-                    <p className="text-xs text-muted-foreground">{item.description}</p>
+                    <p className="text-xs text-muted-foreground hidden sm:block">{item.description}</p>
                     <Badge variant="secondary" className="mt-1 text-xs">
                       {item.count} items
                     </Badge>
@@ -156,7 +156,7 @@ export function DataManagementSection() {
       </Card>
 
       {/* Import/Export Actions */}
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2">
         {/* Import Section */}
         <Card>
           <CardHeader>
@@ -248,16 +248,17 @@ export function DataManagementSection() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
             <Button
               onClick={() => handleDownloadTemplate('transactions')}
               variant="outline"
               size="sm"
               disabled={isGeneratingTemplate}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 text-xs sm:text-sm"
             >
               <FileText className="h-4 w-4" />
-              Transactions
+              <span className="hidden sm:inline">Transactions</span>
+              <span className="sm:hidden">Trans.</span>
             </Button>
             
             <Button
@@ -265,10 +266,11 @@ export function DataManagementSection() {
               variant="outline"
               size="sm"
               disabled={isGeneratingTemplate}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 text-xs sm:text-sm"
             >
               <FileText className="h-4 w-4" />
-              Budget Pockets
+              <span className="hidden sm:inline">Budget Pockets</span>
+              <span className="sm:hidden">Pockets</span>
             </Button>
             
             <Button
@@ -276,10 +278,11 @@ export function DataManagementSection() {
               variant="outline"
               size="sm"
               disabled={isGeneratingTemplate}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 text-xs sm:text-sm"
             >
               <FileText className="h-4 w-4" />
-              Categories
+              <span className="hidden sm:inline">Categories</span>
+              <span className="sm:hidden">Categ.</span>
             </Button>
             
             <Button
@@ -287,10 +290,11 @@ export function DataManagementSection() {
               variant="outline"
               size="sm"
               disabled={isGeneratingTemplate}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 text-xs sm:text-sm"
             >
               <FileText className="h-4 w-4" />
-              Accounts
+              <span className="hidden sm:inline">Accounts</span>
+              <span className="sm:hidden">Acc.</span>
             </Button>
           </div>
           
