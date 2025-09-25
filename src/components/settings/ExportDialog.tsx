@@ -149,7 +149,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Download className="h-5 w-5" />
@@ -175,7 +175,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                 return (
                   <div
                     key={option.id}
-                    className={`flex items-start gap-3 p-4 border rounded-lg cursor-pointer transition-colors ${
+                    className={`flex items-start gap-2 sm:gap-3 p-3 sm:p-4 border rounded-lg cursor-pointer transition-colors ${
                       option.selected ? "bg-primary/5 border-primary/20" : "hover:bg-muted/50"
                     }`}
                     onClick={() => toggleOption(option.id)}
@@ -185,24 +185,24 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                       onChange={() => toggleOption(option.id)}
                       className="mt-0.5"
                     />
-                    <div className="flex items-start gap-3 flex-1">
-                      <div className={`p-2 rounded-lg ${
+                    <div className="flex items-start gap-2 sm:gap-3 flex-1 min-w-0">
+                      <div className={`p-1.5 sm:p-2 rounded-lg ${
                         option.selected ? "bg-primary/10" : "bg-muted"
                       }`}>
-                        <Icon className={`h-4 w-4 ${
+                        <Icon className={`h-3 w-3 sm:h-4 sm:w-4 ${
                           option.selected ? "text-primary" : "text-muted-foreground"
                         }`} />
                       </div>
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <h4 className="font-medium">{option.label}</h4>
+                          <h4 className="font-medium text-sm sm:text-base">{option.label}</h4>
                           {option.selected && (
                             <Badge variant="secondary" className="text-xs">
                               Selected
                             </Badge>
                           )}
                         </div>
-                        <p className="text-sm text-muted-foreground mt-1">
+                        <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                           {option.description}
                         </p>
                       </div>
