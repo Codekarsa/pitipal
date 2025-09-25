@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/useAuth";
+import { withRetry, handleError } from "@/lib/error-utils";
 import { toast } from "sonner";
 
 type SavingsAccount = {
@@ -100,28 +101,30 @@ export function AddSavingsAccountDialog({ open, onOpenChange, editingAccount }: 
         notes: data.notes || null,
       };
 
-      if (editingAccount) {
-        const { error } = await supabase
-          .from("savings_accounts")
-          .update(accountData)
-          .eq("id", editingAccount.id);
-        
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from("savings_accounts")
-          .insert(accountData);
-        
-        if (error) throw error;
-      }
+      return await withRetry(async () => {
+        if (editingAccount) {
+          const { error } = await supabase
+            .from("savings_accounts")
+            .update(accountData)
+            .eq("id", editingAccount.id);
+          
+          if (error) throw error;
+        } else {
+          const { error } = await supabase
+            .from("savings_accounts")
+            .insert(accountData);
+          
+          if (error) throw error;
+        }
+      }, 3);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["savings-accounts"] });
       toast.success(editingAccount ? "Account updated successfully" : "Account added successfully");
       onOpenChange(false);
     },
-    onError: () => {
-      toast.error("Failed to save account");
+    onError: (error) => {
+      handleError(error, "Failed to save account. Please check your inputs and try again.");
     },
   });
 

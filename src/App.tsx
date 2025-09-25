@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/components/auth/useAuth";
+import { ErrorBoundary } from "@/components/error/ErrorBoundary";
 import { AuthForm } from "@/components/auth/AuthForm";
 import { LandingPage } from "@/components/landing/LandingPage";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
@@ -15,6 +16,7 @@ import { TransactionsPage } from "@/components/transactions/TransactionsPage";
 import { TransactionDialog } from "@/components/dashboard/TransactionDialog";
 import { CreatePocketDialog } from "@/components/dashboard/CreatePocketDialog";
 import { supabase } from "@/integrations/supabase/client";
+import { handleError } from "@/lib/error-utils";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -55,7 +57,7 @@ function AppContent() {
       if (error) throw error;
       setPockets(data || []);
     } catch (error) {
-      console.error('Error fetching pockets:', error);
+      handleError(error, "Failed to load budget pockets. Please try refreshing the page.");
     }
   };
 
@@ -85,114 +87,116 @@ function AppContent() {
   }
 
   return (
-    <Routes>
-      <Route 
-        path="/" 
-        element={
-          <DashboardLayout 
-            onAddTransaction={() => setShowAddTransaction(true)}
-            onAddPocket={() => navigate("/pockets")}
-          >
-            <Dashboard />
-            <TransactionDialog
-              open={showAddTransaction}
-              onOpenChange={setShowAddTransaction}
-              onSuccess={() => {
-                setShowAddTransaction(false);
-                handleRefreshPockets();
-              }}
-              pockets={pockets}
-            />
-          </DashboardLayout>
-        } 
-      />
-      <Route 
-        path="/pockets" 
-        element={
-          <DashboardLayout 
-            onAddTransaction={() => setShowAddTransaction(true)}
-            onAddPocket={() => setShowCreatePocket(true)}
-          >
-            <PocketsPage />
-            <TransactionDialog
-              open={showAddTransaction}
-              onOpenChange={setShowAddTransaction}
-              onSuccess={() => {
-                setShowAddTransaction(false);
-                handleRefreshPockets();
-              }}
-              pockets={pockets}
-            />
-            <CreatePocketDialog
-              open={showCreatePocket}
-              onOpenChange={setShowCreatePocket}
-              onSuccess={() => setShowCreatePocket(false)}
-            />
-          </DashboardLayout>
-        } 
-      />
-      <Route 
-        path="/transactions" 
-        element={
-          <DashboardLayout 
-            onAddTransaction={() => setShowAddTransaction(true)}
-            onAddPocket={() => navigate("/pockets")}
-          >
-            <TransactionsPage />
-            <TransactionDialog
-              open={showAddTransaction}
-              onOpenChange={setShowAddTransaction}
-              onSuccess={() => {
-                setShowAddTransaction(false);
-                handleRefreshPockets();
-              }}
-              pockets={pockets}
-            />
-          </DashboardLayout>
-        } 
-      />
-      <Route 
-        path="/transactions/:pocketId" 
-        element={
-          <DashboardLayout 
-            onAddTransaction={() => setShowAddTransaction(true)}
-            onAddPocket={() => navigate("/pockets")}
-          >
-            <TransactionsPage />
-            <TransactionDialog
-              open={showAddTransaction}
-              onOpenChange={setShowAddTransaction}
-              onSuccess={() => {
-                setShowAddTransaction(false);
-                handleRefreshPockets();
-              }}
-              pockets={pockets}
-            />
-          </DashboardLayout>
-        } 
-      />
-      <Route 
-        path="/settings" 
-        element={
-          <DashboardLayout 
-            onAddTransaction={() => setShowAddTransaction(true)}
-            onAddPocket={() => navigate("/pockets")}
-          >
-            <SettingsPage />
-            <TransactionDialog
-              open={showAddTransaction}
-              onOpenChange={setShowAddTransaction}
-              onSuccess={() => {
-                setShowAddTransaction(false);
-                handleRefreshPockets();
-              }}
-              pockets={pockets}
-            />
-          </DashboardLayout>
-        } 
-      />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <ErrorBoundary>
+      <Routes>
+        <Route 
+          path="/" 
+          element={
+            <DashboardLayout 
+              onAddTransaction={() => setShowAddTransaction(true)}
+              onAddPocket={() => navigate("/pockets")}
+            >
+              <Dashboard />
+              <TransactionDialog
+                open={showAddTransaction}
+                onOpenChange={setShowAddTransaction}
+                onSuccess={() => {
+                  setShowAddTransaction(false);
+                  handleRefreshPockets();
+                }}
+                pockets={pockets}
+              />
+            </DashboardLayout>
+          } 
+        />
+        <Route 
+          path="/pockets" 
+          element={
+            <DashboardLayout 
+              onAddTransaction={() => setShowAddTransaction(true)}
+              onAddPocket={() => setShowCreatePocket(true)}
+            >
+              <PocketsPage />
+              <TransactionDialog
+                open={showAddTransaction}
+                onOpenChange={setShowAddTransaction}
+                onSuccess={() => {
+                  setShowAddTransaction(false);
+                  handleRefreshPockets();
+                }}
+                pockets={pockets}
+              />
+              <CreatePocketDialog
+                open={showCreatePocket}
+                onOpenChange={setShowCreatePocket}
+                onSuccess={() => setShowCreatePocket(false)}
+              />
+            </DashboardLayout>
+          } 
+        />
+        <Route 
+          path="/transactions" 
+          element={
+            <DashboardLayout 
+              onAddTransaction={() => setShowAddTransaction(true)}
+              onAddPocket={() => navigate("/pockets")}
+            >
+              <TransactionsPage />
+              <TransactionDialog
+                open={showAddTransaction}
+                onOpenChange={setShowAddTransaction}
+                onSuccess={() => {
+                  setShowAddTransaction(false);
+                  handleRefreshPockets();
+                }}
+                pockets={pockets}
+              />
+            </DashboardLayout>
+          } 
+        />
+        <Route 
+          path="/transactions/:pocketId" 
+          element={
+            <DashboardLayout 
+              onAddTransaction={() => setShowAddTransaction(true)}
+              onAddPocket={() => navigate("/pockets")}
+            >
+              <TransactionsPage />
+              <TransactionDialog
+                open={showAddTransaction}
+                onOpenChange={setShowAddTransaction}
+                onSuccess={() => {
+                  setShowAddTransaction(false);
+                  handleRefreshPockets();
+                }}
+                pockets={pockets}
+              />
+            </DashboardLayout>
+          } 
+        />
+        <Route 
+          path="/settings" 
+          element={
+            <DashboardLayout 
+              onAddTransaction={() => setShowAddTransaction(true)}
+              onAddPocket={() => navigate("/pockets")}
+            >
+              <SettingsPage />
+              <TransactionDialog
+                open={showAddTransaction}
+                onOpenChange={setShowAddTransaction}
+                onSuccess={() => {
+                  setShowAddTransaction(false);
+                  handleRefreshPockets();
+                }}
+                pockets={pockets}
+              />
+            </DashboardLayout>
+          } 
+        />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </ErrorBoundary>
   );
 }
 
