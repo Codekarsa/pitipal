@@ -109,45 +109,51 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
       console.log('Dialog opened, fetching data...');
       fetchCategories();
       fetchPayees();
-      fetchAccounts();
-      if (type === 'investment') {
-        fetchAssets();
-      }
       
-      // If editing, populate fields
-      if (editingTransaction) {
-        setType(editingTransaction.type);
-        setAmount(editingTransaction.amount.toString());
-        setCategory(editingTransaction.category);
-        setDescription(editingTransaction.description || "");
-        setDate(editingTransaction.transaction_date);
-        setPocketId(editingTransaction.pocket_id || "");
-        setSavingsAccountId(editingTransaction.savings_account_id || "");
-        setInvestmentAccountId(editingTransaction.investment_account_id || "");
-        setCreditCardAccountId(editingTransaction.credit_card_account_id || "");
-        
-        // Handle payee for editing
-        if (editingTransaction.payee_id) {
-          // Fetch payee name
-          const fetchPayeeName = async () => {
-            try {
-              const { data, error } = await supabase
-                .from('payees')
-                .select('name')
-                .eq('id', editingTransaction.payee_id)
-                .single();
-              
-              if (error) throw error;
-              setPayee(data?.name || "");
-            } catch (error) {
-              console.error('Error fetching payee name:', error);
-            }
-          };
-          fetchPayeeName();
-        } else {
-          setPayee("");
+      // Fetch accounts first, then populate transaction data
+      const initializeData = async () => {
+        await fetchAccounts();
+        if (type === 'investment') {
+          await fetchAssets();
         }
-      }
+        
+        // If editing, populate fields after accounts are loaded
+        if (editingTransaction) {
+          setType(editingTransaction.type);
+          setAmount(editingTransaction.amount.toString());
+          setCategory(editingTransaction.category);
+          setDescription(editingTransaction.description || "");
+          setDate(editingTransaction.transaction_date);
+          setPocketId(editingTransaction.pocket_id || "");
+          setSavingsAccountId(editingTransaction.savings_account_id || "");
+          setInvestmentAccountId(editingTransaction.investment_account_id || "");
+          setCreditCardAccountId(editingTransaction.credit_card_account_id || "");
+          
+          // Handle payee for editing
+          if (editingTransaction.payee_id) {
+            // Fetch payee name
+            const fetchPayeeName = async () => {
+              try {
+                const { data, error } = await supabase
+                  .from('payees')
+                  .select('name')
+                  .eq('id', editingTransaction.payee_id)
+                  .single();
+                
+                if (error) throw error;
+                setPayee(data?.name || "");
+              } catch (error) {
+                console.error('Error fetching payee name:', error);
+              }
+            };
+            fetchPayeeName();
+          } else {
+            setPayee("");
+          }
+        }
+      };
+      
+      initializeData();
     }
   }, [open, type, editingTransaction]);
 
