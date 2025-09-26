@@ -165,6 +165,7 @@ export function AddInvestmentAccountDialog({ open, onOpenChange, editingAccount 
           <div className="space-y-2">
             <Label htmlFor="account_type">Account Type *</Label>
             <Select 
+              key={editingAccount?.id || 'new'}
               value={formData.account_type} 
               onValueChange={(value) => setFormData({ ...formData, account_type: value })}
             >
