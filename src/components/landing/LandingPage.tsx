@@ -326,7 +326,7 @@ export function LandingPage({ onGetStarted, onAbout }: LandingPageProps) {
             <span className="font-semibold text-foreground">Pitipal</span>
           </div>
           <p className="text-sm text-muted-foreground">
-            © 2024 Pitipal. All rights reserved.
+            © 2025 Pitipal. All rights reserved.
           </p>
         </div>
       </footer>
