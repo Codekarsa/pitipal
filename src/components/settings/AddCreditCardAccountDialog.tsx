@@ -183,7 +183,7 @@ export function AddCreditCardAccountDialog({
           
           <div className="space-y-2">
             <Label htmlFor="card_type">Card Type</Label>
-            <Select value={formData.card_type} onValueChange={(value) => setFormData({ ...formData, card_type: value })}>
+            <Select key={editingAccount?.id || 'new'} value={formData.card_type} onValueChange={(value) => setFormData({ ...formData, card_type: value })}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -239,7 +239,7 @@ export function AddCreditCardAccountDialog({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="due_date">Due Date (Day of Month)</Label>
-              <Select value={formData.due_date} onValueChange={(value) => setFormData({ ...formData, due_date: value })}>
+              <Select key={`due-date-${editingAccount?.id || 'new'}`} value={formData.due_date} onValueChange={(value) => setFormData({ ...formData, due_date: value })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
