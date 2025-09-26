@@ -79,10 +79,6 @@ export function LandingPage({ onGetStarted, onAbout }: LandingPageProps) {
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div className={`space-y-8 transition-all duration-1000 delay-200 ${isVisible ? 'translate-x-0 opacity-100' : '-translate-x-8 opacity-0'}`}>
             <div className="space-y-4">
-              <Badge className="bg-gradient-primary text-primary-foreground hover:scale-105 transition-transform duration-300 animate-pulse">
-                <Brain className="mr-2 h-3 w-3" />
-                AI-Powered Budgeting
-              </Badge>
               <h1 className="text-4xl lg:text-6xl font-bold leading-tight">
                 Smart Budgeting
                 <span className="block bg-gradient-primary bg-clip-text text-transparent hover:scale-105 transition-transform duration-500 cursor-default">
