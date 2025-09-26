@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useEffect, useState } from "react";
 import { 
   PiggyBank, 
   TrendingUp, 
@@ -15,7 +16,8 @@ import {
   PieChart, 
   Settings,
   Users,
-  ArrowRight
+  ArrowRight,
+  Sparkles
 } from "lucide-react";
 import heroImage from "@/assets/hero-image.jpg";
 
@@ -25,27 +27,48 @@ interface LandingPageProps {
 }
 
 export function LandingPage({ onGetStarted, onAbout }: LandingPageProps) {
+  const [scrollY, setScrollY] = useState(0);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setScrollY(window.scrollY);
+    const handleVisibility = () => setIsVisible(true);
+    
+    window.addEventListener('scroll', handleScroll);
+    setTimeout(handleVisibility, 100);
+    
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
-    <div className="min-h-screen bg-gradient-subtle">
+    <div className="min-h-screen bg-gradient-subtle overflow-hidden">
+      {/* Floating particles */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-primary/20 rounded-full animate-bounce" style={{ animationDelay: '0s', animationDuration: '3s' }}></div>
+        <div className="absolute top-1/3 right-1/4 w-1 h-1 bg-secondary/30 rounded-full animate-bounce" style={{ animationDelay: '1s', animationDuration: '4s' }}></div>
+        <div className="absolute bottom-1/3 left-1/3 w-1.5 h-1.5 bg-primary/15 rounded-full animate-bounce" style={{ animationDelay: '2s', animationDuration: '5s' }}></div>
+      </div>
+
       {/* Header */}
-      <header className="container mx-auto px-4 py-6">
+      <header className={`container mx-auto px-4 py-6 transition-all duration-700 ${isVisible ? 'translate-y-0 opacity-100' : '-translate-y-4 opacity-0'}`}>
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-primary rounded-xl flex items-center justify-center shadow-glow">
-              <span className="text-lg font-bold text-primary-foreground">₿</span>
+          <div className="flex items-center space-x-3 group cursor-pointer">
+            <div className="w-10 h-10 bg-gradient-primary rounded-xl flex items-center justify-center shadow-glow group-hover:scale-110 group-hover:rotate-12 transition-all duration-300">
+              <span className="text-lg font-bold text-primary-foreground group-hover:scale-110 transition-transform duration-300">₿</span>
             </div>
-            <span className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+            <span className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent group-hover:tracking-wider transition-all duration-300">
               Pitipal
             </span>
           </div>
           <div className="flex items-center space-x-4">
             {onAbout && (
-              <Button onClick={onAbout} variant="ghost">
+              <Button onClick={onAbout} variant="ghost" className="hover:scale-105 transition-all duration-200 hover:bg-primary/10">
                 About
               </Button>
             )}
-            <Button onClick={onGetStarted} variant="hero">
+            <Button onClick={onGetStarted} variant="hero" className="group hover:scale-105 hover:shadow-2xl transition-all duration-300">
               Get Started
+              <Sparkles className="ml-2 h-4 w-4 group-hover:rotate-12 transition-transform duration-300" />
             </Button>
           </div>
         </div>
@@ -54,47 +77,54 @@ export function LandingPage({ onGetStarted, onAbout }: LandingPageProps) {
       {/* Hero Section */}
       <section className="container mx-auto px-4 py-16">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
-          <div className="space-y-8">
+          <div className={`space-y-8 transition-all duration-1000 delay-200 ${isVisible ? 'translate-x-0 opacity-100' : '-translate-x-8 opacity-0'}`}>
             <div className="space-y-4">
-              <Badge className="bg-gradient-primary text-primary-foreground">
+              <Badge className="bg-gradient-primary text-primary-foreground hover:scale-105 transition-transform duration-300 animate-pulse">
+                <Brain className="mr-2 h-3 w-3" />
                 AI-Powered Budgeting
               </Badge>
               <h1 className="text-4xl lg:text-6xl font-bold leading-tight">
                 Smart Budgeting
-                <span className="block bg-gradient-primary bg-clip-text text-transparent">
+                <span className="block bg-gradient-primary bg-clip-text text-transparent hover:scale-105 transition-transform duration-500 cursor-default">
                   Made Simple
                 </span>
               </h1>
-              <p className="text-xl text-muted-foreground leading-relaxed">
+              <p className="text-xl text-muted-foreground leading-relaxed hover:text-foreground transition-colors duration-300">
                 Transform your financial life with unlimited budget pockets, AI-powered categorization, 
                 seamless data import/export, and intelligent insights. Built for the modern user who 
                 demands both simplicity and powerful features.
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button onClick={onGetStarted} variant="hero" size="lg" className="group">
+              <Button onClick={onGetStarted} variant="hero" size="lg" className="group hover:scale-105 hover:shadow-2xl transition-all duration-300">
                 Start Your Financial Journey
-                <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-smooth" />
+                <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform duration-300" />
               </Button>
             </div>
             <div className="flex items-center justify-center space-x-2 text-sm">
-              <div className="flex items-center space-x-1 px-3 py-1 rounded-full bg-gradient-primary/10 border border-primary/20">
+              <div className="flex items-center space-x-1 px-3 py-1 rounded-full bg-gradient-primary/10 border border-primary/20 hover:bg-gradient-primary/20 hover:scale-105 transition-all duration-300">
                 <Brain className="h-3 w-3 text-primary animate-pulse" />
                 <span className="text-primary font-medium">AI-Powered</span>
               </div>
-              <div className="flex items-center space-x-1 px-3 py-1 rounded-full bg-gradient-secondary/10 border border-secondary/20">
-                <Zap className="h-3 w-3 text-secondary" />
+              <div className="flex items-center space-x-1 px-3 py-1 rounded-full bg-gradient-secondary/10 border border-secondary/20 hover:bg-gradient-secondary/20 hover:scale-105 transition-all duration-300">
+                <Zap className="h-3 w-3 text-secondary animate-bounce" />
                 <span className="text-secondary font-medium">Smart Insights</span>
               </div>
             </div>
           </div>
-          <div className="relative">
-            <div className="absolute inset-0 bg-gradient-primary rounded-3xl blur-3xl opacity-20"></div>
-            <img 
-              src={heroImage} 
-              alt="Pitipal Dashboard" 
-              className="relative rounded-3xl shadow-2xl w-full"
-            />
+          <div className={`relative transition-all duration-1000 delay-400 ${isVisible ? 'translate-x-0 opacity-100' : 'translate-x-8 opacity-0'}`}>
+            <div className="absolute inset-0 bg-gradient-primary rounded-3xl blur-3xl opacity-20 animate-pulse"></div>
+            <div 
+              className="relative group cursor-pointer"
+              style={{ transform: `translateY(${scrollY * -0.1}px)` }}
+            >
+              <img 
+                src={heroImage} 
+                alt="Pitipal Dashboard" 
+                className="relative rounded-3xl shadow-2xl w-full group-hover:scale-105 transition-transform duration-500"
+              />
+              <div className="absolute inset-0 bg-gradient-primary/10 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            </div>
           </div>
         </div>
       </section>
@@ -114,77 +144,65 @@ export function LandingPage({ onGetStarted, onAbout }: LandingPageProps) {
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          <Card className="bg-gradient-card border-0 shadow-lg hover:shadow-xl transition-smooth group">
-            <CardHeader>
-              <div className="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-smooth">
-                <PiggyBank className="h-6 w-6 text-primary-foreground" />
-              </div>
-              <CardTitle>Unlimited Budget Pockets</CardTitle>
-              <CardDescription>
-                Create unlimited customizable budget categories with personalized colors, icons, and flexible budgeting cycles
-              </CardDescription>
-            </CardHeader>
-          </Card>
-
-          <Card className="bg-gradient-card border-0 shadow-lg hover:shadow-xl transition-smooth group">
-            <CardHeader>
-              <div className="w-12 h-12 bg-gradient-secondary rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-smooth">
-                <Brain className="h-6 w-6 text-secondary-foreground" />
-              </div>
-              <CardTitle>AI-Powered Intelligence</CardTitle>
-              <CardDescription>
-                Smart categorization, transaction insights, and personalized recommendations that learn from your behavior
-              </CardDescription>
-            </CardHeader>
-          </Card>
-
-          <Card className="bg-gradient-card border-0 shadow-lg hover:shadow-xl transition-smooth group">
-            <CardHeader>
-              <div className="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-smooth">
-                <Upload className="h-6 w-6 text-primary-foreground" />
-              </div>
-              <CardTitle>Smart Import/Export</CardTitle>
-              <CardDescription>
-                Seamless CSV import with templates, data validation, and comprehensive export options for all your financial data
-              </CardDescription>
-            </CardHeader>
-          </Card>
-
-          <Card className="bg-gradient-card border-0 shadow-lg hover:shadow-xl transition-smooth group">
-            <CardHeader>
-              <div className="w-12 h-12 bg-gradient-secondary rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-smooth">
-                <CreditCard className="h-6 w-6 text-secondary-foreground" />
-              </div>
-              <CardTitle>Multi-Account Management</CardTitle>
-              <CardDescription>
-                Manage savings, investment, and credit card accounts with automatic categorization and portfolio tracking
-              </CardDescription>
-            </CardHeader>
-          </Card>
-
-          <Card className="bg-gradient-card border-0 shadow-lg hover:shadow-xl transition-smooth group">
-            <CardHeader>
-              <div className="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-smooth">
-                <RefreshCw className="h-6 w-6 text-primary-foreground" />
-              </div>
-              <CardTitle>Robust Error Handling</CardTitle>
-              <CardDescription>
-                Advanced error recovery with automatic retries, comprehensive feedback, and seamless user experience
-              </CardDescription>
-            </CardHeader>
-          </Card>
-
-          <Card className="bg-gradient-card border-0 shadow-lg hover:shadow-xl transition-smooth group">
-            <CardHeader>
-              <div className="w-12 h-12 bg-gradient-secondary rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-smooth">
-                <Smartphone className="h-6 w-6 text-secondary-foreground" />
-              </div>
-              <CardTitle>Mobile-First Design</CardTitle>
-              <CardDescription>
-                Fully responsive interface optimized for mobile with intuitive gestures and lightning-fast performance
-              </CardDescription>
-            </CardHeader>
-          </Card>
+          {[
+            {
+              icon: PiggyBank,
+              title: "Unlimited Budget Pockets",
+              description: "Create unlimited customizable budget categories with personalized colors, icons, and flexible budgeting cycles",
+              delay: "0s"
+            },
+            {
+              icon: Brain,
+              title: "AI-Powered Intelligence", 
+              description: "Smart categorization, transaction insights, and personalized recommendations that learn from your behavior",
+              delay: "0.1s"
+            },
+            {
+              icon: Upload,
+              title: "Smart Import/Export",
+              description: "Seamless CSV import with templates, data validation, and comprehensive export options for all your financial data", 
+              delay: "0.2s"
+            },
+            {
+              icon: CreditCard,
+              title: "Multi-Account Management",
+              description: "Manage savings, investment, and credit card accounts with automatic categorization and portfolio tracking",
+              delay: "0.3s"
+            },
+            {
+              icon: RefreshCw,
+              title: "Robust Error Handling",
+              description: "Advanced error recovery with automatic retries, comprehensive feedback, and seamless user experience",
+              delay: "0.4s"
+            },
+            {
+              icon: Smartphone,
+              title: "Mobile-First Design",
+              description: "Fully responsive interface optimized for mobile with intuitive gestures and lightning-fast performance",
+              delay: "0.5s"
+            }
+          ].map((feature, index) => (
+            <Card 
+              key={feature.title}
+              className={`bg-gradient-card border-0 shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-500 group cursor-pointer ${
+                isVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
+              }`}
+              style={{ 
+                transitionDelay: isVisible ? feature.delay : '0s',
+                animationDelay: feature.delay 
+              }}
+            >
+              <CardHeader className="group-hover:pb-2 transition-all duration-300">
+                <div className={`w-12 h-12 ${index % 2 === 0 ? 'bg-gradient-primary' : 'bg-gradient-secondary'} rounded-xl flex items-center justify-center mb-4 group-hover:scale-125 group-hover:rotate-12 transition-all duration-500 group-hover:shadow-lg`}>
+                  <feature.icon className={`h-6 w-6 ${index % 2 === 0 ? 'text-primary-foreground' : 'text-secondary-foreground'} group-hover:animate-pulse`} />
+                </div>
+                <CardTitle className="group-hover:text-primary transition-colors duration-300">{feature.title}</CardTitle>
+                <CardDescription className="group-hover:text-foreground transition-colors duration-300">
+                  {feature.description}
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          ))}
         </div>
 
         {/* Additional Features Section */}
