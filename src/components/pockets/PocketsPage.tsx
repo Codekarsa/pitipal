@@ -48,11 +48,17 @@ export function PocketsPage() {
     queryFn: async () => {
       if (!user?.id) return [];
       
+      // Get current month in YYYY-MM format
+      const currentDate = new Date();
+      const currentMonth = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+      
       const { data, error } = await supabase
         .from("budget_pockets")
         .select("*")
         .eq("user_id", user.id)
         .eq("is_active", true)
+        .eq("is_template", false)
+        .eq("month_year", currentMonth)
         .order("created_at", { ascending: false });
 
       if (error) {
