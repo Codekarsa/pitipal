@@ -749,9 +749,9 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
             <Select 
               key={editingTransaction?.id || 'new'}
               value={
-                savingsAccountId ? `savings:${savingsAccountId}` :
-                investmentAccountId ? `investment:${investmentAccountId}` :
-                creditCardAccountId ? `credit:${creditCardAccountId}` :
+                (savingsAccountId && savingsAccountId !== "") ? `savings:${savingsAccountId}` :
+                (investmentAccountId && investmentAccountId !== "") ? `investment:${investmentAccountId}` :
+                (creditCardAccountId && creditCardAccountId !== "") ? `credit:${creditCardAccountId}` :
                 "none"
               }
               onValueChange={(value) => {
