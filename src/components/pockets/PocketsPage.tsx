@@ -210,7 +210,10 @@ export function PocketsPage() {
       <CreatePocketDialog
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}
-        onSuccess={() => setShowCreateDialog(false)}
+        onSuccess={() => {
+          setShowCreateDialog(false);
+          queryClient.invalidateQueries({ queryKey: ["pockets"] });
+        }}
       />
 
       <EditPocketDialog
