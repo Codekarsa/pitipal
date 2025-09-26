@@ -100,12 +100,12 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
   const [fees, setFees] = useState("");
   const [investmentType, setInvestmentType] = useState<"buy" | "sell">("buy");
   
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
-    console.log('TransactionDialog useEffect triggered - open:', open, 'type:', type);
-    if (open) {
+    console.log('TransactionDialog useEffect triggered - open:', open, 'type:', type, 'user:', user?.id, 'authLoading:', authLoading);
+    if (open && !authLoading && user) {
       console.log('Dialog opened, fetching data...');
       fetchCategories();
       fetchPayees();
@@ -155,7 +155,7 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
       
       initializeData();
     }
-  }, [open, type, editingTransaction]);
+  }, [open, type, editingTransaction, authLoading, user]);
 
   // Auto-suggest "Credit Card Payment" category when credit card is selected
   useEffect(() => {
@@ -190,11 +190,13 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
   };
 
   const fetchPayees = async () => {
+    if (!user?.id) return;
+    
     try {
       const { data, error } = await supabase
         .from('payees')
         .select('name')
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -208,14 +210,16 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
   };
 
   const fetchAccounts = async () => {
+    if (!user?.id) return;
+    
     try {
-      console.log('Fetching accounts for user:', user?.id);
+      console.log('Fetching accounts for user:', user.id);
       
       // Fetch savings accounts
       const { data: savingsData, error: savingsError } = await supabase
         .from('savings_accounts')
         .select('id, account_name, institution_name, account_type')
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .eq('is_active', true);
 
       console.log('Savings accounts:', savingsData, 'Error:', savingsError);
@@ -224,7 +228,7 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
       const { data: investmentData, error: investmentError } = await supabase
         .from('investment_accounts')
         .select('id, account_name, institution_name, account_type')
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .eq('is_active', true);
 
       console.log('Investment accounts:', investmentData, 'Error:', investmentError);
@@ -233,7 +237,7 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
       const { data: creditCardData, error: creditCardError } = await supabase
         .from('credit_card_accounts')
         .select('id, account_name, institution_name, card_type')
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .eq('is_active', true);
 
       console.log('Credit card accounts:', creditCardData, 'Error:', creditCardError);
