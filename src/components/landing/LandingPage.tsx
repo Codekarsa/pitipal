@@ -72,21 +72,19 @@ export function LandingPage({ onGetStarted, onAbout }: LandingPageProps) {
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button onClick={onGetStarted} variant="hero" size="lg">
+              <Button onClick={onGetStarted} variant="hero" size="lg" className="group">
                 Start Your Financial Journey
-              </Button>
-              <Button variant="outline" size="lg">
-                View Demo
+                <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-smooth" />
               </Button>
             </div>
-            <div className="flex items-center space-x-8 text-sm text-muted-foreground">
-              <div className="flex items-center space-x-2">
-                <Shield className="h-4 w-4 text-success" />
-                <span>Bank-level Security</span>
+            <div className="flex items-center justify-center space-x-2 text-sm">
+              <div className="flex items-center space-x-1 px-3 py-1 rounded-full bg-gradient-primary/10 border border-primary/20">
+                <Brain className="h-3 w-3 text-primary animate-pulse" />
+                <span className="text-primary font-medium">AI-Powered</span>
               </div>
-              <div className="flex items-center space-x-2">
-                <Zap className="h-4 w-4 text-success" />
-                <span>Instant Setup</span>
+              <div className="flex items-center space-x-1 px-3 py-1 rounded-full bg-gradient-secondary/10 border border-secondary/20">
+                <Zap className="h-3 w-3 text-secondary" />
+                <span className="text-secondary font-medium">Smart Insights</span>
               </div>
             </div>
           </div>
