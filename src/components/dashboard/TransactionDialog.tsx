@@ -741,6 +741,7 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
           <div className="space-y-2">
             <Label htmlFor="account">Account</Label>
             <Select 
+              key={editingTransaction?.id || 'new'}
               value={
                 savingsAccountId ? `savings:${savingsAccountId}` :
                 investmentAccountId ? `investment:${investmentAccountId}` :
