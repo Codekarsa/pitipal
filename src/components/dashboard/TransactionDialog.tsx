@@ -84,9 +84,9 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [payees, setPayees] = useState<string[]>([]);
-  const [savingsAccountId, setSavingsAccountId] = useState("");
-  const [investmentAccountId, setInvestmentAccountId] = useState("");
-  const [creditCardAccountId, setCreditCardAccountId] = useState("");
+  const [savingsAccountId, setSavingsAccountId] = useState<string | undefined>("");
+  const [investmentAccountId, setInvestmentAccountId] = useState<string | undefined>("");
+  const [creditCardAccountId, setCreditCardAccountId] = useState<string | undefined>("");
   const [savingsAccounts, setSavingsAccounts] = useState<SavingsAccount[]>([]);
   const [investmentAccounts, setInvestmentAccounts] = useState<InvestmentAccount[]>([]);
   const [creditCardAccounts, setCreditCardAccounts] = useState<CreditCardAccount[]>([]);
@@ -125,9 +125,9 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
           setDescription(editingTransaction.description || "");
           setDate(editingTransaction.transaction_date);
           setPocketId(editingTransaction.pocket_id || "");
-          setSavingsAccountId(editingTransaction.savings_account_id || "");
-          setInvestmentAccountId(editingTransaction.investment_account_id || "");
-          setCreditCardAccountId(editingTransaction.credit_card_account_id || "");
+          setSavingsAccountId(editingTransaction.savings_account_id || undefined);
+          setInvestmentAccountId(editingTransaction.investment_account_id || undefined);
+          setCreditCardAccountId(editingTransaction.credit_card_account_id || undefined);
           
           // Handle payee for editing
           if (editingTransaction.payee_id) {
@@ -753,37 +753,37 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
             <Select 
               key={editingTransaction?.id || 'new'}
               value={
-                (savingsAccountId && savingsAccountId !== "") ? `savings:${savingsAccountId}` :
-                (investmentAccountId && investmentAccountId !== "") ? `investment:${investmentAccountId}` :
-                (creditCardAccountId && creditCardAccountId !== "") ? `credit:${creditCardAccountId}` :
-                "none"
+                savingsAccountId ? `savings:${savingsAccountId}` :
+                investmentAccountId ? `investment:${investmentAccountId}` :
+                creditCardAccountId ? `credit:${creditCardAccountId}` :
+                undefined
               }
               onValueChange={(value) => {
                 console.log('Account selection changed to:', value);
                 if (value === "none") {
-                  setSavingsAccountId("");
-                  setInvestmentAccountId("");
-                  setCreditCardAccountId("");
+                  setSavingsAccountId(undefined);
+                  setInvestmentAccountId(undefined);
+                  setCreditCardAccountId(undefined);
                   return;
                 }
                 const [accountType, accountId] = value.split(':');
                 console.log('Parsed account type:', accountType, 'ID:', accountId);
                 if (accountType === 'savings') {
                   setSavingsAccountId(accountId);
-                  setInvestmentAccountId("");
-                  setCreditCardAccountId("");
+                  setInvestmentAccountId(undefined);
+                  setCreditCardAccountId(undefined);
                 } else if (accountType === 'investment') {
                   setInvestmentAccountId(accountId);
-                  setSavingsAccountId("");
-                  setCreditCardAccountId("");
+                  setSavingsAccountId(undefined);
+                  setCreditCardAccountId(undefined);
                 } else if (accountType === 'credit') {
                   setCreditCardAccountId(accountId);
-                  setSavingsAccountId("");
-                  setInvestmentAccountId("");
+                  setSavingsAccountId(undefined);
+                  setInvestmentAccountId(undefined);
                 } else {
-                  setSavingsAccountId("");
-                  setInvestmentAccountId("");
-                  setCreditCardAccountId("");
+                  setSavingsAccountId(undefined);
+                  setInvestmentAccountId(undefined);
+                  setCreditCardAccountId(undefined);
                 }
               }}
             >
