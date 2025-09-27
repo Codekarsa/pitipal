@@ -246,22 +246,23 @@ export function TransactionsPage() {
     }
   }, [user, pocketId, typeFilter, categoryFilter, accountFilter, sortBy, searchTerm, accounts, toast]);
 
+  // Initial data loading effect
   useEffect(() => {
     if (user) {
-      fetchTransactions();
       fetchUserProfile();
       fetchAccounts();
       if (pocketId) {
         fetchPocketName();
       }
     }
-  }, [user, pocketId, fetchTransactions, fetchUserProfile, fetchAccounts, fetchPocketName]);
+  }, [user, pocketId, fetchUserProfile, fetchAccounts, fetchPocketName]);
 
+  // Transactions loading effect - depends on filters and accounts
   useEffect(() => {
-    if (user) {
+    if (user && accounts.length >= 0) { // accounts.length >= 0 to ensure it runs even when accounts is empty
       fetchTransactions();
     }
-  }, [user, fetchTransactions]);
+  }, [user, typeFilter, categoryFilter, accountFilter, sortBy, searchTerm, accounts, fetchTransactions]);
 
   const getUniqueCategories = () => {
     const categories = [...new Set(transactions.map(t => t.category))];
