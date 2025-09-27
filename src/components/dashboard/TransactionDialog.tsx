@@ -109,61 +109,57 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
       console.log('Dialog opened, fetching data...');
       fetchCategories();
       fetchPayees();
-      
-      // Fetch accounts first, then populate transaction data
-      const initializeData = async () => {
-        await fetchAccounts();
-        if (type === 'investment') {
-          await fetchAssets();
-        }
-
-        // If editing, populate fields after accounts are loaded
-        if (editingTransaction) {
-          console.log('Setting transaction fields for editing:', editingTransaction);
-          setType(editingTransaction.type);
-          setAmount(editingTransaction.amount.toString());
-          setCategory(editingTransaction.category);
-          setDescription(editingTransaction.description || "");
-          setDate(editingTransaction.transaction_date);
-          setPocketId(editingTransaction.pocket_id || "");
-
-          // Set account IDs - these will now work because accounts are loaded
-          console.log('Setting account IDs:', {
-            savings: editingTransaction.savings_account_id,
-            investment: editingTransaction.investment_account_id,
-            credit: editingTransaction.credit_card_account_id
-          });
-          setSavingsAccountId(editingTransaction.savings_account_id || undefined);
-          setInvestmentAccountId(editingTransaction.investment_account_id || undefined);
-          setCreditCardAccountId(editingTransaction.credit_card_account_id || undefined);
-
-          // Handle payee for editing
-          if (editingTransaction.payee_id) {
-            // Fetch payee name
-            const fetchPayeeName = async () => {
-              try {
-                const { data, error } = await supabase
-                  .from('payees')
-                  .select('name')
-                  .eq('id', editingTransaction.payee_id)
-                  .single();
-
-                if (error) throw error;
-                setPayee(data?.name || "");
-              } catch (error) {
-                console.error('Error fetching payee name:', error);
-              }
-            };
-            fetchPayeeName();
-          } else {
-            setPayee("");
-          }
-        }
-      };
-      
-      initializeData();
+      fetchAccounts();
+      if (type === 'investment') {
+        fetchAssets();
+      }
     }
-  }, [open, type, editingTransaction, authLoading, user]);
+  }, [open, type, authLoading, user]);
+
+  // Separate effect for editing transaction data population - only runs once when dialog opens with editing data
+  useEffect(() => {
+    if (open && editingTransaction && savingsAccounts.length >= 0 && investmentAccounts.length >= 0 && creditCardAccounts.length >= 0) {
+      console.log('Setting transaction fields for editing:', editingTransaction);
+      setType(editingTransaction.type);
+      setAmount(editingTransaction.amount.toString());
+      setCategory(editingTransaction.category);
+      setDescription(editingTransaction.description || "");
+      setDate(editingTransaction.transaction_date);
+      setPocketId(editingTransaction.pocket_id || "");
+
+      // Set account IDs - these will now work because accounts are loaded
+      console.log('Setting account IDs:', {
+        savings: editingTransaction.savings_account_id,
+        investment: editingTransaction.investment_account_id,
+        credit: editingTransaction.credit_card_account_id
+      });
+      setSavingsAccountId(editingTransaction.savings_account_id || undefined);
+      setInvestmentAccountId(editingTransaction.investment_account_id || undefined);
+      setCreditCardAccountId(editingTransaction.credit_card_account_id || undefined);
+
+      // Handle payee for editing
+      if (editingTransaction.payee_id) {
+        // Fetch payee name
+        const fetchPayeeName = async () => {
+          try {
+            const { data, error } = await supabase
+              .from('payees')
+              .select('name')
+              .eq('id', editingTransaction.payee_id)
+              .single();
+
+            if (error) throw error;
+            setPayee(data?.name || "");
+          } catch (error) {
+            console.error('Error fetching payee name:', error);
+          }
+        };
+        fetchPayeeName();
+      } else {
+        setPayee("");
+      }
+    }
+  }, [open, editingTransaction?.id, savingsAccounts.length, investmentAccounts.length, creditCardAccounts.length]);
 
   // Auto-suggest "Credit Card Payment" category when credit card is selected
   useEffect(() => {
@@ -759,7 +755,7 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
           <div className="space-y-2">
             <Label htmlFor="account">Account</Label>
             <Select
-              key={`${editingTransaction?.id || 'new'}-${savingsAccountId}-${investmentAccountId}-${creditCardAccountId}`}
+              key={editingTransaction?.id || 'new'}
               value={
                 savingsAccountId ? `savings:${savingsAccountId}` :
                 investmentAccountId ? `investment:${investmentAccountId}` :
