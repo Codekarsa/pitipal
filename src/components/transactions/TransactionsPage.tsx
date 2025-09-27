@@ -63,6 +63,7 @@ export function TransactionsPage() {
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [transactionDialogOpen, setTransactionDialogOpen] = useState(false);
   const [deletingTransactionId, setDeletingTransactionId] = useState<string | null>(null);
+  const [pockets, setPockets] = useState<any[]>([]);
 
   const fetchUserProfile = useCallback(async () => {
     try {
@@ -146,6 +147,23 @@ export function TransactionsPage() {
       setTotalAccountBalance(totalBalance);
     } catch (error) {
       console.error('Error fetching accounts:', error);
+    }
+  }, [user]);
+
+  const fetchPockets = useCallback(async () => {
+    if (!user?.id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('budget_pockets')
+        .select('id, name, color, pocket_type')
+        .eq('user_id', user.id)
+        .order('name');
+
+      if (error) throw error;
+      setPockets(data || []);
+    } catch (error) {
+      console.error('Error fetching pockets:', error);
     }
   }, [user]);
 
@@ -251,11 +269,12 @@ export function TransactionsPage() {
     if (user) {
       fetchUserProfile();
       fetchAccounts();
+      fetchPockets();
       if (pocketId) {
         fetchPocketName();
       }
     }
-  }, [user, pocketId, fetchUserProfile, fetchAccounts, fetchPocketName]);
+  }, [user, pocketId, fetchUserProfile, fetchAccounts, fetchPockets, fetchPocketName]);
 
   // Transactions loading effect - depends on filters and accounts
   useEffect(() => {
@@ -696,7 +715,7 @@ export function TransactionsPage() {
         open={transactionDialogOpen}
         onOpenChange={setTransactionDialogOpen}
         onSuccess={handleTransactionSuccess}
-        pockets={[]}
+        pockets={pockets}
         editingTransaction={editingTransaction}
       />
     </div>
