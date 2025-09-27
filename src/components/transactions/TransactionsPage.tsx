@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/components/auth/useAuth";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -64,18 +64,7 @@ export function TransactionsPage() {
   const [transactionDialogOpen, setTransactionDialogOpen] = useState(false);
   const [deletingTransactionId, setDeletingTransactionId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (user) {
-      fetchTransactions();
-      fetchUserProfile();
-      fetchAccounts();
-      if (pocketId) {
-        fetchPocketName();
-      }
-    }
-  }, [user, pocketId]);
-
-  const fetchUserProfile = async () => {
+  const fetchUserProfile = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -90,9 +79,9 @@ export function TransactionsPage() {
     } catch (error) {
       console.error('Error fetching user profile:', error);
     }
-  };
+  }, [user]);
 
-  const fetchPocketName = async () => {
+  const fetchPocketName = useCallback(async () => {
     if (!pocketId) return;
     try {
       const { data, error } = await supabase
@@ -109,9 +98,9 @@ export function TransactionsPage() {
     } catch (error) {
       console.error('Error fetching pocket name:', error);
     }
-  };
+  }, [pocketId, user]);
 
-  const fetchAccounts = async () => {
+  const fetchAccounts = useCallback(async () => {
     try {
       // Fetch savings accounts
       const { data: savingsData, error: savingsError } = await supabase
@@ -158,9 +147,9 @@ export function TransactionsPage() {
     } catch (error) {
       console.error('Error fetching accounts:', error);
     }
-  };
+  }, [user]);
 
-  const fetchTransactions = async () => {
+  const fetchTransactions = useCallback(async () => {
     try {
       setLoading(true);
       let query = supabase
@@ -255,13 +244,24 @@ export function TransactionsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, pocketId, typeFilter, categoryFilter, accountFilter, sortBy, searchTerm, accounts, toast]);
+
+  useEffect(() => {
+    if (user) {
+      fetchTransactions();
+      fetchUserProfile();
+      fetchAccounts();
+      if (pocketId) {
+        fetchPocketName();
+      }
+    }
+  }, [user, pocketId, fetchTransactions, fetchUserProfile, fetchAccounts, fetchPocketName]);
 
   useEffect(() => {
     if (user) {
       fetchTransactions();
     }
-  }, [typeFilter, categoryFilter, accountFilter, sortBy, searchTerm]);
+  }, [user, fetchTransactions]);
 
   const getUniqueCategories = () => {
     const categories = [...new Set(transactions.map(t => t.category))];
@@ -327,10 +327,10 @@ export function TransactionsPage() {
       // Refresh transactions
       fetchTransactions();
       fetchAccounts();
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: "Error deleting transaction",
-        description: error.message,
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
         variant: "destructive",
       });
     }
