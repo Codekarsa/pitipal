@@ -116,19 +116,27 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
         if (type === 'investment') {
           await fetchAssets();
         }
-        
+
         // If editing, populate fields after accounts are loaded
         if (editingTransaction) {
+          console.log('Setting transaction fields for editing:', editingTransaction);
           setType(editingTransaction.type);
           setAmount(editingTransaction.amount.toString());
           setCategory(editingTransaction.category);
           setDescription(editingTransaction.description || "");
           setDate(editingTransaction.transaction_date);
           setPocketId(editingTransaction.pocket_id || "");
+
+          // Set account IDs - these will now work because accounts are loaded
+          console.log('Setting account IDs:', {
+            savings: editingTransaction.savings_account_id,
+            investment: editingTransaction.investment_account_id,
+            credit: editingTransaction.credit_card_account_id
+          });
           setSavingsAccountId(editingTransaction.savings_account_id || undefined);
           setInvestmentAccountId(editingTransaction.investment_account_id || undefined);
           setCreditCardAccountId(editingTransaction.credit_card_account_id || undefined);
-          
+
           // Handle payee for editing
           if (editingTransaction.payee_id) {
             // Fetch payee name
@@ -139,7 +147,7 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
                   .select('name')
                   .eq('id', editingTransaction.payee_id)
                   .single();
-                
+
                 if (error) throw error;
                 setPayee(data?.name || "");
               } catch (error) {
@@ -750,8 +758,8 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
 
           <div className="space-y-2">
             <Label htmlFor="account">Account</Label>
-            <Select 
-              key={editingTransaction?.id || 'new'}
+            <Select
+              key={`${editingTransaction?.id || 'new'}-${savingsAccountId}-${investmentAccountId}-${creditCardAccountId}`}
               value={
                 savingsAccountId ? `savings:${savingsAccountId}` :
                 investmentAccountId ? `investment:${investmentAccountId}` :
