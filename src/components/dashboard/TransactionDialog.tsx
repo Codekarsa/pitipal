@@ -103,6 +103,88 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
 
+  // Helper function to handle credit card balance changes when editing transactions
+  const handleCreditCardBalanceForEdit = async (
+    oldTransaction: any,
+    newTransactionData: {
+      amount: number;
+      type: string;
+      category: string;
+      creditCardAccountId?: string;
+      oldCreditCardAccountId?: string;
+    }
+  ) => {
+    try {
+      // Reverse the old transaction's credit card balance impact
+      if (oldTransaction.credit_card_account_id) {
+        const { data: oldCardData, error: oldCardError } = await supabase
+          .from('credit_card_accounts')
+          .select('current_balance')
+          .eq('id', oldTransaction.credit_card_account_id)
+          .single();
+
+        if (!oldCardError && oldCardData) {
+          let oldBalanceAdjustment = 0;
+
+          if (oldTransaction.category === 'Credit Card Payment') {
+            // Reverse old payment: add back the payment amount
+            oldBalanceAdjustment = oldTransaction.amount;
+          } else if (oldTransaction.type === 'expense') {
+            // Reverse old expense: subtract the expense amount
+            oldBalanceAdjustment = -oldTransaction.amount;
+          }
+
+          if (oldBalanceAdjustment !== 0) {
+            const newOldBalance = oldCardData.current_balance + oldBalanceAdjustment;
+
+            await supabase
+              .from('credit_card_accounts')
+              .update({
+                current_balance: newOldBalance,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', oldTransaction.credit_card_account_id);
+          }
+        }
+      }
+
+      // Apply the new transaction's credit card balance impact
+      if (newTransactionData.creditCardAccountId) {
+        const { data: newCardData, error: newCardError } = await supabase
+          .from('credit_card_accounts')
+          .select('current_balance')
+          .eq('id', newTransactionData.creditCardAccountId)
+          .single();
+
+        if (!newCardError && newCardData) {
+          let newBalanceAdjustment = 0;
+
+          if (newTransactionData.category === 'Credit Card Payment') {
+            // New payment: subtract the payment amount
+            newBalanceAdjustment = -newTransactionData.amount;
+          } else if (newTransactionData.type === 'expense') {
+            // New expense: add the expense amount
+            newBalanceAdjustment = newTransactionData.amount;
+          }
+
+          if (newBalanceAdjustment !== 0) {
+            const newBalance = newCardData.current_balance + newBalanceAdjustment;
+
+            await supabase
+              .from('credit_card_accounts')
+              .update({
+                current_balance: newBalance,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', newTransactionData.creditCardAccountId);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error handling credit card balance for edit:', error);
+    }
+  };
+
   useEffect(() => {
     console.log('TransactionDialog useEffect triggered - open:', open, 'type:', type, 'user:', user?.id, 'authLoading:', authLoading);
     if (open && !authLoading && user) {
@@ -327,6 +409,15 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
       }
 
       if (editingTransaction) {
+        // Handle credit card balance changes for edited transactions
+        await handleCreditCardBalanceForEdit(editingTransaction, {
+          amount: totalAmount,
+          type: type,
+          category: category,
+          creditCardAccountId: creditCardAccountId,
+          oldCreditCardAccountId: editingTransaction.credit_card_account_id
+        });
+
         // Update existing transaction
         await withRetry(async () => {
           const result = await supabase
@@ -455,8 +546,8 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
             
             const { error: updateError } = await supabase
               .from('credit_card_accounts')
-              .update({ 
-                current_balance: Math.max(0, newBalance), // Don't allow negative balances
+              .update({
+                current_balance: newBalance, // Allow negative balances (credits)
                 updated_at: new Date().toISOString()
               })
               .eq('id', creditCardAccountId);
