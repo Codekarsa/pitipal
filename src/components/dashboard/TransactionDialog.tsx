@@ -529,8 +529,9 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
         }
       }
 
-      // Update credit card balance if credit card payment
-      if (creditCardAccountId && category === 'Credit Card Payment') {
+      // Update credit card balance if credit card payment (only for new transactions)
+      // Only process if a credit card account is selected
+      if (!editingTransaction && creditCardAccountId && category === 'Credit Card Payment') {
         try {
           const { data: cardData, error: fetchError } = await supabase
             .from('credit_card_accounts')
@@ -559,7 +560,7 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
         } catch (error) {
           console.error('Error processing credit card payment:', error);
         }
-      } else if (creditCardAccountId && type === 'expense') {
+      } else if (!editingTransaction && creditCardAccountId && type === 'expense') {
         // Regular purchases on credit card increase the balance
         try {
           const { data: cardData, error: fetchError } = await supabase
