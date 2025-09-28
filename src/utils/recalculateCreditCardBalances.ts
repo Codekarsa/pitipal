@@ -16,6 +16,21 @@ interface Transaction {
 
 export async function recalculateCreditCardBalances(userId: string, dryRun: boolean = true) {
   try {
+    // Get user's currency preference
+    const { data: userProfile } = await supabase
+      .from('user_profiles')
+      .select('currency')
+      .eq('id', userId)
+      .single();
+
+    const currency = userProfile?.currency || 'USD';
+    const formatCurrency = (amount: number) => {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: currency,
+      }).format(amount);
+    };
+
     console.log(`🔄 Starting credit card balance recalculation for user: ${userId}`);
     console.log(`📊 Mode: ${dryRun ? 'DRY RUN (no changes will be made)' : 'LIVE UPDATE'}`);
 
@@ -40,7 +55,7 @@ export async function recalculateCreditCardBalances(userId: string, dryRun: bool
     // 2. For each credit card account, calculate balance from transactions
     for (const account of creditCardAccounts) {
       console.log(`\n💳 Processing: ${account.account_name} (ID: ${account.id})`);
-      console.log(`📊 Current stored balance: $${account.current_balance.toLocaleString()}`);
+      console.log(`📊 Current stored balance: ${formatCurrency(account.current_balance)}`);
 
       // Fetch all transactions for this credit card
       const { data: transactions, error: transactionsError } = await supabase
@@ -52,21 +67,27 @@ export async function recalculateCreditCardBalances(userId: string, dryRun: bool
       if (transactionsError) throw transactionsError;
 
       // Calculate balance from transactions
+      // Logic: Only transactions linked to this credit card account count
       let calculatedBalance = 0;
 
-      transactions?.forEach((transaction: Transaction) => {
-        if (transaction.category === 'Credit Card Payment') {
-          // Credit card payments reduce the balance
-          calculatedBalance -= transaction.amount;
-        } else if (transaction.type === 'expense') {
-          // Regular expenses on credit card increase the balance
-          calculatedBalance += transaction.amount;
-        }
-        // Note: Income transactions on credit cards are rare but would reduce balance
-      });
+      if (!transactions || transactions.length === 0) {
+        console.log(`   ℹ️  No transactions linked to this credit card account`);
+      } else {
+        transactions.forEach((transaction: Transaction) => {
+          if (transaction.category === 'Credit Card Payment') {
+            // Payments reduce the debt
+            calculatedBalance -= transaction.amount;
+            console.log(`   💳 Payment: -${transaction.amount} (Balance: ${calculatedBalance})`);
+          } else {
+            // All other transactions (purchases) increase the debt
+            calculatedBalance += transaction.amount;
+            console.log(`   🛒 Purchase: +${transaction.amount} (Balance: ${calculatedBalance})`);
+          }
+        });
+      }
 
-      console.log(`🧮 Calculated balance from ${transactions?.length || 0} transactions: $${calculatedBalance.toLocaleString()}`);
-      console.log(`📊 Difference: $${(account.current_balance - calculatedBalance).toLocaleString()}`);
+      console.log(`🧮 Calculated balance from ${transactions?.length || 0} transactions: ${formatCurrency(calculatedBalance)}`);
+      console.log(`📊 Difference: ${formatCurrency(account.current_balance - calculatedBalance)}`);
 
       const result = {
         accountId: account.id,
@@ -81,7 +102,7 @@ export async function recalculateCreditCardBalances(userId: string, dryRun: bool
 
       // 3. Update the balance if not in dry run mode
       if (!dryRun && Math.abs(result.difference) > 0.01) { // Only update if there's a meaningful difference
-        console.log(`💾 Updating balance from $${account.current_balance} to $${calculatedBalance}`);
+        console.log(`💾 Updating balance from ${formatCurrency(account.current_balance)} to ${formatCurrency(calculatedBalance)}`);
 
         const { error: updateError } = await supabase
           .from('credit_card_accounts')
@@ -101,7 +122,7 @@ export async function recalculateCreditCardBalances(userId: string, dryRun: bool
           result.updateStatus = 'success';
         }
       } else if (!dryRun) {
-        console.log(`ℹ️ No update needed for ${account.account_name} (difference < $0.01)`);
+        console.log(`ℹ️ No update needed for ${account.account_name} (difference < ${formatCurrency(0.01)})`);
         result.updateStatus = 'skipped';
       }
     }
@@ -114,9 +135,9 @@ export async function recalculateCreditCardBalances(userId: string, dryRun: bool
     console.log(`\n📋 SUMMARY REPORT`);
     console.log(`=================`);
     console.log(`🏦 Total accounts processed: ${results.length}`);
-    console.log(`💰 Total stored balance: $${totalStoredBalance.toLocaleString()}`);
-    console.log(`🧮 Total calculated balance: $${totalCalculatedBalance.toLocaleString()}`);
-    console.log(`📊 Total difference: $${totalDifference.toLocaleString()}`);
+    console.log(`💰 Total stored balance: ${formatCurrency(totalStoredBalance)}`);
+    console.log(`🧮 Total calculated balance: ${formatCurrency(totalCalculatedBalance)}`);
+    console.log(`📊 Total difference: ${formatCurrency(totalDifference)}`);
 
     if (dryRun) {
       console.log(`\n⚠️ This was a DRY RUN - no changes were made to the database`);
