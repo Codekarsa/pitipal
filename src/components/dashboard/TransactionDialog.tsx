@@ -243,9 +243,9 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
     }
   }, [open, editingTransaction?.id, savingsAccounts.length, investmentAccounts.length, creditCardAccounts.length]);
 
-  // Auto-suggest "Credit Card Payment" category when credit card is selected
+  // Auto-suggest "Credit Card Payment" category when credit card is first selected
   useEffect(() => {
-    if (creditCardAccountId && type === "expense" && !editingTransaction) {
+    if (creditCardAccountId && type === "expense" && !editingTransaction && !category) {
       setCategory("Credit Card Payment");
     }
   }, [creditCardAccountId, type, editingTransaction]);
