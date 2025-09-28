@@ -10,6 +10,18 @@ import { CreatePocketDialog } from "@/components/dashboard/CreatePocketDialog";
 import { EditPocketDialog } from "@/components/dashboard/EditPocketDialog";
 import { useToast } from "@/hooks/use-toast";
 
+interface BudgetPocket {
+  id: string;
+  name: string;
+  description: string | null;
+  budget_amount: number;
+  budget_type: string;
+  pocket_type: string;
+  color: string;
+  is_template: boolean;
+  auto_renew: boolean;
+}
+
 export function PocketsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -17,7 +29,7 @@ export function PocketsPage() {
   const navigate = useNavigate();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
-  const [selectedPocket, setSelectedPocket] = useState(null);
+  const [selectedPocket, setSelectedPocket] = useState<BudgetPocket | null>(null);
 
   // Fetch user profile for currency preference
   const { data: profile } = useQuery({
@@ -124,7 +136,7 @@ export function PocketsPage() {
     }
   };
 
-  const handleEditPocket = (pocket: any) => {
+  const handleEditPocket = (pocket: BudgetPocket) => {
     setSelectedPocket(pocket);
     setShowEditDialog(true);
   };

@@ -17,6 +17,7 @@ interface BudgetPocket {
   description: string | null;
   budget_amount: number;
   budget_type: string;
+  pocket_type: string;
   color: string;
   is_template: boolean;
   auto_renew: boolean;
@@ -55,6 +56,7 @@ export function EditPocketDialog({ open, onOpenChange, onSuccess, pocket }: Edit
   const [description, setDescription] = useState("");
   const [budgetAmount, setBudgetAmount] = useState("");
   const [budgetType, setBudgetType] = useState("regular_monthly");
+  const [pocketType, setPocketType] = useState<"expense" | "income" | "investment">("expense");
   const [color, setColor] = useState("#8b5cf6");
   const [isTemplate, setIsTemplate] = useState(false);
   const [autoRenew, setAutoRenew] = useState(true);
@@ -73,6 +75,7 @@ export function EditPocketDialog({ open, onOpenChange, onSuccess, pocket }: Edit
       setDescription(pocket.description || "");
       setBudgetAmount(pocket.budget_amount.toString());
       setBudgetType(pocket.budget_type);
+      setPocketType((pocket.pocket_type as "expense" | "income" | "investment") || "expense");
       setColor(pocket.color);
       setIsTemplate(pocket.is_template);
       setAutoRenew(pocket.auto_renew);
@@ -98,6 +101,7 @@ export function EditPocketDialog({ open, onOpenChange, onSuccess, pocket }: Edit
       setDescription("");
       setBudgetAmount("");
       setBudgetType("regular_monthly");
+      setPocketType("expense");
       setColor("#8b5cf6");
       setIsTemplate(false);
       setAutoRenew(true);
@@ -121,6 +125,7 @@ export function EditPocketDialog({ open, onOpenChange, onSuccess, pocket }: Edit
           description: description.trim() || null,
           budget_amount: parseFloat(budgetAmount) || 0,
           budget_type: budgetType,
+          pocket_type: pocketType,
           color: color,
           is_template: isTemplate,
           auto_renew: autoRenew,
@@ -186,6 +191,44 @@ export function EditPocketDialog({ open, onOpenChange, onSuccess, pocket }: Edit
               maxLength={200}
               rows={2}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="pocketType">Transaction Type *</Label>
+            <Select value={pocketType} onValueChange={(value: "expense" | "income" | "investment") => setPocketType(value)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="expense">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-red-500">📤</span>
+                    <div>
+                      <div className="font-medium">Expense</div>
+                      <div className="text-xs text-muted-foreground">For spending and outgoing money</div>
+                    </div>
+                  </div>
+                </SelectItem>
+                <SelectItem value="income">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-green-500">📥</span>
+                    <div>
+                      <div className="font-medium">Income</div>
+                      <div className="text-xs text-muted-foreground">For earnings and incoming money</div>
+                    </div>
+                  </div>
+                </SelectItem>
+                <SelectItem value="investment">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-blue-500">📈</span>
+                    <div>
+                      <div className="font-medium">Investment</div>
+                      <div className="text-xs text-muted-foreground">For investment transactions and portfolio tracking</div>
+                    </div>
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
