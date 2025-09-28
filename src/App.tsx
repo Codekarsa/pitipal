@@ -20,6 +20,8 @@ import { CreditCardBalanceDebug } from "@/components/debug/CreditCardBalanceDebu
 import { supabase } from "@/integrations/supabase/client";
 import { handleError } from "@/lib/error-utils";
 import NotFound from "./pages/NotFound";
+import "@/utils/debugCreditCardCalculation";
+import "@/utils/quickCreditCardDebug";
 
 const queryClient = new QueryClient();
 

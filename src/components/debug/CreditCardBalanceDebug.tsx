@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { runCreditCardBalanceRecalculation } from "@/utils/recalculateCreditCardBalances";
 import { RefreshCw, AlertTriangle, CheckCircle, Info } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface RecalculationResult {
   success: boolean;
@@ -32,6 +34,23 @@ export function CreditCardBalanceDebug() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<RecalculationResult | null>(null);
 
+  const { data: userProfile } = useQuery({
+    queryKey: ['userProfile'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('currency')
+        .eq('id', user.id)
+        .single();
+
+      if (error) throw error;
+      return data;
+    }
+  });
+
   const handleRecalculate = async (dryRun: boolean) => {
     setLoading(true);
     try {
@@ -48,9 +67,10 @@ export function CreditCardBalanceDebug() {
   };
 
   const formatCurrency = (amount: number) => {
+    const currency = userProfile?.currency || 'USD';
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD',
+      currency: currency,
     }).format(amount);
   };
 
