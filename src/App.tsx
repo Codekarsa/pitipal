@@ -16,6 +16,7 @@ import { SettingsPage } from "@/components/settings/SettingsPage";
 import { TransactionsPage } from "@/components/transactions/TransactionsPage";
 import { TransactionDialog } from "@/components/dashboard/TransactionDialog";
 import { CreatePocketDialog } from "@/components/dashboard/CreatePocketDialog";
+import { CreditCardBalanceDebug } from "@/components/debug/CreditCardBalanceDebug";
 import { supabase } from "@/integrations/supabase/client";
 import { handleError } from "@/lib/error-utils";
 import NotFound from "./pages/NotFound";
@@ -203,7 +204,27 @@ function AppContent() {
                 pockets={pockets}
               />
             </DashboardLayout>
-          } 
+          }
+        />
+        <Route
+          path="/debug/credit-cards"
+          element={
+            <DashboardLayout
+              onAddTransaction={() => setShowAddTransaction(true)}
+              onAddPocket={() => navigate("/pockets")}
+            >
+              <CreditCardBalanceDebug />
+              <TransactionDialog
+                open={showAddTransaction}
+                onOpenChange={setShowAddTransaction}
+                onSuccess={() => {
+                  setShowAddTransaction(false);
+                  handleRefreshPockets();
+                }}
+                pockets={pockets}
+              />
+            </DashboardLayout>
+          }
         />
         <Route path="*" element={<NotFound />} />
       </Routes>
