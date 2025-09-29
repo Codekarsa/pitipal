@@ -498,36 +498,8 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
         if (investmentError) throw investmentError;
       }
 
-      // Update pocket current amount if pocket is selected
-      if (pocketId) {
-        // Get current pocket amount first
-        const { data: pocketData, error: fetchError } = await supabase
-          .from('budget_pockets')
-          .select('current_amount')
-          .eq('id', pocketId)
-          .single();
-
-        if (fetchError) {
-          console.error('Error fetching pocket data:', fetchError);
-        } else {
-          // For expenses, add to current_amount (money spent from budget)
-          // For income, subtract from current_amount (adding money back to budget)
-          const amountChange = type === 'expense' ? parseFloat(amount) : -parseFloat(amount);
-          const newAmount = (pocketData.current_amount || 0) + amountChange;
-          
-          const { error: updateError } = await supabase
-            .from('budget_pockets')
-            .update({ 
-              current_amount: newAmount,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', pocketId);
-
-          if (updateError) {
-            console.error('Error updating pocket amount:', updateError);
-          }
-        }
-      }
+      // Note: Pocket spending is now calculated dynamically from transactions
+      // No need to manually update current_amount - this prevents sync issues
 
       // Update credit card balance if credit card payment (only for new transactions)
       // Only process if a credit card account is selected

@@ -17,13 +17,13 @@ import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { formatCurrency, formatNumber } from "@/lib/utils";
 import { format } from "date-fns";
+import { calculatePocketSpending, PocketSpending } from "@/utils/pocketCalculations";
 
 interface BudgetPocket {
   id: string;
   name: string;
   description: string | null;
   budget_amount: number;
-  current_amount: number;
   cycle_type: string;
   color: string;
   is_featured: boolean;
@@ -37,13 +37,12 @@ interface BudgetPocket {
 }
 
 export function Dashboard() {
-  const [pockets, setPockets] = useState<BudgetPocket[]>([]);
+  const [pockets, setPockets] = useState<PocketSpending[]>([]);
   const [showCreatePocket, setShowCreatePocket] = useState(false);
   const [showAddTransaction, setShowAddTransaction] = useState(false);
   const [showTemplateManagement, setShowTemplateManagement] = useState(false);
   const [showEditPocket, setShowEditPocket] = useState(false);
   const [selectedPocketForEdit, setSelectedPocketForEdit] = useState<BudgetPocket | null>(null);
-  const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState<string>(format(new Date(), "yyyy-MM"));
   const { user } = useAuth();
   const { toast } = useToast();
@@ -82,34 +81,20 @@ export function Dashboard() {
 
   useEffect(() => {
     if (user) {
-      fetchPockets();
+      queryClient.invalidateQueries({ queryKey: ['pocketSpending'] });
     }
   }, [user, selectedMonth]);
 
-  const fetchPockets = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('budget_pockets')
-        .select('*')
-        .eq('user_id', user?.id)
-        .eq('is_active', true)
-        .eq('is_template', false)
-        .eq('month_year', selectedMonth)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setPockets(data || []);
-    } catch (error: any) {
+  // Handle errors from React Query
+  useEffect(() => {
+    if (error) {
       toast({
         title: "Error loading pockets",
-        description: error.message,
+        description: "Failed to load pocket data. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [error, toast]);
 
   const handleEditPocket = (pocket: BudgetPocket) => {
     setSelectedPocketForEdit(pocket);
@@ -146,7 +131,7 @@ export function Dashboard() {
       if (error) throw error;
 
       // Refresh the pockets data
-      fetchPockets();
+      queryClient.invalidateQueries({ queryKey: ['pocketSpending'] });
       
       toast({
         title: "Pocket deleted",
@@ -184,7 +169,7 @@ export function Dashboard() {
 
       if (error) throw error;
 
-      fetchPockets();
+      queryClient.invalidateQueries({ queryKey: ['pocketSpending'] });
       
       toast({
         title: pocket.is_featured ? "Pocket unfeatured" : "Pocket featured",
@@ -202,7 +187,7 @@ export function Dashboard() {
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
