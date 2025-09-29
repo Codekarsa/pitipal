@@ -10,15 +10,19 @@ import { formatCurrency, formatNumber } from "@/lib/utils";
 
 interface PocketCardProps {
   pocket: {
-    id: string;
-    name: string;
+    id?: string;
+    pocketId?: string;
+    name?: string;
+    pocketName?: string;
     description?: string;
-    budget_amount: number;
-    current_amount: number;
-    cycle_type: string;
-    budget_type: string;
-    color: string;
-    is_featured: boolean;
+    budget_amount?: number;
+    budgetAmount?: number;
+    current_amount?: number;
+    currentAmount?: number;
+    cycle_type?: string;
+    budget_type?: string;
+    color?: string;
+    is_featured?: boolean;
   };
   currency?: string;
   onEdit?: () => void;
@@ -42,7 +46,16 @@ export function PocketCard({
     return null;
   }
 
-  const { id, name, description, budget_amount, current_amount, cycle_type, budget_type, color, is_featured } = pocket;
+  // Support both old and new data structures
+  const id = pocket.id || pocket.pocketId || '';
+  const name = pocket.name || pocket.pocketName || '';
+  const description = pocket.description;
+  const budget_amount = pocket.budget_amount || pocket.budgetAmount || 0;
+  const current_amount = pocket.current_amount || pocket.currentAmount || 0;
+  const cycle_type = pocket.cycle_type;
+  const budget_type = pocket.budget_type;
+  const color = pocket.color || '#3B82F6';
+  const is_featured = pocket.is_featured || false;
   const percentageUsed = budget_amount > 0 ? (current_amount / budget_amount) * 100 : 0;
   const remaining = budget_amount - current_amount;
   const isOverBudget = current_amount > budget_amount;
