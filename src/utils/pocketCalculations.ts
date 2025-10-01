@@ -1,10 +1,17 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export interface PocketSpending {
+  id: string;
   pocketId: string;
+  name: string;
   pocketName: string;
   budgetAmount: number;
   currentAmount: number;
+  color: string;
+  is_featured: boolean;
+  pocket_type: string;
+  budget_type: string;
+  cycle_type: string;
   transactions: Array<{
     id: string;
     amount: number;
@@ -80,10 +87,17 @@ export async function calculatePocketSpending(
     }, 0);
 
     return {
+      id: pocket.id,
       pocketId: pocket.id,
+      name: pocket.name,
       pocketName: pocket.name,
       budgetAmount: pocket.budget_amount,
       currentAmount,
+      color: pocket.color,
+      is_featured: pocket.is_featured,
+      pocket_type: pocket.pocket_type,
+      budget_type: pocket.budget_type,
+      cycle_type: pocket.cycle_type,
       transactions: categoryTransactions
     };
   });
