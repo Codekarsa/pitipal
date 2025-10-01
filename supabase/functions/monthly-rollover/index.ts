@@ -167,7 +167,7 @@ Deno.serve(async (req) => {
     console.error('Monthly rollover error:', error)
     return new Response(
       JSON.stringify({ 
-        error: error.message,
+        error: error instanceof Error ? error.message : 'Unknown error occurred',
         success: false 
       }),
       { 
