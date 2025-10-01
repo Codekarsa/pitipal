@@ -73,17 +73,28 @@ export function Dashboard() {
 
   const userCurrency = profile?.currency || 'USD';
 
-  // Calculate totals
-  const totalBudget = pockets.reduce((sum, pocket) => sum + pocket.budget_amount, 0);
-  const totalSpent = pockets.reduce((sum, pocket) => sum + pocket.current_amount, 0);
-  const totalRemaining = totalBudget - totalSpent;
-  const overBudgetPockets = pockets.filter(p => p.current_amount > p.budget_amount).length;
+  // Fetch pockets with spending data
+  const { data: pocketData, isLoading, error } = useQuery({
+    queryKey: ['pocketSpending', user?.id, selectedMonth],
+    queryFn: async () => {
+      if (!user?.id) return { pockets: [], totalBudget: 0, totalSpent: 0, totalRemaining: 0 };
+      return await calculatePocketSpending(user.id, selectedMonth);
+    },
+    enabled: !!user?.id,
+  });
 
+  // Update local state when data changes
   useEffect(() => {
-    if (user) {
-      queryClient.invalidateQueries({ queryKey: ['pocketSpending'] });
+    if (pocketData?.pockets) {
+      setPockets(pocketData.pockets);
     }
-  }, [user, selectedMonth]);
+  }, [pocketData]);
+
+  // Calculate totals
+  const totalBudget = pockets.reduce((sum, pocket) => sum + pocket.budgetAmount, 0);
+  const totalSpent = pockets.reduce((sum, pocket) => sum + pocket.currentAmount, 0);
+  const totalRemaining = totalBudget - totalSpent;
+  const overBudgetPockets = pockets.filter(p => p.currentAmount > p.budgetAmount).length;
 
   // Handle errors from React Query
   useEffect(() => {
@@ -96,15 +107,32 @@ export function Dashboard() {
     }
   }, [error, toast]);
 
-  const handleEditPocket = (pocket: BudgetPocket) => {
-    setSelectedPocketForEdit(pocket);
+  const handleEditPocket = (pocket: PocketSpending) => {
+    // Convert PocketSpending to BudgetPocket format
+    const budgetPocket: BudgetPocket = {
+      id: pocket.id,
+      name: pocket.name,
+      description: null,
+      budget_amount: pocket.budgetAmount,
+      cycle_type: pocket.cycle_type,
+      color: pocket.color,
+      is_featured: pocket.is_featured,
+      pocket_type: pocket.pocket_type,
+      budget_type: pocket.budget_type,
+      is_template: false,
+      month_year: selectedMonth,
+      parent_pocket_id: null,
+      auto_renew: true,
+      recurring_rule: null,
+    };
+    setSelectedPocketForEdit(budgetPocket);
     setShowEditPocket(true);
   };
 
   const handlePocketUpdated = () => {
     setShowEditPocket(false);
     setSelectedPocketForEdit(null);
-    fetchPockets();
+    queryClient.invalidateQueries({ queryKey: ['pocketSpending'] });
     toast({
       title: "Pocket updated!",
       description: "Your budget pocket has been updated successfully.",
@@ -113,7 +141,7 @@ export function Dashboard() {
 
   const handlePocketCreated = () => {
     setShowCreatePocket(false);
-    fetchPockets();
+    queryClient.invalidateQueries({ queryKey: ['pocketSpending'] });
     toast({
       title: "Pocket created!",
       description: "Your new budget pocket has been created successfully.",
@@ -149,7 +177,7 @@ export function Dashboard() {
 
   const handleTransactionAdded = () => {
     setShowAddTransaction(false);
-    fetchPockets();
+    queryClient.invalidateQueries({ queryKey: ['pocketSpending'] });
     toast({
       title: "Transaction added!",
       description: "Your transaction has been recorded successfully.",
