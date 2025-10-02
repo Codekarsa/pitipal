@@ -8,7 +8,9 @@ import { Plus } from "lucide-react";
 import { PocketCard } from "@/components/dashboard/PocketCard";
 import { CreatePocketDialog } from "@/components/dashboard/CreatePocketDialog";
 import { EditPocketDialog } from "@/components/dashboard/EditPocketDialog";
+import { MonthNavigator } from "@/components/dashboard/MonthNavigator";
 import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
 
 interface BudgetPocket {
   id: string;
@@ -30,6 +32,7 @@ export function PocketsPage() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [selectedPocket, setSelectedPocket] = useState<BudgetPocket | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState(format(new Date(), "yyyy-MM"));
 
   // Fetch user profile for currency preference
   const { data: profile } = useQuery({
@@ -56,13 +59,9 @@ export function PocketsPage() {
   const userCurrency = profile?.currency || 'USD';
 
   const { data: pockets, isLoading } = useQuery({
-    queryKey: ["pockets", user?.id],
+    queryKey: ["pockets", user?.id, selectedMonth],
     queryFn: async () => {
       if (!user?.id) return [];
-      
-      // Get current month in YYYY-MM format
-      const currentDate = new Date();
-      const currentMonth = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
       
       const { data, error } = await supabase
         .from("budget_pockets")
@@ -70,7 +69,7 @@ export function PocketsPage() {
         .eq("user_id", user.id)
         .eq("is_active", true)
         .eq("is_template", false)
-        .eq("month_year", currentMonth)
+        .eq("month_year", selectedMonth)
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -169,17 +168,23 @@ export function PocketsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
             My Pockets
           </h1>
           <p className="text-muted-foreground">Manage your budget allocations</p>
         </div>
-        <Button onClick={() => setShowCreateDialog(true)} className="bg-gradient-primary hover:opacity-90">
-          <Plus className="mr-2 h-4 w-4" />
-          Create Pocket
-        </Button>
+        <div className="flex items-center gap-4">
+          <MonthNavigator 
+            selectedMonth={selectedMonth} 
+            onMonthChange={setSelectedMonth}
+          />
+          <Button onClick={() => setShowCreateDialog(true)} className="bg-gradient-primary hover:opacity-90">
+            <Plus className="mr-2 h-4 w-4" />
+            Create Pocket
+          </Button>
+        </div>
       </div>
 
       {pockets && pockets.length > 0 ? (

@@ -2,23 +2,23 @@ import { supabase } from "@/integrations/supabase/client";
 
 export interface PocketSpending {
   // Primary identifiers (support both formats)
-  id?: string;
+  id: string;
   pocketId: string;
-  name?: string;
+  name: string;
   pocketName: string;
 
   // Budget amounts (support both formats)
-  budget_amount?: number;
+  budget_amount: number;
   budgetAmount: number;
-  current_amount?: number;
+  current_amount: number;
   currentAmount: number;
 
   // Pocket metadata
-  color?: string;
-  is_featured?: boolean;
-  pocket_type?: string;
-  budget_type?: string;
-  cycle_type?: string;
+  color: string;
+  is_featured: boolean;
+  pocket_type: string;
+  budget_type: string;
+  cycle_type: string;
   description?: string | null;
 
   // Transactions

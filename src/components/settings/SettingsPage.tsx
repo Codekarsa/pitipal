@@ -19,6 +19,7 @@ import { CategoriesSection } from "./CategoriesSection";
 import { AccountsSection } from "./AccountsSection";
 import { PortfolioSection } from "./PortfolioSection";
 import { DataManagementSection } from "./DataManagementSection";
+import { MonthlyRolloverTrigger } from "../debug/MonthlyRolloverTrigger";
 
 const currencies = [
   { code: "USD", symbol: "$", name: "US Dollar", icon: DollarSign },
@@ -364,7 +365,10 @@ export function SettingsPage() {
 
         {/* Data Management Tab */}
         <TabsContent value="data">
-          <DataManagementSection />
+          <div className="space-y-6">
+            <DataManagementSection />
+            <MonthlyRolloverTrigger />
+          </div>
         </TabsContent>
       </Tabs>
     </div>
