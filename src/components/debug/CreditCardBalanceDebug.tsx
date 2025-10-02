@@ -41,9 +41,9 @@ export function CreditCardBalanceDebug() {
       if (!user) throw new Error('Not authenticated');
 
       const { data, error } = await supabase
-        .from('user_profiles')
+        .from('profiles')
         .select('currency')
-        .eq('id', user.id)
+        .eq('user_id', user.id)
         .single();
 
       if (error) throw error;
