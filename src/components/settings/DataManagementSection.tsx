@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { ImportDialog } from "./ImportDialog";
 import { ExportDialog } from "./ExportDialog";
+import { PocketMigrationSection } from "./PocketMigrationSection";
 import { generateCSVTemplate, exportDataToCSV } from "@/lib/csv-utils";
 
 export function DataManagementSection() {
@@ -236,6 +237,9 @@ export function DataManagementSection() {
         </Card>
       </div>
 
+      {/* Pocket Migration */}
+      <PocketMigrationSection />
+
       {/* CSV Templates */}
       <Card>
         <CardHeader>
@@ -260,7 +264,7 @@ export function DataManagementSection() {
               <span className="hidden sm:inline">Transactions</span>
               <span className="sm:hidden">Trans.</span>
             </Button>
-            
+
             <Button
               onClick={() => handleDownloadTemplate('pockets')}
               variant="outline"
@@ -272,7 +276,7 @@ export function DataManagementSection() {
               <span className="hidden sm:inline">Budget Pockets</span>
               <span className="sm:hidden">Pockets</span>
             </Button>
-            
+
             <Button
               onClick={() => handleDownloadTemplate('categories')}
               variant="outline"
@@ -284,7 +288,7 @@ export function DataManagementSection() {
               <span className="hidden sm:inline">Categories</span>
               <span className="sm:hidden">Categ.</span>
             </Button>
-            
+
             <Button
               onClick={() => handleDownloadTemplate('accounts')}
               variant="outline"
@@ -297,7 +301,7 @@ export function DataManagementSection() {
               <span className="sm:hidden">Acc.</span>
             </Button>
           </div>
-          
+
           {isGeneratingTemplate && (
             <div className="mt-4 space-y-2">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
