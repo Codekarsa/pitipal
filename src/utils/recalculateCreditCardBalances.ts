@@ -18,9 +18,9 @@ export async function recalculateCreditCardBalances(userId: string, dryRun: bool
   try {
     // Get user's currency preference
     const { data: userProfile } = await supabase
-      .from('user_profiles')
+      .from('profiles')
       .select('currency')
-      .eq('id', userId)
+      .eq('user_id', userId)
       .single();
 
     const currency = userProfile?.currency || 'USD';
@@ -95,7 +95,9 @@ export async function recalculateCreditCardBalances(userId: string, dryRun: bool
         storedBalance: account.current_balance,
         calculatedBalance: calculatedBalance,
         difference: account.current_balance - calculatedBalance,
-        transactionCount: transactions?.length || 0
+        transactionCount: transactions?.length || 0,
+        updateStatus: undefined as string | undefined,
+        updateError: undefined as string | undefined
       };
 
       results.push(result);
