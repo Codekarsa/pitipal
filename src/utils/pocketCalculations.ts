@@ -1,10 +1,27 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export interface PocketSpending {
+  // Primary identifiers (support both formats)
+  id?: string;
   pocketId: string;
+  name?: string;
   pocketName: string;
+
+  // Budget amounts (support both formats)
+  budget_amount?: number;
   budgetAmount: number;
+  current_amount?: number;
   currentAmount: number;
+
+  // Pocket metadata
+  color?: string;
+  is_featured?: boolean;
+  pocket_type?: string;
+  budget_type?: string;
+  cycle_type?: string;
+  description?: string | null;
+
+  // Transactions
   transactions: Array<{
     id: string;
     amount: number;
@@ -34,13 +51,12 @@ export async function calculatePocketSpending(
 
   // Parallel queries for maximum speed
   const [pocketsResult, transactionsResult] = await Promise.all([
-    // Query 1: Get all active pockets for the month
+    // Query 1: Get all active pockets (not filtered by month - pockets are long-lived)
     supabase
       .from('budget_pockets')
       .select('id, name, budget_amount, color, is_featured, pocket_type, budget_type, cycle_type')
       .eq('user_id', userId)
       .eq('is_active', true)
-      .eq('month_year', monthYear)
       .order('created_at', { ascending: false }),
 
     // Query 2: Get ALL transactions for the month (single query)
@@ -80,10 +96,20 @@ export async function calculatePocketSpending(
     }, 0);
 
     return {
+      // Support both naming conventions for compatibility
+      id: pocket.id,
       pocketId: pocket.id,
+      name: pocket.name,
       pocketName: pocket.name,
+      budget_amount: pocket.budget_amount,
       budgetAmount: pocket.budget_amount,
+      current_amount: currentAmount,
       currentAmount,
+      color: pocket.color,
+      is_featured: pocket.is_featured,
+      pocket_type: pocket.pocket_type,
+      budget_type: pocket.budget_type,
+      cycle_type: pocket.cycle_type,
       transactions: categoryTransactions
     };
   });

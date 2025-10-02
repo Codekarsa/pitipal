@@ -501,67 +501,8 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
       // Note: Pocket spending is now calculated dynamically from transactions
       // No need to manually update current_amount - this prevents sync issues
 
-      // Update credit card balance if credit card payment (only for new transactions)
-      // Only process if a credit card account is selected
-      if (!editingTransaction && creditCardAccountId && category === 'Credit Card Payment') {
-        try {
-          const { data: cardData, error: fetchError } = await supabase
-            .from('credit_card_accounts')
-            .select('current_balance')
-            .eq('id', creditCardAccountId)
-            .single();
-
-          if (fetchError) {
-            console.error('Error fetching credit card data:', fetchError);
-          } else {
-            // Credit card payments reduce the balance
-            const newBalance = (cardData.current_balance || 0) - parseFloat(amount);
-            
-            const { error: updateError } = await supabase
-              .from('credit_card_accounts')
-              .update({
-                current_balance: newBalance, // Allow negative balances (credits)
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', creditCardAccountId);
-
-            if (updateError) {
-              console.error('Error updating credit card balance:', updateError);
-            }
-          }
-        } catch (error) {
-          console.error('Error processing credit card payment:', error);
-        }
-      } else if (!editingTransaction && creditCardAccountId && type === 'expense') {
-        // Regular purchases on credit card increase the balance
-        try {
-          const { data: cardData, error: fetchError } = await supabase
-            .from('credit_card_accounts')
-            .select('current_balance')
-            .eq('id', creditCardAccountId)
-            .single();
-
-          if (fetchError) {
-            console.error('Error fetching credit card data:', fetchError);
-          } else {
-            const newBalance = (cardData.current_balance || 0) + parseFloat(amount);
-            
-            const { error: updateError } = await supabase
-              .from('credit_card_accounts')
-              .update({ 
-                current_balance: newBalance,
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', creditCardAccountId);
-
-            if (updateError) {
-              console.error('Error updating credit card balance:', updateError);
-            }
-          }
-        } catch (error) {
-          console.error('Error processing credit card purchase:', error);
-        }
-      }
+      // Note: Credit card balances are now calculated dynamically from transactions
+      // No need to manually update current_balance - this prevents sync issues
       
       // Reset form
       console.log('Resetting form after successful submission');

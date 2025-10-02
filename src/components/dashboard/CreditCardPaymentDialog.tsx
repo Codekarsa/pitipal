@@ -10,14 +10,8 @@ import { useAuth } from "@/components/auth/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { formatCurrency } from "@/lib/utils";
+import { getCreditCardAccountsWithBalances } from "@/utils/creditCardCalculations";
 
-interface CreditCardAccount {
-  id: string;
-  account_name: string;
-  institution_name: string;
-  current_balance: number;
-  minimum_payment: number;
-}
 
 interface CreditCardPaymentDialogProps {
   open: boolean;
@@ -35,18 +29,15 @@ export function CreditCardPaymentDialog({ open, onOpenChange, onSuccess }: Credi
   const { toast } = useToast();
 
   const { data: creditCards } = useQuery({
-    queryKey: ['credit-card-accounts'],
+    queryKey: ['credit-card-accounts-with-balances'],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("User not authenticated");
 
-      const { data, error } = await supabase
-        .from('credit_card_accounts')
-        .select('id, account_name, institution_name, current_balance, minimum_payment')
-        .eq('user_id', user.id)
-        .eq('is_active', true)
-        .gt('current_balance', 0)
-        .order('current_balance', { ascending: false });
+      const accounts = await getCreditCardAccountsWithBalances(user.id);
+      // Filter to only show accounts with positive balances
+      return accounts.filter(acc => acc.current_balance > 0)
+                    .sort((a, b) => b.current_balance - a.current_balance);
 
       if (error) throw error;
       return data as CreditCardAccount[];
@@ -122,20 +113,8 @@ export function CreditCardPaymentDialog({ open, onOpenChange, onSuccess }: Credi
 
       if (transactionError) throw transactionError;
 
-      // Update credit card balance
-      if (selectedCard) {
-        const newBalance = Math.max(0, selectedCard.current_balance - paymentAmount);
-        
-        const { error: updateError } = await supabase
-          .from('credit_card_accounts')
-          .update({ 
-            current_balance: newBalance,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', selectedCardId);
-
-        if (updateError) throw updateError;
-      }
+      // Note: Credit card balance is now calculated dynamically from transactions
+      // No need to manually update current_balance - this prevents sync issues
 
       toast({
         title: "Payment recorded",
