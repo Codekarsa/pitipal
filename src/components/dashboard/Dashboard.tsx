@@ -73,17 +73,28 @@ export function Dashboard() {
 
   const userCurrency = profile?.currency || 'USD';
 
-  // Calculate totals
-  const totalBudget = pockets.reduce((sum, pocket) => sum + pocket.budget_amount, 0);
-  const totalSpent = pockets.reduce((sum, pocket) => sum + pocket.current_amount, 0);
-  const totalRemaining = totalBudget - totalSpent;
-  const overBudgetPockets = pockets.filter(p => p.current_amount > p.budget_amount).length;
+  // Fetch pocket spending data
+  const { data: pocketData, isLoading, error } = useQuery({
+    queryKey: ['pocketSpending', user?.id, selectedMonth],
+    queryFn: async () => {
+      if (!user?.id) return { pockets: [], totalBudget: 0, totalSpent: 0, totalRemaining: 0 };
+      return await calculatePocketSpending(user.id, selectedMonth);
+    },
+    enabled: !!user?.id,
+  });
 
+  // Update pockets when data changes
   useEffect(() => {
-    if (user) {
-      queryClient.invalidateQueries({ queryKey: ['pocketSpending'] });
+    if (pocketData?.pockets) {
+      setPockets(pocketData.pockets);
     }
-  }, [user, selectedMonth]);
+  }, [pocketData]);
+
+  // Calculate totals from pocketData or fallback to calculating from pockets
+  const totalBudget = pocketData?.totalBudget ?? 0;
+  const totalSpent = pocketData?.totalSpent ?? 0;
+  const totalRemaining = pocketData?.totalRemaining ?? 0;
+  const overBudgetPockets = pockets.filter(p => p.currentAmount > p.budgetAmount).length;
 
   // Handle errors from React Query
   useEffect(() => {
@@ -104,7 +115,7 @@ export function Dashboard() {
   const handlePocketUpdated = () => {
     setShowEditPocket(false);
     setSelectedPocketForEdit(null);
-    fetchPockets();
+    queryClient.invalidateQueries({ queryKey: ['pocketSpending', user?.id, selectedMonth] });
     toast({
       title: "Pocket updated!",
       description: "Your budget pocket has been updated successfully.",
@@ -113,7 +124,7 @@ export function Dashboard() {
 
   const handlePocketCreated = () => {
     setShowCreatePocket(false);
-    fetchPockets();
+    queryClient.invalidateQueries({ queryKey: ['pocketSpending', user?.id, selectedMonth] });
     toast({
       title: "Pocket created!",
       description: "Your new budget pocket has been created successfully.",
@@ -131,8 +142,8 @@ export function Dashboard() {
       if (error) throw error;
 
       // Refresh the pockets data
-      queryClient.invalidateQueries({ queryKey: ['pocketSpending'] });
-      
+      queryClient.invalidateQueries({ queryKey: ['pocketSpending', user?.id, selectedMonth] });
+
       toast({
         title: "Pocket deleted",
         description: "Your pocket has been successfully deleted.",
@@ -149,7 +160,7 @@ export function Dashboard() {
 
   const handleTransactionAdded = () => {
     setShowAddTransaction(false);
-    fetchPockets();
+    queryClient.invalidateQueries({ queryKey: ['pocketSpending', user?.id, selectedMonth] });
     toast({
       title: "Transaction added!",
       description: "Your transaction has been recorded successfully.",
@@ -158,23 +169,29 @@ export function Dashboard() {
 
   const handleToggleFeatured = async (pocketId: string) => {
     try {
-      const pocket = pockets.find(p => p.id === pocketId);
-      if (!pocket) return;
+      // Fetch the pocket from database to get current is_featured state
+      const { data: pocketData, error: fetchError } = await supabase
+        .from("budget_pockets")
+        .select("is_featured")
+        .eq("id", pocketId)
+        .single();
+
+      if (fetchError) throw fetchError;
 
       const { error } = await supabase
         .from("budget_pockets")
-        .update({ is_featured: !pocket.is_featured })
+        .update({ is_featured: !pocketData.is_featured })
         .eq("id", pocketId)
         .eq("user_id", user?.id);
 
       if (error) throw error;
 
-      queryClient.invalidateQueries({ queryKey: ['pocketSpending'] });
-      
+      queryClient.invalidateQueries({ queryKey: ['pocketSpending', user?.id, selectedMonth] });
+
       toast({
-        title: pocket.is_featured ? "Pocket unfeatured" : "Pocket featured",
-        description: pocket.is_featured 
-          ? "Pocket removed from dashboard" 
+        title: pocketData.is_featured ? "Pocket unfeatured" : "Pocket featured",
+        description: pocketData.is_featured
+          ? "Pocket removed from dashboard"
           : "Pocket will now appear on dashboard",
       });
     } catch (error) {

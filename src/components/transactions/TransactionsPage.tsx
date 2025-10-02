@@ -341,52 +341,8 @@ export function TransactionsPage() {
 
   const handleDeleteTransaction = async (transactionId: string) => {
     try {
-      // First, get the transaction details to reverse credit card balance changes
-      const { data: transaction, error: fetchError } = await supabase
-        .from('transactions')
-        .select('*')
-        .eq('id', transactionId)
-        .eq('user_id', user?.id)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      // Reverse credit card balance changes if this was a credit card transaction
-      if (transaction.credit_card_account_id) {
-        const { data: cardData, error: cardFetchError } = await supabase
-          .from('credit_card_accounts')
-          .select('current_balance')
-          .eq('id', transaction.credit_card_account_id)
-          .single();
-
-        if (!cardFetchError && cardData) {
-          let balanceAdjustment = 0;
-
-          if (transaction.category === 'Credit Card Payment') {
-            // Reverse credit card payment: add back the payment amount
-            balanceAdjustment = transaction.amount;
-          } else if (transaction.type === 'expense') {
-            // Reverse credit card expense: subtract the expense amount
-            balanceAdjustment = -transaction.amount;
-          }
-
-          if (balanceAdjustment !== 0) {
-            const newBalance = cardData.current_balance + balanceAdjustment;
-
-            const { error: updateError } = await supabase
-              .from('credit_card_accounts')
-              .update({
-                current_balance: newBalance,
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', transaction.credit_card_account_id);
-
-            if (updateError) {
-              console.error('Error reversing credit card balance:', updateError);
-            }
-          }
-        }
-      }
+      // Note: Credit card balances are calculated dynamically from transactions
+      // No need to manually reverse balance changes when deleting transactions
 
       // Delete the transaction
       const { error } = await supabase

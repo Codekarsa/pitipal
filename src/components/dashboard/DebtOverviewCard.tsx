@@ -6,16 +6,8 @@ import { CreditCard, TrendingDown, AlertTriangle, DollarSign } from "lucide-reac
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { CreditCardPaymentDialog } from "./CreditCardPaymentDialog";
+import { calculateCreditCardBalances } from "@/utils/creditCardCalculations";
 
-interface CreditCardAccount {
-  id: string;
-  account_name: string;
-  institution_name: string;
-  current_balance: number;
-  minimum_payment: number;
-  credit_limit: number;
-  due_date: number;
-}
 
 export function DebtOverviewCard() {
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
@@ -38,23 +30,20 @@ export function DebtOverviewCard() {
     },
   });
 
-  const { data: creditCardAccounts, isLoading } = useQuery({
-    queryKey: ['credit-card-accounts'],
+  // Fetch credit card balances with dynamic calculation
+  const { data: creditCardData, isLoading } = useQuery({
+    queryKey: ['credit-card-balances'],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("User not authenticated");
 
-      const { data, error } = await supabase
-        .from('credit_card_accounts')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('is_active', true)
-        .order('current_balance', { ascending: false });
-
-      if (error) throw error;
-      return data as CreditCardAccount[];
+      return await calculateCreditCardBalances(user.id);
     },
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    refetchOnWindowFocus: false
   });
+
+  const creditCardAccounts = creditCardData?.accounts || [];
 
   const formatCurrency = (amount: number) => {
     const currency = profile?.currency || 'USD';
@@ -103,19 +92,22 @@ export function DebtOverviewCard() {
     );
   }
 
-  const totalDebt = creditCardAccounts.reduce((sum, account) => sum + account.current_balance, 0);
-  const totalMinimumPayments = creditCardAccounts.reduce((sum, account) => sum + account.minimum_payment, 0);
-  const totalCreditLimit = creditCardAccounts.reduce((sum, account) => sum + account.credit_limit, 0);
-  const overallUtilization = totalCreditLimit > 0 ? (totalDebt / totalCreditLimit) * 100 : 0;
+  // Use calculated values from creditCardData
+  const totalDebt = creditCardData?.totalDebt || 0;
+  const totalMinimumPayments = creditCardAccounts.reduce((sum, account) => sum + account.minimumPayment, 0);
+  const totalCreditLimit = creditCardData?.totalCreditLimit || 0;
+  const overallUtilization = creditCardData?.averageUtilization || 0;
 
   // Get accounts due soon (within next 7 days)
   const today = new Date();
   const currentDay = today.getDate();
   const accountsDueSoon = creditCardAccounts.filter(account => {
-    const daysUntilDue = account.due_date >= currentDay 
-      ? account.due_date - currentDay 
-      : (30 - currentDay) + account.due_date;
-    return daysUntilDue <= 7 && account.current_balance > 0;
+    if (!account.dueDate) return false;
+    const dueDate = parseInt(account.dueDate);
+    const daysUntilDue = dueDate >= currentDay
+      ? dueDate - currentDay
+      : (30 - currentDay) + dueDate;
+    return daysUntilDue <= 7 && account.currentBalance > 0;
   });
 
   return (
@@ -176,10 +168,10 @@ export function DebtOverviewCard() {
               </div>
               {accountsDueSoon.slice(0, 2).map(account => (
                 <div key={account.id} className="flex items-center justify-between text-sm p-2 bg-destructive/10 rounded">
-                  <span className="font-medium">{account.account_name}</span>
+                  <span className="font-medium">{account.accountName}</span>
                   <div className="text-right">
-                    <div className="font-medium">{formatCurrency(account.minimum_payment)}</div>
-                    <div className="text-xs text-muted-foreground">Due {account.due_date}th</div>
+                    <div className="font-medium">{formatCurrency(account.minimumPayment)}</div>
+                    <div className="text-xs text-muted-foreground">Due {account.dueDate}th</div>
                   </div>
                 </div>
               ))}
@@ -187,17 +179,17 @@ export function DebtOverviewCard() {
           )}
 
           {/* Top Debt Account */}
-          {totalDebt > 0 && (
+          {totalDebt > 0 && creditCardAccounts.length > 0 && (
             <div className="space-y-2">
               <span className="text-sm font-medium">Highest Balance</span>
               <div className="flex items-center justify-between text-sm p-2 bg-muted/50 rounded">
-                <span className="font-medium">{creditCardAccounts[0].account_name}</span>
+                <span className="font-medium">{creditCardAccounts[0].accountName}</span>
                 <div className="text-right">
                   <div className="font-medium text-destructive">
-                    {formatCurrency(creditCardAccounts[0].current_balance)}
+                    {formatCurrency(creditCardAccounts[0].currentBalance)}
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {((creditCardAccounts[0].current_balance / creditCardAccounts[0].credit_limit) * 100).toFixed(1)}% utilized
+                    {((creditCardAccounts[0].currentBalance / creditCardAccounts[0].creditLimit) * 100).toFixed(1)}% utilized
                   </div>
                 </div>
               </div>
