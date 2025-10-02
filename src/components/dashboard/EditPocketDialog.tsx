@@ -278,15 +278,18 @@ export function EditPocketDialog({ open, onOpenChange, onSuccess, pocket }: Edit
             </div>
           </div>
 
-          {/* Template Options */}
+          {/* Recurring Options */}
           <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
-            <h4 className="text-sm font-medium">Recurring Options</h4>
-            
+            <div>
+              <h4 className="text-sm font-semibold mb-1">Monthly Recurrence</h4>
+              <p className="text-xs text-muted-foreground">Control how this pocket behaves each month</p>
+            </div>
+
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label htmlFor="is-template" className="text-sm">Template Mode</Label>
+                <Label htmlFor="is-template" className="text-sm font-medium">Repeat every month</Label>
                 <p className="text-xs text-muted-foreground">
-                  Templates can be used to generate monthly pockets
+                  Automatically create this pocket for future months
                 </p>
               </div>
               <Switch
@@ -297,66 +300,85 @@ export function EditPocketDialog({ open, onOpenChange, onSuccess, pocket }: Edit
             </div>
 
             {isTemplate && (
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="auto-renew" className="text-sm">Auto-renewal</Label>
-                  <p className="text-xs text-muted-foreground">
-                    Automatically create new instances each month
-                  </p>
-                </div>
-                <Switch
-                  id="auto-renew"
-                  checked={autoRenew}
-                  onCheckedChange={setAutoRenew}
-                />
-              </div>
-            )}
-
-            {isTemplate && autoRenew && (
-              <div className="space-y-4">
-                <h4 className="font-medium">Rollover Rules</h4>
-                <div className="space-y-3">
-                  <div>
-                    <Label htmlFor="rollover-type">When unused budget remains</Label>
-                    <Select value={rolloverType} onValueChange={(value: 'reset' | 'carry_over' | 'percentage') => setRolloverType(value)}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="reset">Reset to zero (don't carry over)</SelectItem>
-                        <SelectItem value="carry_over">Carry over full unused amount</SelectItem>
-                        <SelectItem value="percentage">Carry over percentage of unused</SelectItem>
-                      </SelectContent>
-                    </Select>
+              <>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="auto-renew" className="text-sm font-medium">Auto-create next month</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Create new pocket automatically when month changes
+                    </p>
                   </div>
-
-                  {rolloverType === 'percentage' && (
-                    <div>
-                      <Label htmlFor="rollover-percentage">Percentage to carry over (%)</Label>
-                      <Input
-                        id="rollover-percentage"
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={rolloverPercentage}
-                        onChange={(e) => setRolloverPercentage(Number(e.target.value))}
-                      />
-                    </div>
-                  )}
-
-                  {rolloverType === 'carry_over' && (
-                    <div>
-                      <Label htmlFor="max-carry-over">Maximum carry over amount (optional)</Label>
-                      <CurrencyInput
-                        id="max-carry-over"
-                        value={maxCarryOver?.toString() || ""}
-                        onChange={(value) => setMaxCarryOver(value ? parseFloat(value) : undefined)}
-                        placeholder="No limit"
-                      />
-                    </div>
-                  )}
+                  <Switch
+                    id="auto-renew"
+                    checked={autoRenew}
+                    onCheckedChange={setAutoRenew}
+                  />
                 </div>
-              </div>
+
+                {autoRenew && (
+                  <div className="space-y-3 pt-2">
+                    <div>
+                      <Label htmlFor="rollover-type" className="text-sm font-medium">Leftover budget handling</Label>
+                      <p className="text-xs text-muted-foreground mb-2">What to do with unspent money at month end</p>
+                      <Select value={rolloverType} onValueChange={(value: 'reset' | 'carry_over' | 'percentage') => setRolloverType(value)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="reset">
+                            <div className="flex flex-col">
+                              <span className="font-medium">Start fresh</span>
+                              <span className="text-xs text-muted-foreground">Don't carry over unused budget</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="carry_over">
+                            <div className="flex flex-col">
+                              <span className="font-medium">Roll over all</span>
+                              <span className="text-xs text-muted-foreground">Add all unused budget to next month</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="percentage">
+                            <div className="flex flex-col">
+                              <span className="font-medium">Roll over partial</span>
+                              <span className="text-xs text-muted-foreground">Add a % of unused budget to next month</span>
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {rolloverType === 'percentage' && (
+                      <div>
+                        <Label htmlFor="rollover-percentage">Percentage to roll over</Label>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            id="rollover-percentage"
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={rolloverPercentage}
+                            onChange={(e) => setRolloverPercentage(Number(e.target.value))}
+                          />
+                          <span className="text-sm text-muted-foreground">%</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {rolloverType === 'carry_over' && (
+                      <div>
+                        <Label htmlFor="max-carry-over">Maximum rollover amount (optional)</Label>
+                        <CurrencyInput
+                          id="max-carry-over"
+                          value={maxCarryOver?.toString() || ""}
+                          onChange={(value) => setMaxCarryOver(value ? parseFloat(value) : undefined)}
+                          placeholder="No limit"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">Leave empty for unlimited rollover</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
             )}
           </div>
 
