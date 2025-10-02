@@ -50,19 +50,28 @@ export async function calculatePocketSpending(
 ): Promise<SpendingCalculationResult> {
 
   // Parallel queries for maximum speed
-  const [pocketsResult, transactionsResult] = await Promise.all([
-    // Query 1: Get all active pockets (not filtered by month - pockets are long-lived)
+  const [pocketsResult, templatesResult, transactionsResult] = await Promise.all([
+    // Query 1: Get all active pockets for the selected month
     supabase
       .from('budget_pockets')
-      .select('id, name, budget_amount, color, is_featured, pocket_type, budget_type, cycle_type')
+      .select('id, name, budget_amount, color, is_featured, pocket_type, budget_type, cycle_type, parent_pocket_id')
       .eq('user_id', userId)
       .eq('is_active', true)
+      .eq('month_year', monthYear)
       .order('created_at', { ascending: false }),
 
-    // Query 2: Get ALL transactions for the month (single query)
+    // Query 2: Get all templates to check featured status
+    supabase
+      .from('budget_pockets')
+      .select('id, is_featured')
+      .eq('user_id', userId)
+      .eq('is_active', true)
+      .eq('is_template', true),
+
+    // Query 3: Get ALL transactions for the month (single query)
     supabase
       .from('transactions')
-      .select('id, amount, type, category, transaction_date')
+      .select('id, amount, type, category, transaction_date, pocket_id')
       .eq('user_id', userId)
       .gte('transaction_date', `${monthYear}-01`)
       .lt('transaction_date', getNextMonth(monthYear))
@@ -70,30 +79,45 @@ export async function calculatePocketSpending(
   ]);
 
   if (pocketsResult.error) throw pocketsResult.error;
+  if (templatesResult.error) throw templatesResult.error;
   if (transactionsResult.error) throw transactionsResult.error;
 
   const pockets = pocketsResult.data || [];
+  const templates = templatesResult.data || [];
   const allTransactions = transactionsResult.data || [];
 
-  // Fast JavaScript grouping by category
-  const transactionsByCategory = new Map<string, typeof allTransactions>();
+  // Create a map of template featured status
+  const templateFeaturedMap = new Map<string, boolean>();
+  for (const template of templates) {
+    templateFeaturedMap.set(template.id, template.is_featured);
+  }
+
+  // Fast JavaScript grouping by pocket_id
+  const transactionsByPocket = new Map<string, typeof allTransactions>();
 
   for (const transaction of allTransactions) {
-    const category = transaction.category;
-    if (!transactionsByCategory.has(category)) {
-      transactionsByCategory.set(category, []);
+    const pocketId = transaction.pocket_id;
+    if (pocketId) {
+      if (!transactionsByPocket.has(pocketId)) {
+        transactionsByPocket.set(pocketId, []);
+      }
+      transactionsByPocket.get(pocketId)!.push(transaction);
     }
-    transactionsByCategory.get(category)!.push(transaction);
   }
 
   // Calculate spending for each pocket
   const pocketSpending: PocketSpending[] = pockets.map(pocket => {
-    const categoryTransactions = transactionsByCategory.get(pocket.name) || [];
+    const pocketTransactions = transactionsByPocket.get(pocket.id) || [];
 
     // Calculate current spending from transactions
-    const currentAmount = categoryTransactions.reduce((sum, tx) => {
+    const currentAmount = pocketTransactions.reduce((sum, tx) => {
       return sum + (tx.type === 'expense' ? tx.amount : -tx.amount);
     }, 0);
+
+    // Determine featured status: if pocket has parent_pocket_id, use template's featured status
+    const isFeatured = pocket.parent_pocket_id
+      ? (templateFeaturedMap.get(pocket.parent_pocket_id) || false)
+      : pocket.is_featured;
 
     return {
       // Support both naming conventions for compatibility
@@ -106,11 +130,11 @@ export async function calculatePocketSpending(
       current_amount: currentAmount,
       currentAmount,
       color: pocket.color,
-      is_featured: pocket.is_featured,
+      is_featured: isFeatured, // Use template's featured status if linked
       pocket_type: pocket.pocket_type,
       budget_type: pocket.budget_type,
       cycle_type: pocket.cycle_type,
-      transactions: categoryTransactions
+      transactions: pocketTransactions
     };
   });
 

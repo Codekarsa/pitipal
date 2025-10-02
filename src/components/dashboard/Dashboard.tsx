@@ -107,26 +107,83 @@ export function Dashboard() {
     }
   }, [error, toast]);
 
-  const handleEditPocket = (pocket: PocketSpending) => {
-    // Convert PocketSpending to BudgetPocket format
-    const budgetPocket: BudgetPocket = {
-      id: pocket.id,
-      name: pocket.name,
-      description: null,
-      budget_amount: pocket.budgetAmount,
-      cycle_type: pocket.cycle_type,
-      color: pocket.color,
-      is_featured: pocket.is_featured,
-      pocket_type: pocket.pocket_type,
-      budget_type: pocket.budget_type,
-      is_template: false,
-      month_year: selectedMonth,
-      parent_pocket_id: null,
-      auto_renew: true,
-      recurring_rule: null,
-    };
-    setSelectedPocketForEdit(budgetPocket);
-    setShowEditPocket(true);
+  const handleEditPocket = async (pocket: PocketSpending) => {
+    try {
+      // Fetch the full pocket data to get parent_pocket_id and month_year
+      const { data: pocketData, error: fetchError } = await supabase
+        .from("budget_pockets")
+        .select("*")
+        .eq("id", pocket.id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Determine if this is a past month
+      const currentMonth = format(new Date(), "yyyy-MM");
+      const pocketMonth = pocketData.month_year;
+      const isPastMonth = pocketMonth && pocketMonth < currentMonth;
+
+      let targetData: BudgetPocket;
+      let editingTemplate = false;
+
+      if (isPastMonth) {
+        // Past month: edit the specific month instance only
+        targetData = pocketData;
+        toast({
+          title: "Editing Past Month",
+          description: "Changes will only affect this specific month.",
+        });
+      } else {
+        // Current or future month: edit the template
+        const targetId = pocketData.parent_pocket_id || pocketData.id;
+
+        const { data: fetchedTarget, error: targetError } = await supabase
+          .from("budget_pockets")
+          .select("*")
+          .eq("id", targetId)
+          .single();
+
+        if (targetError) throw targetError;
+
+        targetData = fetchedTarget;
+        editingTemplate = targetData.is_template || false;
+
+        if (editingTemplate || pocketData.parent_pocket_id) {
+          toast({
+            title: "Editing Template",
+            description: "Changes will apply to current and future months.",
+          });
+        }
+      }
+
+      // Convert to BudgetPocket format
+      const budgetPocket: BudgetPocket = {
+        id: targetData.id,
+        name: targetData.name,
+        description: targetData.description,
+        budget_amount: targetData.budget_amount,
+        cycle_type: targetData.cycle_type,
+        color: targetData.color,
+        is_featured: targetData.is_featured,
+        pocket_type: targetData.pocket_type,
+        budget_type: targetData.budget_type,
+        is_template: targetData.is_template || false,
+        month_year: targetData.month_year,
+        parent_pocket_id: targetData.parent_pocket_id,
+        auto_renew: targetData.auto_renew || true,
+        recurring_rule: targetData.recurring_rule,
+      };
+
+      setSelectedPocketForEdit(budgetPocket);
+      setShowEditPocket(true);
+    } catch (error) {
+      console.error("Error loading pocket for edit:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load pocket data.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handlePocketUpdated = () => {
@@ -186,19 +243,32 @@ export function Dashboard() {
 
   const handleToggleFeatured = async (pocketId: string) => {
     try {
-      // Fetch the pocket from database to get current is_featured state
+      // Fetch the pocket to get parent_pocket_id
       const { data: pocketData, error: fetchError } = await supabase
         .from("budget_pockets")
-        .select("is_featured")
+        .select("parent_pocket_id, is_featured")
         .eq("id", pocketId)
         .single();
 
       if (fetchError) throw fetchError;
 
+      // If pocket has a template (parent_pocket_id), update the template's featured status
+      const targetId = pocketData.parent_pocket_id || pocketId;
+
+      // Get current featured status
+      const { data: targetData, error: targetFetchError } = await supabase
+        .from("budget_pockets")
+        .select("is_featured")
+        .eq("id", targetId)
+        .single();
+
+      if (targetFetchError) throw targetFetchError;
+
+      // Toggle featured on template (or pocket if no template)
       const { error } = await supabase
         .from("budget_pockets")
-        .update({ is_featured: !pocketData.is_featured })
-        .eq("id", pocketId)
+        .update({ is_featured: !targetData.is_featured })
+        .eq("id", targetId)
         .eq("user_id", user?.id);
 
       if (error) throw error;
@@ -206,8 +276,8 @@ export function Dashboard() {
       queryClient.invalidateQueries({ queryKey: ['pocketSpending', user?.id, selectedMonth] });
 
       toast({
-        title: pocketData.is_featured ? "Pocket unfeatured" : "Pocket featured",
-        description: pocketData.is_featured
+        title: targetData.is_featured ? "Pocket unfeatured" : "Pocket featured",
+        description: targetData.is_featured
           ? "Pocket removed from dashboard"
           : "Pocket will now appear on dashboard",
       });

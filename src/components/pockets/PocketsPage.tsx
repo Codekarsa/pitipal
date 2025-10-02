@@ -11,6 +11,7 @@ import { EditPocketDialog } from "@/components/dashboard/EditPocketDialog";
 import { MonthNavigator } from "@/components/dashboard/MonthNavigator";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { calculatePocketSpending, PocketSpending } from "@/utils/pocketCalculations";
 
 interface BudgetPocket {
   id: string;
@@ -21,6 +22,11 @@ interface BudgetPocket {
   pocket_type: string;
   color: string;
   is_template: boolean;
+  auto_renew: boolean;
+  cycle_type: string;
+  is_featured: boolean;
+  month_year: string | null;
+  parent_pocket_id: string | null;
   auto_renew: boolean;
 }
 
@@ -58,29 +64,20 @@ export function PocketsPage() {
 
   const userCurrency = profile?.currency || 'USD';
 
-  const { data: pockets, isLoading } = useQuery({
-    queryKey: ["pockets", user?.id, selectedMonth],
+  const { data: pocketData, isLoading } = useQuery({
+    queryKey: ["pocketSpending", user?.id, selectedMonth],
     queryFn: async () => {
-      if (!user?.id) return [];
-      
-      const { data, error } = await supabase
-        .from("budget_pockets")
-        .select("*")
-        .eq("user_id", user.id)
-        .eq("is_active", true)
-        .eq("is_template", false)
-        .eq("month_year", selectedMonth)
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        console.error("Error fetching pockets:", error);
-        throw error;
-      }
-
-      return data || [];
+      if (!user?.id) return { pockets: [], totalBudget: 0, totalSpent: 0, totalRemaining: 0 };
+      const result = await calculatePocketSpending(user.id, selectedMonth);
+      console.log('Pockets data from query:', result.pockets);
+      console.log('Pocket IDs:', result.pockets.map(p => ({ id: p.id, name: p.name })));
+      return result;
     },
     enabled: !!user?.id,
   });
+
+  const pockets = pocketData?.pockets || [];
+  console.log('Pockets after extraction:', pockets.length, pockets.map(p => p.id));
 
   const handleDeletePocket = async (pocketId: string) => {
     try {
@@ -92,7 +89,7 @@ export function PocketsPage() {
 
       if (error) throw error;
 
-      queryClient.invalidateQueries({ queryKey: ["pockets"] });
+      queryClient.invalidateQueries({ queryKey: ["pocketSpending", user?.id, selectedMonth] });
       toast({
         title: "Pocket deleted",
         description: "Your pocket has been successfully deleted.",
@@ -112,18 +109,40 @@ export function PocketsPage() {
       const currentPocket = pockets?.find(p => p.id === pocketId);
       if (!currentPocket) return;
 
+      // Fetch the pocket to get parent_pocket_id
+      const { data: pocketData, error: fetchError } = await supabase
+        .from("budget_pockets")
+        .select("parent_pocket_id, is_featured")
+        .eq("id", pocketId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // If pocket has a template (parent_pocket_id), update the template's featured status
+      const targetId = pocketData.parent_pocket_id || pocketId;
+
+      // Get current featured status
+      const { data: targetData, error: targetFetchError } = await supabase
+        .from("budget_pockets")
+        .select("is_featured")
+        .eq("id", targetId)
+        .single();
+
+      if (targetFetchError) throw targetFetchError;
+
+      // Toggle featured on template (or pocket if no template)
       const { error } = await supabase
         .from("budget_pockets")
-        .update({ is_featured: !currentPocket.is_featured })
-        .eq("id", pocketId)
+        .update({ is_featured: !targetData.is_featured })
+        .eq("id", targetId)
         .eq("user_id", user?.id);
 
       if (error) throw error;
 
-      queryClient.invalidateQueries({ queryKey: ["pockets"] });
+      queryClient.invalidateQueries({ queryKey: ["pocketSpending", user?.id, selectedMonth] });
       toast({
-        title: currentPocket.is_featured ? "Pocket unfeatured" : "Pocket featured",
-        description: `"${currentPocket.name}" has been ${currentPocket.is_featured ? 'removed from' : 'added to'} featured pockets.`,
+        title: targetData.is_featured ? "Pocket unfeatured" : "Pocket featured",
+        description: `"${currentPocket.name}" has been ${targetData.is_featured ? 'removed from' : 'added to'} featured pockets.`,
       });
     } catch (error) {
       console.error("Error toggling featured status:", error);
@@ -135,15 +154,88 @@ export function PocketsPage() {
     }
   };
 
-  const handleEditPocket = (pocket: BudgetPocket) => {
-    setSelectedPocket(pocket);
-    setShowEditDialog(true);
+  const handleEditPocket = async (pocket: PocketSpending) => {
+    try {
+      // Fetch the full pocket data to get parent_pocket_id and month_year
+      const { data: pocketData, error: fetchError } = await supabase
+        .from("budget_pockets")
+        .select("*")
+        .eq("id", pocket.id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Determine if this is a past month
+      const currentMonth = format(new Date(), "yyyy-MM");
+      const pocketMonth = pocketData.month_year;
+      const isPastMonth = pocketMonth && pocketMonth < currentMonth;
+
+      let targetData: any;
+      let editingTemplate = false;
+
+      if (isPastMonth) {
+        // Past month: edit the specific month instance only
+        targetData = pocketData;
+        toast({
+          title: "Editing Past Month",
+          description: "Changes will only affect this specific month.",
+        });
+      } else {
+        // Current or future month: edit the template
+        const targetId = pocketData.parent_pocket_id || pocketData.id;
+
+        const { data: fetchedTarget, error: targetError } = await supabase
+          .from("budget_pockets")
+          .select("*")
+          .eq("id", targetId)
+          .single();
+
+        if (targetError) throw targetError;
+
+        targetData = fetchedTarget;
+        editingTemplate = targetData.is_template || false;
+
+        if (editingTemplate || pocketData.parent_pocket_id) {
+          toast({
+            title: "Editing Template",
+            description: "Changes will apply to current and future months.",
+          });
+        }
+      }
+
+      // Convert to BudgetPocket format
+      const budgetPocket: BudgetPocket = {
+        id: targetData.id,
+        name: targetData.name,
+        description: targetData.description,
+        budget_amount: targetData.budget_amount,
+        budget_type: targetData.budget_type,
+        pocket_type: targetData.pocket_type,
+        color: targetData.color,
+        is_template: targetData.is_template || false,
+        auto_renew: targetData.auto_renew || true,
+        cycle_type: targetData.cycle_type,
+        is_featured: targetData.is_featured,
+        month_year: targetData.month_year,
+        parent_pocket_id: targetData.parent_pocket_id,
+      };
+
+      setSelectedPocket(budgetPocket);
+      setShowEditDialog(true);
+    } catch (error) {
+      console.error("Error loading pocket for edit:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load pocket data.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleEditSuccess = () => {
     setShowEditDialog(false);
     setSelectedPocket(null);
-    queryClient.invalidateQueries({ queryKey: ["pockets"] });
+    queryClient.invalidateQueries({ queryKey: ["pocketSpending", user?.id, selectedMonth] });
   };
 
   if (isLoading) {
@@ -190,6 +282,10 @@ export function PocketsPage() {
       {pockets && pockets.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {pockets
+            // Remove duplicates by pocket ID
+            .filter((pocket, index, self) =>
+              index === self.findIndex((p) => p.id === pocket.id)
+            )
             .sort((a, b) => {
               // Sort featured pockets first
               if (a.is_featured && !b.is_featured) return -1;
@@ -229,7 +325,7 @@ export function PocketsPage() {
         onOpenChange={setShowCreateDialog}
         onSuccess={() => {
           setShowCreateDialog(false);
-          queryClient.invalidateQueries({ queryKey: ["pockets"] });
+          queryClient.invalidateQueries({ queryKey: ["pocketSpending", user?.id, selectedMonth] });
         }}
       />
 
