@@ -20,6 +20,7 @@ export interface PocketSpending {
   budget_type: string;
   cycle_type: string;
   description?: string | null;
+  month_year?: string | null;
 
   // Transactions
   transactions: Array<{
@@ -54,7 +55,7 @@ export async function calculatePocketSpending(
     // Query 1: Get all active pockets for the selected month
     supabase
       .from('budget_pockets')
-      .select('id, name, budget_amount, color, is_featured, pocket_type, budget_type, cycle_type, parent_pocket_id')
+      .select('id, name, budget_amount, color, is_featured, pocket_type, budget_type, cycle_type, parent_pocket_id, month_year')
       .eq('user_id', userId)
       .eq('is_active', true)
       .eq('month_year', monthYear)
@@ -134,6 +135,7 @@ export async function calculatePocketSpending(
       pocket_type: pocket.pocket_type,
       budget_type: pocket.budget_type,
       cycle_type: pocket.cycle_type,
+      month_year: pocket.month_year,
       transactions: pocketTransactions
     };
   });
