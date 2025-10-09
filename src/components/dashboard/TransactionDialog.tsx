@@ -18,6 +18,7 @@ interface BudgetPocket {
   name: string;
   color: string;
   pocket_type: string;
+  month_year?: string | null;
 }
 
 interface Category {
@@ -840,16 +841,24 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
           <div className="space-y-2">
             <Label htmlFor="pocket">Budget Pocket</Label>
             {(() => {
-              const filteredPockets = pockets.filter(pocket => pocket.pocket_type === type);
-              
+              // Extract month-year from transaction date (YYYY-MM format)
+              const transactionMonth = date ? date.substring(0, 7) : null;
+
+              // Filter pockets by type and month
+              const filteredPockets = pockets.filter(pocket => {
+                const typeMatches = pocket.pocket_type === type;
+                const monthMatches = !transactionMonth || pocket.month_year === transactionMonth;
+                return typeMatches && monthMatches;
+              });
+
               if (filteredPockets.length === 0) {
                 return (
                   <div className="text-sm text-muted-foreground p-3 border rounded-md bg-muted/50">
-                    No {type} pockets have been created yet.
+                    No {type} pockets available for {transactionMonth ? new Date(transactionMonth + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'the selected month'}.
                   </div>
                 );
               }
-              
+
               return (
                 <Select value={pocketId} onValueChange={setPocketId}>
                   <SelectTrigger>
