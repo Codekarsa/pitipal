@@ -9,8 +9,11 @@ SELECT cron.schedule(
   $$
   SELECT
     net.http_post(
-        url:='https://nhqlaikoiyqmwsxqjorn.supabase.co/functions/v1/monthly-rollover',
-        headers:='{"Content-Type": "application/json", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ocWxhaWtvaXlxbXdzeHFqb3JuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg1MTA3NDUsImV4cCI6MjA3NDA4Njc0NX0.8cr36_MnLrwjGh22-Vu1TQtLbIJfBb0KL9i6DYgKeEg"}'::jsonb,
+        url:=current_setting('app.settings.supabase_url') || '/functions/v1/monthly-rollover',
+        headers:=jsonb_build_object(
+          'Content-Type', 'application/json',
+          'Authorization', 'Bearer ' || current_setting('app.settings.supabase_anon_key')
+        ),
         body:=concat('{"time": "', now(), '"}')::jsonb
     ) as request_id;
   $$
