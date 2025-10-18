@@ -27,7 +27,6 @@ interface BudgetPocket {
   is_featured: boolean;
   month_year: string | null;
   parent_pocket_id: string | null;
-  auto_renew: boolean;
 }
 
 export function PocketsPage() {
