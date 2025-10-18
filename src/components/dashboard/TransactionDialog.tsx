@@ -92,6 +92,7 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
   const [investmentAccounts, setInvestmentAccounts] = useState<InvestmentAccount[]>([]);
   const [creditCardAccounts, setCreditCardAccounts] = useState<CreditCardAccount[]>([]);
   const [loading, setLoading] = useState(false);
+  const [allPockets, setAllPockets] = useState<BudgetPocket[]>([]); // Store all pockets for date-based filtering
   
   // Investment-specific fields
   const [assets, setAssets] = useState<Asset[]>([]);
@@ -193,6 +194,7 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
       fetchCategories();
       fetchPayees();
       fetchAccounts();
+      fetchAllPockets(); // Fetch all pockets for month-based filtering
       if (type === 'investment') {
         fetchAssets();
       }
@@ -355,6 +357,24 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
       setAssets(data || []);
     } catch (error: any) {
       console.error('Error loading assets:', error);
+    }
+  };
+
+  const fetchAllPockets = async () => {
+    if (!user?.id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('budget_pockets')
+        .select('id, name, color, pocket_type, month_year')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .order('month_year', { ascending: false });
+
+      if (error) throw error;
+      setAllPockets(data || []);
+    } catch (error: any) {
+      console.error('Error loading pockets:', error);
     }
   };
 
@@ -844,8 +864,8 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
               // Extract month-year from transaction date (YYYY-MM format)
               const transactionMonth = date ? date.substring(0, 7) : null;
 
-              // Filter pockets by type and month
-              const filteredPockets = pockets.filter(pocket => {
+              // Filter pockets by type and month using allPockets instead of pockets prop
+              const filteredPockets = allPockets.filter(pocket => {
                 const typeMatches = pocket.pocket_type === type;
                 const monthMatches = !transactionMonth || pocket.month_year === transactionMonth;
                 return typeMatches && monthMatches;
