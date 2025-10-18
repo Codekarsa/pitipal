@@ -7,7 +7,7 @@ export interface CreditCardBalance {
   creditLimit: number;
   currentBalance: number;
   minimumPayment: number;
-  dueDate: string | null;
+  dueDate: number | null;
   isActive: boolean;
   transactions: Array<{
     id: string;

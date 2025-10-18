@@ -38,9 +38,6 @@ export function CreditCardPaymentDialog({ open, onOpenChange, onSuccess }: Credi
       // Filter to only show accounts with positive balances
       return accounts.filter(acc => acc.current_balance > 0)
                     .sort((a, b) => b.current_balance - a.current_balance);
-
-      if (error) throw error;
-      return data as CreditCardAccount[];
     },
     enabled: open,
   });
