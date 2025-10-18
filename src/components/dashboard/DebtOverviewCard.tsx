@@ -103,7 +103,7 @@ export function DebtOverviewCard() {
   const currentDay = today.getDate();
   const accountsDueSoon = creditCardAccounts.filter(account => {
     if (!account.dueDate) return false;
-    const dueDate = parseInt(account.dueDate);
+    const dueDate = account.dueDate;
     const daysUntilDue = dueDate >= currentDay
       ? dueDate - currentDay
       : (30 - currentDay) + dueDate;
@@ -167,7 +167,7 @@ export function DebtOverviewCard() {
                 <span className="text-sm font-medium">Due Soon</span>
               </div>
               {accountsDueSoon.slice(0, 2).map(account => (
-                <div key={account.id} className="flex items-center justify-between text-sm p-2 bg-destructive/10 rounded">
+                <div key={account.accountId} className="flex items-center justify-between text-sm p-2 bg-destructive/10 rounded">
                   <span className="font-medium">{account.accountName}</span>
                   <div className="text-right">
                     <div className="font-medium">{formatCurrency(account.minimumPayment)}</div>
