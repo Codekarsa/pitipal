@@ -66,7 +66,7 @@ export function LandingPage({ onGetStarted, onAbout }: LandingPageProps) {
         <div className="max-w-4xl mx-auto text-center space-y-8">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-border bg-muted/50 text-sm">
             <Code className="h-3 w-3" />
-            <span>Open Source • MIT Licensed</span>
+            <span>Open Source • AGPL-3.0 Licensed</span>
           </div>
           
           <h1 className="text-5xl lg:text-7xl font-bold tracking-tight">
@@ -171,7 +171,7 @@ export function LandingPage({ onGetStarted, onAbout }: LandingPageProps) {
               Open Source & Community Driven
             </h2>
             <p className="text-lg text-muted-foreground">
-              Pitipal is completely free and open source under the MIT license. 
+              Pitipal is completely free and open source under the AGPL-3.0 license.
               Join our community, contribute to the project, or customize it for your needs.
             </p>
           </div>
@@ -197,7 +197,7 @@ export function LandingPage({ onGetStarted, onAbout }: LandingPageProps) {
 
           <div className="flex flex-wrap items-center justify-center gap-3 pt-6">
             <Badge variant="outline" className="text-sm px-3 py-1">
-              MIT Licensed
+              AGPL-3.0 Licensed
             </Badge>
             <Badge variant="outline" className="text-sm px-3 py-1">
               Community Driven
@@ -236,7 +236,7 @@ export function LandingPage({ onGetStarted, onAbout }: LandingPageProps) {
               <span className="font-semibold">Pitipal</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              © 2025 Pitipal. Open source under MIT License.
+              © 2025 Pitipal. Open source under AGPL-3.0 License.
             </p>
           </div>
         </div>
