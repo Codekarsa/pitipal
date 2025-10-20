@@ -17,7 +17,10 @@ import {
   Settings,
   Users,
   ArrowRight,
-  Sparkles
+  Sparkles,
+  Github,
+  Code,
+  Heart
 } from "lucide-react";
 import heroImage from "@/assets/hero-image.jpg";
 
@@ -278,6 +281,62 @@ export function LandingPage({ onGetStarted, onAbout }: LandingPageProps) {
             </Card>
           </div>
         </div>
+      </section>
+
+      {/* Open Source Section */}
+      <section className="container mx-auto px-4 py-16">
+        <Card className="bg-gradient-card border-0 shadow-xl overflow-hidden">
+          <CardContent className="p-12">
+            <div className="flex flex-col items-center text-center space-y-6">
+              <div className="w-16 h-16 bg-gradient-primary rounded-2xl flex items-center justify-center shadow-glow">
+                <Github className="h-8 w-8 text-primary-foreground" />
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center justify-center gap-2">
+                  <Code className="h-5 w-5 text-primary" />
+                  <h3 className="text-3xl font-bold">Open Source & Free</h3>
+                  <Heart className="h-5 w-5 text-primary" />
+                </div>
+                <p className="text-xl text-muted-foreground max-w-2xl">
+                  Pitipal is completely open source and free to use. Built by the community, for the community.
+                  Contribute, customize, and make it your own!
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                <Button
+                  variant="hero"
+                  size="lg"
+                  className="group"
+                  onClick={() => window.open('https://github.com/Codekarsa/pitipal', '_blank')}
+                >
+                  <Github className="mr-2 h-5 w-5 group-hover:rotate-12 transition-transform duration-300" />
+                  View on GitHub
+                  <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform duration-300" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="group"
+                  onClick={() => window.open('https://github.com/Codekarsa/pitipal/stargazers', '_blank')}
+                >
+                  <Sparkles className="mr-2 h-4 w-4 group-hover:rotate-12 transition-transform duration-300" />
+                  Star the Project
+                </Button>
+              </div>
+              <div className="flex items-center gap-6 text-sm text-muted-foreground pt-4">
+                <Badge variant="outline" className="hover:scale-105 transition-transform duration-300">
+                  MIT Licensed
+                </Badge>
+                <Badge variant="outline" className="hover:scale-105 transition-transform duration-300">
+                  Community Driven
+                </Badge>
+                <Badge variant="outline" className="hover:scale-105 transition-transform duration-300">
+                  Always Free
+                </Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </section>
 
       {/* CTA Section */}
