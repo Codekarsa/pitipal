@@ -59,6 +59,46 @@ This project is built with:
 - React
 - shadcn-ui
 - Tailwind CSS
+- Supabase (Backend & Database)
+
+## Supabase Setup
+
+This project uses Supabase for backend functionality (authentication, database, etc.).
+
+### Quick Start (Demo Instance)
+
+The project comes pre-configured with a demo Supabase instance. Just run:
+
+```sh
+npm run dev
+```
+
+The demo instance is safe for testing and development. The credentials are hardcoded in `src/integrations/supabase/client.ts`.
+
+### Using Your Own Supabase Instance (Optional)
+
+If you want to use your own Supabase project:
+
+1. **Create a Supabase project** at [https://supabase.com](https://supabase.com)
+
+2. **Get your credentials** from Project Settings → API:
+   - Project URL
+   - Anon/Public Key
+
+3. **Update the credentials** in `src/integrations/supabase/client.ts`:
+   ```typescript
+   const SUPABASE_URL = "your_project_url";
+   const SUPABASE_PUBLISHABLE_KEY = "your_anon_key";
+   ```
+
+4. **Run the database migrations** located in `supabase/migrations/` to set up the schema
+
+5. **(Optional)** Use environment variables:
+   - Copy `.env.example` to `.env`
+   - Add your credentials to `.env`
+   - Update `client.ts` to use `import.meta.env.VITE_SUPABASE_URL`
+
+**Note:** The Supabase anon/public key is safe to expose in client-side code - it's designed for this purpose and protected by Row Level Security (RLS) policies.
 
 ## How can I deploy this project?
 

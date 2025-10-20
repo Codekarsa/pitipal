@@ -2,6 +2,13 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
+// Demo Supabase credentials (safe for public use - anon key is client-side safe)
+// These are hardcoded to work with Lovable's preview environment
+// 
+// To use your own Supabase instance:
+// 1. Create a new project at https://supabase.com
+// 2. Replace the values below with your project's URL and anon key
+// 3. Update the database schema to match (see supabase/migrations/)
 const SUPABASE_URL = "***REMOVED***";
 const SUPABASE_PUBLISHABLE_KEY = "***REMOVED***";
 
