@@ -13,6 +13,8 @@ import { formatCurrency } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { TransactionDialog } from "@/components/dashboard/TransactionDialog";
+import { MonthNavigator } from "@/components/dashboard/MonthNavigator";
+import { format } from "date-fns";
 
 interface Transaction {
   id: string;
@@ -63,6 +65,7 @@ export function TransactionsPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [accountFilter, setAccountFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("date_desc");
+  const [selectedMonth, setSelectedMonth] = useState<string>(format(new Date(), "yyyy-MM"));
   const [userCurrency, setUserCurrency] = useState<string>('USD');
   const [pocketName, setPocketName] = useState<string>('');
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -180,23 +183,33 @@ export function TransactionsPage() {
   const fetchTransactions = useCallback(async () => {
     try {
       setLoading(true);
+
+      // Calculate date range for selected month
+      const startDate = `${selectedMonth}-01`;
+      const [year, month] = selectedMonth.split('-').map(Number);
+      const nextMonth = month === 12 ? 1 : month + 1;
+      const nextYear = month === 12 ? year + 1 : year;
+      const endDate = `${nextYear}-${String(nextMonth).padStart(2, '0')}-01`;
+
       let query = supabase
         .from('transactions')
         .select(`
           *,
           payees(name)
         `)
-        .eq('user_id', user?.id);
+        .eq('user_id', user?.id)
+        .gte('transaction_date', startDate)
+        .lt('transaction_date', endDate);
 
       // Apply filters
       if (pocketId) {
         query = query.eq('pocket_id', pocketId);
       }
-      
+
       if (typeFilter !== "all") {
         query = query.eq('type', typeFilter);
       }
-      
+
       if (categoryFilter !== "all") {
         query = query.eq('category', categoryFilter);
       }
@@ -272,7 +285,7 @@ export function TransactionsPage() {
     } finally {
       setLoading(false);
     }
-  }, [user, pocketId, typeFilter, categoryFilter, accountFilter, sortBy, searchTerm, accounts, toast]);
+  }, [user, pocketId, typeFilter, categoryFilter, accountFilter, sortBy, searchTerm, accounts, toast, selectedMonth]);
 
   // Initial data loading effect
   useEffect(() => {
@@ -410,7 +423,7 @@ export function TransactionsPage() {
             {pocketId ? `Transactions for ${pocketName} pocket` : 'Track and manage all your financial transactions'}
           </p>
           {pocketId && (
-            <button 
+            <button
               onClick={() => navigate('/transactions')}
               className="text-sm text-primary hover:underline mt-1"
             >
@@ -418,6 +431,10 @@ export function TransactionsPage() {
             </button>
           )}
         </div>
+        <MonthNavigator
+          selectedMonth={selectedMonth}
+          onMonthChange={setSelectedMonth}
+        />
       </div>
 
       {/* Stats Cards */}
@@ -580,7 +597,9 @@ export function TransactionsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
-            <span>All Transactions ({transactions.length})</span>
+            <span>
+              Transactions for {format(new Date(`${selectedMonth}-01`), "MMMM yyyy")} ({transactions.length})
+            </span>
             <Button variant="outline" size="sm">
               <ArrowUpDown className="h-4 w-4 mr-2" />
               Sort
