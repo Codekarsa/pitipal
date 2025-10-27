@@ -538,8 +538,6 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
         setSessionTransactionCount(prev => prev + 1);
       }
       
-      onSuccess();
-      
       // Refresh payees list to get latest from database
       setTimeout(() => {
         fetchPayees();
@@ -561,6 +559,9 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
         setInvestmentAccountId(currentInvestmentAccount);
         setCreditCardAccountId(currentCreditCardAccount);
         
+        // Don't call onSuccess() here - it would close the modal
+        // Data will refresh when modal is eventually closed
+        
         // Auto-focus amount field after a brief delay
         setTimeout(() => {
           const amountInput = document.getElementById('amount') as HTMLInputElement;
@@ -572,6 +573,7 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
         // Normal flow: reset form and close modal
         console.log('Resetting form after successful submission');
         resetForm();
+        onSuccess();
       }
     } catch (error: any) {
       handleError(error, "Failed to add transaction. Please check your inputs and try again.");
