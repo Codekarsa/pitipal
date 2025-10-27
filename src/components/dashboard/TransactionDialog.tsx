@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Combobox } from "@/components/ui/combobox";
+import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -101,6 +102,10 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
   const [pricePerUnit, setPricePerUnit] = useState("");
   const [fees, setFees] = useState("");
   const [investmentType, setInvestmentType] = useState<"buy" | "sell">("buy");
+  
+  // Keep adding transactions feature
+  const [keepAddingTransactions, setKeepAddingTransactions] = useState(false);
+  const [sessionTransactionCount, setSessionTransactionCount] = useState(0);
   
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
@@ -525,11 +530,13 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
       // Note: Credit card balances are now calculated dynamically from transactions
       // No need to manually update current_balance - this prevents sync issues
       
-      // Reset form
-      console.log('Resetting form after successful submission');
-      resetForm();
-      
-      showSuccessMessage(editingTransaction ? "Transaction updated successfully" : "Transaction added successfully");
+      // Show success message
+      if (editingTransaction) {
+        showSuccessMessage("Transaction updated successfully");
+      } else {
+        showSuccessMessage("Transaction saved! ✓");
+        setSessionTransactionCount(prev => prev + 1);
+      }
       
       onSuccess();
       
@@ -537,6 +544,35 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
       setTimeout(() => {
         fetchPayees();
       }, 100);
+      
+      // Handle "keep adding" feature
+      if (keepAddingTransactions && !editingTransaction) {
+        // Reset form but keep date and optionally account
+        const currentDate = date;
+        const currentSavingsAccount = savingsAccountId;
+        const currentInvestmentAccount = investmentAccountId;
+        const currentCreditCardAccount = creditCardAccountId;
+        
+        resetForm();
+        
+        // Restore preserved fields
+        setDate(currentDate);
+        setSavingsAccountId(currentSavingsAccount);
+        setInvestmentAccountId(currentInvestmentAccount);
+        setCreditCardAccountId(currentCreditCardAccount);
+        
+        // Auto-focus amount field after a brief delay
+        setTimeout(() => {
+          const amountInput = document.getElementById('amount') as HTMLInputElement;
+          if (amountInput) {
+            amountInput.focus();
+          }
+        }, 100);
+      } else {
+        // Normal flow: reset form and close modal
+        console.log('Resetting form after successful submission');
+        resetForm();
+      }
     } catch (error: any) {
       handleError(error, "Failed to add transaction. Please check your inputs and try again.");
     } finally {
@@ -564,8 +600,12 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
   };
 
   const handleDialogOpenChange = (open: boolean) => {
-    if (!open && !editingTransaction) {
-      resetForm();
+    if (!open) {
+      if (!editingTransaction) {
+        resetForm();
+      }
+      // Reset session counter when dialog closes
+      setSessionTransactionCount(0);
     }
     onOpenChange(open);
   };
@@ -913,6 +953,27 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
               rows={2}
             />
           </div>
+
+          {!editingTransaction && (
+            <div className="flex items-center space-x-2 pt-2">
+              <Checkbox
+                id="keepAdding"
+                checked={keepAddingTransactions}
+                onCheckedChange={(checked) => setKeepAddingTransactions(checked as boolean)}
+              />
+              <Label
+                htmlFor="keepAdding"
+                className="text-sm font-normal cursor-pointer select-none"
+              >
+                Keep adding transactions
+              </Label>
+              {sessionTransactionCount > 0 && (
+                <span className="text-xs text-muted-foreground ml-2">
+                  ({sessionTransactionCount} added this session)
+                </span>
+              )}
+            </div>
+          )}
 
           <DialogFooter className="gap-2">
             <Button
