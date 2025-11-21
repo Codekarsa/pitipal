@@ -17,7 +17,7 @@ import {
   Upload, FileText, CheckCircle, AlertCircle,
   X, Eye, Database, Download
 } from "lucide-react";
-import { parseCSV, validateCSVData, generateCSVTemplate } from "@/lib/csv-utils";
+import { parseCSV, validateCSVData, generateCSVTemplate, importTransactions } from "@/lib/csv-utils";
 
 interface ImportDialogProps {
   open: boolean;
@@ -90,28 +90,43 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
     setUploadProgress(10);
 
     try {
-      // Simulate progress updates
+      // Progress updates
       const progressInterval = setInterval(() => {
         setUploadProgress(prev => Math.min(prev + 10, 90));
       }, 200);
 
-      // Here you would implement the actual import logic
-      // For now, we'll simulate a successful import
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
+      let result: { success: number; failed: number; errors: string[] };
+
+      if (importType === "transactions") {
+        const csvData = [parsedData.headers, ...parsedData.rows];
+        result = await importTransactions(csvData, user.id);
+      } else {
+        // Placeholder for pockets import (will be implemented in Step 4)
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        result = { success: parsedData.rows.length, failed: 0, errors: [] };
+      }
+
       clearInterval(progressInterval);
       setUploadProgress(100);
-      
-      toast({
-        title: "Import Successful",
-        description: `Imported ${parsedData.rows.length} ${importType} successfully.`,
-      });
-      
+
+      if (result.failed > 0) {
+        toast({
+          title: "Import Completed with Errors",
+          description: `Imported ${result.success} ${importType}. ${result.failed} failed.`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Import Successful",
+          description: `Imported ${result.success} ${importType} successfully.`,
+        });
+      }
+
       // Reset state
       setSelectedFile(null);
       setParsedData(null);
       onOpenChange(false);
-      
+
     } catch (error) {
       toast({
         title: "Import Failed",
