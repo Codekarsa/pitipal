@@ -17,7 +17,7 @@ import {
   Upload, FileText, CheckCircle, AlertCircle,
   X, Eye, Database, Download
 } from "lucide-react";
-import { parseCSV, validateCSVData, generateCSVTemplate, importTransactions } from "@/lib/csv-utils";
+import { parseCSV, validateCSVData, generateCSVTemplate, importTransactions, importBudgetPockets } from "@/lib/csv-utils";
 
 interface ImportDialogProps {
   open: boolean;
@@ -97,13 +97,14 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
 
       let result: { success: number; failed: number; errors: string[] };
 
+      const csvData = [parsedData.headers, ...parsedData.rows];
+
       if (importType === "transactions") {
-        const csvData = [parsedData.headers, ...parsedData.rows];
         result = await importTransactions(csvData, user.id);
+      } else if (importType === "pockets") {
+        result = await importBudgetPockets(csvData, user.id);
       } else {
-        // Placeholder for pockets import (will be implemented in Step 4)
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        result = { success: parsedData.rows.length, failed: 0, errors: [] };
+        result = { success: 0, failed: 0, errors: ['Unknown import type'] };
       }
 
       clearInterval(progressInterval);

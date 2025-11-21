@@ -420,3 +420,90 @@ export const importTransactions = async (
 
   return { success, failed, errors };
 };
+
+// Import Budget Pockets
+export const importBudgetPockets = async (
+  data: string[][],
+  userId: string
+): Promise<{ success: number; failed: number; errors: string[] }> => {
+  const headers = data[0];
+  const rows = data.slice(1);
+  const errors: string[] = [];
+  let success = 0;
+  let failed = 0;
+
+  // Get column indices
+  const nameIdx = getColumnIndex(headers, 'name');
+  const budgetAmountIdx = getColumnIndex(headers, 'budget_amount');
+  const pocketTypeIdx = getColumnIndex(headers, 'pocket_type');
+  const cycleTypeIdx = getColumnIndex(headers, 'cycle_type');
+  const descriptionIdx = getColumnIndex(headers, 'description');
+  const colorIdx = getColumnIndex(headers, 'color');
+  const iconIdx = getColumnIndex(headers, 'icon');
+
+  // Get current month for pocket instances
+  const now = new Date();
+  const monthYear = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+  // Process each row
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const rowNum = i + 2; // Account for header row and 0-index
+
+    try {
+      const name = row[nameIdx]?.trim();
+      const budgetAmount = parseFloat(row[budgetAmountIdx]?.trim() || '0');
+      const pocketType = row[pocketTypeIdx]?.trim().toLowerCase();
+      const cycleType = cycleTypeIdx >= 0 ? row[cycleTypeIdx]?.trim().toLowerCase() : 'monthly';
+      const description = descriptionIdx >= 0 ? row[descriptionIdx]?.trim() : '';
+      const color = colorIdx >= 0 ? row[colorIdx]?.trim() : '#6b7280';
+      const icon = iconIdx >= 0 ? row[iconIdx]?.trim() : 'wallet';
+
+      // Validate required fields
+      if (!name || isNaN(budgetAmount) || !pocketType) {
+        errors.push(`Row ${rowNum}: Missing required fields (name, budget_amount, pocket_type)`);
+        failed++;
+        continue;
+      }
+
+      // Validate pocket_type
+      if (pocketType !== 'expense' && pocketType !== 'savings') {
+        errors.push(`Row ${rowNum}: Invalid pocket_type "${pocketType}". Must be "expense" or "savings"`);
+        failed++;
+        continue;
+      }
+
+      // Insert budget pocket as instance for current month
+      const { error: pocketError } = await supabase
+        .from('budget_pockets')
+        .insert({
+          user_id: userId,
+          name: name,
+          budget_amount: budgetAmount,
+          pocket_type: pocketType,
+          budget_type: pocketType === 'savings' ? 'savings' : 'expense',
+          cycle_type: cycleType || 'monthly',
+          description: description || null,
+          color: color || '#6b7280',
+          icon: icon || 'wallet',
+          month_year: monthYear,
+          is_template: false,
+          is_active: true,
+          is_featured: false,
+          current_amount: 0,
+        });
+
+      if (pocketError) {
+        errors.push(`Row ${rowNum}: ${pocketError.message}`);
+        failed++;
+      } else {
+        success++;
+      }
+    } catch (error) {
+      errors.push(`Row ${rowNum}: Unexpected error`);
+      failed++;
+    }
+  }
+
+  return { success, failed, errors };
+};
