@@ -2,7 +2,7 @@
 -- These values should be set via Supabase dashboard Settings > Database > Configuration
 -- or via SQL:
 --
--- ALTER DATABASE postgres SET app.settings.supabase_url = '***REMOVED***';
+-- ALTER DATABASE postgres SET app.settings.supabase_url = 'https://nhqlaikoiyqmwsxqjorn.supabase.co';
 -- ALTER DATABASE postgres SET app.settings.supabase_anon_key = 'your-anon-key';
 --
 -- For local development with supabase CLI, these are automatically available as environment variables
