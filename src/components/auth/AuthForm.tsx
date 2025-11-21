@@ -106,6 +106,8 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
           description: error.message,
           variant: "destructive",
         });
+      } else {
+        onSuccess();
       }
     } catch (error) {
       toast({
