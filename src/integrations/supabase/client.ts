@@ -9,8 +9,8 @@ import type { Database } from './types';
 // 1. Create a new project at https://supabase.com
 // 2. Replace the values below with your project's URL and anon key
 // 3. Update the database schema to match (see supabase/migrations/)
-const SUPABASE_URL = "***REMOVED***";
-const SUPABASE_PUBLISHABLE_KEY = "***REMOVED***";
+const SUPABASE_URL = "https://nhqlaikoiyqmwsxqjorn.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_cs0BK-FcZHqzX1OIlGNOpA_SX8lFzfT";
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
