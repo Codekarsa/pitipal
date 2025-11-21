@@ -146,22 +146,12 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
         <div className="flex-1 overflow-hidden">
           <Tabs value={importType} onValueChange={setImportType} className="space-y-4">
             {/* Import Type Selection */}
-            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-1">
-              <TabsTrigger value="transactions" className="text-xs px-2">
-                <span className="hidden sm:inline">Transactions</span>
-                <span className="sm:hidden">Trans.</span>
+            <TabsList className="grid w-full grid-cols-2 gap-1">
+              <TabsTrigger value="transactions" className="text-xs sm:text-sm px-2">
+                Transactions
               </TabsTrigger>
-              <TabsTrigger value="pockets" className="text-xs px-2">
-                <span className="hidden sm:inline">Budget Pockets</span>
-                <span className="sm:hidden">Pockets</span>
-              </TabsTrigger>
-              <TabsTrigger value="categories" className="text-xs px-2">
-                <span className="hidden sm:inline">Categories</span>
-                <span className="sm:hidden">Categ.</span>
-              </TabsTrigger>
-              <TabsTrigger value="accounts" className="text-xs px-2">
-                <span className="hidden sm:inline">Accounts</span>
-                <span className="sm:hidden">Acc.</span>
+              <TabsTrigger value="pockets" className="text-xs sm:text-sm px-2">
+                Budget Pockets
               </TabsTrigger>
             </TabsList>
 
