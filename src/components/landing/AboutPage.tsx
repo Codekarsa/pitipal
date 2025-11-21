@@ -26,8 +26,8 @@ export function AboutPage({ onBack }: AboutPageProps) {
       <header className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-primary rounded-xl flex items-center justify-center shadow-glow">
-              <span className="text-lg font-bold text-primary-foreground">₿</span>
+            <div className="w-10 h-10 bg-gradient-primary rounded-xl flex items-center justify-center shadow-glow overflow-hidden">
+              <img src="/pitipal_square.png" alt="Pitipal" className="w-full h-full object-cover" />
             </div>
             <span className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
               Pitipal
@@ -255,8 +255,8 @@ export function AboutPage({ onBack }: AboutPageProps) {
       <footer className="container mx-auto px-4 py-8 border-t border-border">
         <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-              <span className="text-sm font-bold text-primary-foreground">₿</span>
+            <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center overflow-hidden">
+              <img src="/pitipal_square.png" alt="Pitipal" className="w-full h-full object-cover" />
             </div>
             <span className="font-semibold text-foreground">Pitipal</span>
           </div>
