@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { initializeGA, trackPageView } from "@/lib/analytics";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -23,6 +24,9 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+// Initialize Google Analytics
+initializeGA();
+
 interface BudgetPocket {
   id: string;
   name: string;
@@ -39,6 +43,12 @@ function AppContent() {
   const [showCreatePocket, setShowCreatePocket] = useState(false);
   const [pockets, setPockets] = useState<BudgetPocket[]>([]);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Track page views
+  useEffect(() => {
+    trackPageView(location.pathname);
+  }, [location]);
 
   useEffect(() => {
     if (user) {
