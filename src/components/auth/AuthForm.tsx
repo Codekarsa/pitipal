@@ -434,7 +434,7 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
     <div className="min-h-screen flex items-center justify-center bg-gradient-subtle p-4">
       <Card className="w-full max-w-md bg-gradient-card border-0 shadow-xl">
         <CardHeader className="text-center space-y-4">
-          <div className="mx-auto w-16 h-16 bg-gradient-primary rounded-2xl flex items-center justify-center shadow-glow overflow-hidden">
+          <div className="mx-auto w-16 h-16 rounded-2xl flex items-center justify-center overflow-hidden">
             <img src="/pitipal_square.png" alt="Pitipal" className="w-full h-full object-cover" />
           </div>
           <CardTitle className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">

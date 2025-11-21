@@ -72,7 +72,7 @@ function AppContent() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-subtle">
         <div className="text-center space-y-4">
-          <div className="w-16 h-16 bg-gradient-primary rounded-2xl flex items-center justify-center shadow-glow mx-auto animate-pulse overflow-hidden">
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto animate-pulse overflow-hidden">
             <img src="/pitipal_square.png" alt="Pitipal" className="w-full h-full object-cover" />
           </div>
           <p className="text-muted-foreground">Loading Pitipal...</p>
