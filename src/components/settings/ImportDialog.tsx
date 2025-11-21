@@ -13,11 +13,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Upload, FileText, CheckCircle, AlertCircle, 
-  X, Eye, Database
+import {
+  Upload, FileText, CheckCircle, AlertCircle,
+  X, Eye, Database, Download
 } from "lucide-react";
-import { parseCSV, validateCSVData } from "@/lib/csv-utils";
+import { parseCSV, validateCSVData, generateCSVTemplate } from "@/lib/csv-utils";
 
 interface ImportDialogProps {
   open: boolean;
@@ -130,6 +130,28 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
     setUploadProgress(0);
   };
 
+  const handleDownloadSample = async () => {
+    try {
+      const templateType = importType === "pockets" ? "pockets" : "transactions";
+      const csvContent = await generateCSVTemplate(templateType);
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${templateType}_sample.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      toast({
+        title: "Download Failed",
+        description: "Failed to generate sample CSV.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[95vw] sm:max-w-2xl lg:max-w-4xl max-h-[85vh] sm:max-h-[80vh] overflow-hidden flex flex-col">
@@ -217,6 +239,18 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
                           UTF-8 encoding recommended
                         </div>
                       </div>
+                    </div>
+
+                    <div className="mt-4 pt-4 border-t">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleDownloadSample}
+                        className="w-full"
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        Download Sample CSV
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
