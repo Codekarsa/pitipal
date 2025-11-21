@@ -304,3 +304,119 @@ export const validateCSVData = (data: string[][], type: string): { isValid: bool
   
   return { isValid: errors.length === 0, errors };
 };
+
+// Helper to get column index from headers
+const getColumnIndex = (headers: string[], columnName: string): number => {
+  return headers.findIndex(h => h.toLowerCase().includes(columnName.toLowerCase()));
+};
+
+// Import Transactions
+export const importTransactions = async (
+  data: string[][],
+  userId: string
+): Promise<{ success: number; failed: number; errors: string[] }> => {
+  const headers = data[0];
+  const rows = data.slice(1);
+  const errors: string[] = [];
+  let success = 0;
+  let failed = 0;
+
+  // Get column indices
+  const dateIdx = getColumnIndex(headers, 'date');
+  const descIdx = getColumnIndex(headers, 'description');
+  const amountIdx = getColumnIndex(headers, 'amount');
+  const typeIdx = getColumnIndex(headers, 'type');
+  const categoryIdx = getColumnIndex(headers, 'category');
+  const payeeIdx = getColumnIndex(headers, 'payee');
+  const notesIdx = getColumnIndex(headers, 'notes');
+
+  // Fetch existing categories for user
+  const { data: existingCategories } = await supabase
+    .from('categories')
+    .select('id, name')
+    .eq('user_id', userId);
+
+  const categoryMap = new Map<string, string>();
+  existingCategories?.forEach(cat => {
+    categoryMap.set(cat.name.toLowerCase(), cat.id);
+  });
+
+  // Process each row
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const rowNum = i + 2; // Account for header row and 0-index
+
+    try {
+      const date = row[dateIdx]?.trim();
+      const amount = parseFloat(row[amountIdx]?.trim() || '0');
+      const type = row[typeIdx]?.trim().toLowerCase();
+      const categoryName = row[categoryIdx]?.trim();
+      const description = descIdx >= 0 ? row[descIdx]?.trim() : '';
+      const payeeName = payeeIdx >= 0 ? row[payeeIdx]?.trim() : '';
+      const notes = notesIdx >= 0 ? row[notesIdx]?.trim() : '';
+
+      // Validate required fields
+      if (!date || isNaN(amount) || !type || !categoryName) {
+        errors.push(`Row ${rowNum}: Missing required fields`);
+        failed++;
+        continue;
+      }
+
+      // Validate type
+      if (type !== 'expense' && type !== 'income') {
+        errors.push(`Row ${rowNum}: Invalid type "${type}". Must be "expense" or "income"`);
+        failed++;
+        continue;
+      }
+
+      // Get or create category
+      let categoryId = categoryMap.get(categoryName.toLowerCase());
+      if (!categoryId) {
+        // Auto-create category
+        const { data: newCategory, error: catError } = await supabase
+          .from('categories')
+          .insert({
+            user_id: userId,
+            name: categoryName,
+            type: type,
+            color: '#6b7280', // Default gray color
+          })
+          .select('id')
+          .single();
+
+        if (catError || !newCategory) {
+          errors.push(`Row ${rowNum}: Failed to create category "${categoryName}"`);
+          failed++;
+          continue;
+        }
+        categoryId = newCategory.id;
+        categoryMap.set(categoryName.toLowerCase(), categoryId);
+      }
+
+      // Insert transaction
+      const { error: txError } = await supabase
+        .from('transactions')
+        .insert({
+          user_id: userId,
+          transaction_date: date,
+          amount: type === 'expense' ? -Math.abs(amount) : Math.abs(amount),
+          type: type,
+          category: categoryName,
+          description: description || null,
+          notes: notes || null,
+        });
+
+      if (txError) {
+        errors.push(`Row ${rowNum}: ${txError.message}`);
+        failed++;
+      } else {
+        success++;
+      }
+    } catch (error) {
+      errors.push(`Row ${rowNum}: Unexpected error`);
+      failed++;
+    }
+  }
+
+  return { success, failed, errors };
+};
