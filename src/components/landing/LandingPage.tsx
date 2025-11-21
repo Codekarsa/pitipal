@@ -34,7 +34,7 @@ export function LandingPage({ onGetStarted, onAbout }: LandingPageProps) {
       <header className="relative container mx-auto px-4 py-6 border-b border-border/40">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center overflow-hidden">
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center overflow-hidden">
               <img src="/pitipal_square.png" alt="Pitipal" className="w-full h-full object-cover" />
             </div>
             <span className="text-xl font-semibold">Pitipal</span>
@@ -230,7 +230,7 @@ export function LandingPage({ onGetStarted, onAbout }: LandingPageProps) {
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center overflow-hidden">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden">
                 <img src="/pitipal_square.png" alt="Pitipal" className="w-full h-full object-cover" />
               </div>
               <span className="font-semibold">Pitipal</span>
