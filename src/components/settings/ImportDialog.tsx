@@ -18,6 +18,7 @@ import {
   X, Eye, Database, Download
 } from "lucide-react";
 import { parseCSV, validateCSVData, generateCSVTemplate, importTransactions, importBudgetPockets } from "@/lib/csv-utils";
+import { analytics } from "@/lib/analytics";
 
 interface ImportDialogProps {
   open: boolean;
@@ -121,6 +122,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
           title: "Import Successful",
           description: `Imported ${result.success} ${importType} successfully.`,
         });
+        analytics.trackImportCompleted(importType, result.success);
       }
 
       // Reset state

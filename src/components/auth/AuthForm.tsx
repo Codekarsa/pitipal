@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { analytics } from "@/lib/analytics";
 import { Chrome, Mail, Lock, ArrowLeft } from "lucide-react";
 
 interface AuthFormProps {
@@ -72,6 +73,7 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
           variant: "destructive",
         });
       } else {
+        analytics.trackSignUp('email');
         toast({
           title: "Check your email",
           description: "We've sent you a confirmation link to complete your registration.",
@@ -107,6 +109,7 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
           variant: "destructive",
         });
       } else {
+        analytics.trackLogin('email');
         onSuccess();
       }
     } catch (error) {

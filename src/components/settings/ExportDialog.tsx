@@ -13,11 +13,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Download, FileText, CheckCircle, 
+import {
+  Download, FileText, CheckCircle,
   Database, Clock, Package
 } from "lucide-react";
 import { exportDataToCSV } from "@/lib/csv-utils";
+import { analytics } from "@/lib/analytics";
 
 interface ExportDialogProps {
   open: boolean;
@@ -119,10 +120,14 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
       }
 
       setExportProgress(100);
-      
+
       toast({
         title: "Export Successful",
         description: `Exported ${selectedOptions.length} file(s) successfully.`,
+      });
+
+      selectedOptions.forEach(option => {
+        analytics.trackExportCompleted(option.id);
       });
 
       // Close dialog after short delay

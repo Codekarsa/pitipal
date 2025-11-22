@@ -12,6 +12,7 @@ import { MonthNavigator } from "@/components/dashboard/MonthNavigator";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { calculatePocketSpending, PocketSpending } from "@/utils/pocketCalculations";
+import { analytics } from "@/lib/analytics";
 
 interface BudgetPocket {
   id: string;
@@ -88,6 +89,7 @@ export function PocketsPage() {
 
       if (error) throw error;
 
+      analytics.trackPocketDeleted();
       queryClient.invalidateQueries({ queryKey: ["pocketSpending", user?.id, selectedMonth] });
       toast({
         title: "Pocket deleted",
