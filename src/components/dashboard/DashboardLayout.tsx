@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/components/auth/useAuth";
 import { LogOut, Plus, Settings, PieChart, Wallet, Receipt } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { analytics } from "@/lib/analytics";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -21,6 +22,7 @@ export function DashboardLayout({ children, onAddTransaction, onAddPocket }: Das
   const handleSignOut = async () => {
     try {
       await signOut();
+      analytics.trackLogout();
       toast({
         title: "Signed out successfully",
         description: "Come back soon!",

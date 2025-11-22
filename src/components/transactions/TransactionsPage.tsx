@@ -15,6 +15,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { TransactionDialog } from "@/components/dashboard/TransactionDialog";
 import { MonthNavigator } from "@/components/dashboard/MonthNavigator";
 import { format } from "date-fns";
+import { analytics } from "@/lib/analytics";
 
 interface Transaction {
   id: string;
@@ -366,6 +367,7 @@ export function TransactionsPage() {
 
       if (error) throw error;
 
+      analytics.trackTransactionDeleted();
       toast({
         title: "Transaction deleted",
         description: "The transaction has been successfully deleted.",

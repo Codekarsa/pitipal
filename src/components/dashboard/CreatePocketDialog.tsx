@@ -12,6 +12,7 @@ import { useAuth } from "@/components/auth/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { withRetry, handleError } from "@/lib/error-utils";
 import { format } from "date-fns";
+import { analytics } from "@/lib/analytics";
 
 interface CreatePocketDialogProps {
   open: boolean;
@@ -174,7 +175,8 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
         title: "Success",
         description: isTemplate ? "Template created successfully" : "Budget pocket created successfully",
       });
-      
+
+      analytics.trackPocketCreated(budgetType);
       onSuccess();
     } catch (error: any) {
       handleError(error, "Failed to create pocket. Please check your inputs and try again.");

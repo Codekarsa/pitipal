@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { withRetry, handleError, showSuccessMessage } from "@/lib/error-utils";
+import { analytics } from "@/lib/analytics";
 
 interface BudgetPocket {
   id: string;
@@ -536,6 +537,7 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
       } else {
         showSuccessMessage("Transaction saved! ✓");
         setSessionTransactionCount(prev => prev + 1);
+        analytics.trackTransactionCreated(type as 'expense' | 'income');
       }
       
       // Refresh payees list to get latest from database
