@@ -74,8 +74,12 @@ function AppContent() {
     }
   };
 
-  const handleRefreshPockets = () => {
+  // A saved transaction changes pocket totals and card balances, so refetch what shows them
+  const handleTransactionSaved = () => {
+    setShowAddTransaction(false);
     fetchPockets();
+    queryClient.invalidateQueries({ queryKey: ['pocketSpending'] });
+    queryClient.invalidateQueries({ queryKey: ['credit-card-balances'] });
   };
 
   if (loading) {
@@ -122,10 +126,7 @@ function AppContent() {
               <TransactionDialog
                 open={showAddTransaction}
                 onOpenChange={setShowAddTransaction}
-                onSuccess={() => {
-                  setShowAddTransaction(false);
-                  handleRefreshPockets();
-                }}
+                onSuccess={handleTransactionSaved}
                 pockets={pockets}
               />
             </DashboardLayout>
@@ -142,10 +143,7 @@ function AppContent() {
               <TransactionDialog
                 open={showAddTransaction}
                 onOpenChange={setShowAddTransaction}
-                onSuccess={() => {
-                  setShowAddTransaction(false);
-                  handleRefreshPockets();
-                }}
+                onSuccess={handleTransactionSaved}
                 pockets={pockets}
               />
               <CreatePocketDialog
@@ -167,10 +165,7 @@ function AppContent() {
               <TransactionDialog
                 open={showAddTransaction}
                 onOpenChange={setShowAddTransaction}
-                onSuccess={() => {
-                  setShowAddTransaction(false);
-                  handleRefreshPockets();
-                }}
+                onSuccess={handleTransactionSaved}
                 pockets={pockets}
               />
             </DashboardLayout>
@@ -187,10 +182,7 @@ function AppContent() {
               <TransactionDialog
                 open={showAddTransaction}
                 onOpenChange={setShowAddTransaction}
-                onSuccess={() => {
-                  setShowAddTransaction(false);
-                  handleRefreshPockets();
-                }}
+                onSuccess={handleTransactionSaved}
                 pockets={pockets}
               />
             </DashboardLayout>
@@ -207,10 +199,7 @@ function AppContent() {
               <TransactionDialog
                 open={showAddTransaction}
                 onOpenChange={setShowAddTransaction}
-                onSuccess={() => {
-                  setShowAddTransaction(false);
-                  handleRefreshPockets();
-                }}
+                onSuccess={handleTransactionSaved}
                 pockets={pockets}
               />
             </DashboardLayout>
@@ -227,10 +216,7 @@ function AppContent() {
               <TransactionDialog
                 open={showAddTransaction}
                 onOpenChange={setShowAddTransaction}
-                onSuccess={() => {
-                  setShowAddTransaction(false);
-                  handleRefreshPockets();
-                }}
+                onSuccess={handleTransactionSaved}
                 pockets={pockets}
               />
             </DashboardLayout>
