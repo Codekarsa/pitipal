@@ -42,6 +42,7 @@ function AppContent() {
   const [showAddTransaction, setShowAddTransaction] = useState(false);
   const [showCreatePocket, setShowCreatePocket] = useState(false);
   const [pockets, setPockets] = useState<BudgetPocket[]>([]);
+  const [transactionsRefreshKey, setTransactionsRefreshKey] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -80,6 +81,7 @@ function AppContent() {
     fetchPockets();
     queryClient.invalidateQueries({ queryKey: ['pocketSpending'] });
     queryClient.invalidateQueries({ queryKey: ['credit-card-balances'] });
+    setTransactionsRefreshKey(k => k + 1);
   };
 
   if (loading) {
@@ -161,7 +163,7 @@ function AppContent() {
               onAddTransaction={() => setShowAddTransaction(true)}
               onAddPocket={() => navigate("/pockets")}
             >
-              <TransactionsPage />
+              <TransactionsPage refreshKey={transactionsRefreshKey} />
               <TransactionDialog
                 open={showAddTransaction}
                 onOpenChange={setShowAddTransaction}
@@ -178,7 +180,7 @@ function AppContent() {
               onAddTransaction={() => setShowAddTransaction(true)}
               onAddPocket={() => navigate("/pockets")}
             >
-              <TransactionsPage />
+              <TransactionsPage refreshKey={transactionsRefreshKey} />
               <TransactionDialog
                 open={showAddTransaction}
                 onOpenChange={setShowAddTransaction}

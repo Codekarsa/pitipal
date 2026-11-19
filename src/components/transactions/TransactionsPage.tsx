@@ -54,7 +54,12 @@ interface BudgetPocket {
   pocket_type: "expense" | "income" | "investment";
 }
 
-export function TransactionsPage() {
+interface TransactionsPageProps {
+  // Changes when a transaction is saved outside this page, such as from the header
+  refreshKey?: number;
+}
+
+export function TransactionsPage({ refreshKey }: TransactionsPageProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const { pocketId } = useParams();
@@ -305,7 +310,7 @@ export function TransactionsPage() {
     if (user && accounts.length >= 0) { // accounts.length >= 0 to ensure it runs even when accounts is empty
       fetchTransactions();
     }
-  }, [user, typeFilter, categoryFilter, accountFilter, sortBy, searchTerm, accounts, fetchTransactions]);
+  }, [user, typeFilter, categoryFilter, accountFilter, sortBy, searchTerm, accounts, fetchTransactions, refreshKey]);
 
   const getUniqueCategories = () => {
     const categories = [...new Set(transactions.map(t => t.category))];
