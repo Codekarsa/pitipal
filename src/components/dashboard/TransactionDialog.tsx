@@ -705,7 +705,7 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="fees">Fees</Label>
                   <CurrencyInput
@@ -737,7 +737,7 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
               )}
             </>
           ) : (
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="amount">Amount *</Label>
                 <CurrencyInput
@@ -979,7 +979,8 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
             </div>
           )}
 
-          <DialogFooter className="gap-2">
+          {/* Stays at the bottom of the scrolling dialog so saving never needs a scroll on small screens */}
+          <DialogFooter className="gap-2 sticky -bottom-6 -mx-6 -mb-6 px-6 py-4 border-t bg-background">
             <Button
               type="button"
               variant="outline"

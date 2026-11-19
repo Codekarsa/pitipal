@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Search, Filter, ArrowUpDown, TrendingUp, TrendingDown, Edit, Trash2 } from "lucide-react";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatCompactCurrency } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { TransactionDialog } from "@/components/dashboard/TransactionDialog";
@@ -52,6 +52,41 @@ interface BudgetPocket {
   name: string;
   color: string;
   pocket_type: "expense" | "income" | "investment";
+}
+
+// Delete button with its confirmation, shared by the table and the phone list
+function DeleteTransactionButton({ onConfirm }: { onConfirm: () => void }) {
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+          aria-label="Delete transaction"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete Transaction</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to delete this transaction? This action cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={onConfirm}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
 }
 
 interface TransactionsPageProps {
@@ -421,7 +456,7 @@ export function TransactionsPage({ refreshKey }: TransactionsPageProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-3xl font-bold">
             {pocketId ? `${pocketName} Transactions` : 'Transactions'}
@@ -445,14 +480,14 @@ export function TransactionsPage({ refreshKey }: TransactionsPageProps) {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6">
         <Card className="bg-gradient-card border-0 shadow-sm">
           <CardContent className="p-4 lg:p-6">
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
                 <p className="text-xs lg:text-sm font-medium text-muted-foreground truncate">Total Income</p>
-                <p className="text-lg lg:text-xl xl:text-2xl font-bold text-green-600 truncate" title={formatCurrency(stats.income, userCurrency)}>
-                  {formatCurrency(stats.income, userCurrency)}
+                <p className="text-lg lg:text-xl 2xl:text-2xl font-bold text-green-600 truncate" title={formatCurrency(stats.income, userCurrency)}>
+                  {formatCompactCurrency(stats.income, userCurrency)}
                 </p>
               </div>
               <div className="w-10 h-10 lg:w-12 lg:h-12 bg-green-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -467,8 +502,8 @@ export function TransactionsPage({ refreshKey }: TransactionsPageProps) {
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
                 <p className="text-xs lg:text-sm font-medium text-muted-foreground truncate">Total Expenses</p>
-                <p className="text-lg lg:text-xl xl:text-2xl font-bold text-red-600 truncate" title={formatCurrency(stats.expenses, userCurrency)}>
-                  {formatCurrency(stats.expenses, userCurrency)}
+                <p className="text-lg lg:text-xl 2xl:text-2xl font-bold text-red-600 truncate" title={formatCurrency(stats.expenses, userCurrency)}>
+                  {formatCompactCurrency(stats.expenses, userCurrency)}
                 </p>
               </div>
               <div className="w-10 h-10 lg:w-12 lg:h-12 bg-red-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -483,8 +518,8 @@ export function TransactionsPage({ refreshKey }: TransactionsPageProps) {
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
                 <p className="text-xs lg:text-sm font-medium text-muted-foreground truncate">Net Amount</p>
-                <p className={`text-lg lg:text-xl xl:text-2xl font-bold truncate ${stats.net >= 0 ? 'text-green-600' : 'text-red-600'}`} title={formatCurrency(stats.net, userCurrency)}>
-                  {formatCurrency(stats.net, userCurrency)}
+                <p className={`text-lg lg:text-xl 2xl:text-2xl font-bold truncate ${stats.net >= 0 ? 'text-green-600' : 'text-red-600'}`} title={formatCurrency(stats.net, userCurrency)}>
+                  {formatCompactCurrency(stats.net, userCurrency)}
                 </p>
               </div>
               <div className={`w-10 h-10 lg:w-12 lg:h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
@@ -504,8 +539,8 @@ export function TransactionsPage({ refreshKey }: TransactionsPageProps) {
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
                 <p className="text-xs lg:text-sm font-medium text-muted-foreground truncate">Total Account Balance</p>
-                <p className="text-lg lg:text-xl xl:text-2xl font-bold text-primary truncate" title={formatCurrency(totalAccountBalance, userCurrency)}>
-                  {formatCurrency(totalAccountBalance, userCurrency)}
+                <p className="text-lg lg:text-xl 2xl:text-2xl font-bold text-primary truncate" title={formatCurrency(totalAccountBalance, userCurrency)}>
+                  {formatCompactCurrency(totalAccountBalance, userCurrency)}
                 </p>
               </div>
               <div className="w-10 h-10 lg:w-12 lg:h-12 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -525,11 +560,11 @@ export function TransactionsPage({ refreshKey }: TransactionsPageProps) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search transactions..."
+                placeholder="Search..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -622,7 +657,42 @@ export function TransactionsPage({ refreshKey }: TransactionsPageProps) {
               </p>
             </div>
           ) : (
-            <Table>
+            <>
+            {/* Phones: one stacked row per transaction so amount and actions stay visible */}
+            <ul className="lg:hidden divide-y">
+              {transactions.map((transaction) => (
+                <li key={transaction.id} className="flex items-start gap-3 py-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">
+                      {transaction.description || transaction.payees?.name || transaction.category}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {[formatDate(transaction.transaction_date), transaction.category, getAccountName(transaction)?.split(' (')[0]]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                    <span className={`font-medium whitespace-nowrap ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                      {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount, userCurrency)}
+                    </span>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEditTransaction(transaction)}
+                        className="h-8 w-8 p-0"
+                        aria-label="Edit transaction"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <DeleteTransactionButton onConfirm={() => handleDeleteTransaction(transaction.id)} />
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <Table className="hidden lg:table">
               <TableHeader>
                 <TableRow>
                   <TableHead>Date</TableHead>
@@ -632,7 +702,7 @@ export function TransactionsPage({ refreshKey }: TransactionsPageProps) {
                   <TableHead>Account</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead className="text-right">Amount</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead className="hidden xl:table-cell">Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -693,7 +763,7 @@ export function TransactionsPage({ refreshKey }: TransactionsPageProps) {
                         {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount, userCurrency)}
                       </span>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden xl:table-cell">
                       <div className="flex gap-1">
                         {transaction.is_recurring && (
                           <Badge variant="outline" className="text-xs">Recurring</Badge>
@@ -713,40 +783,14 @@ export function TransactionsPage({ refreshKey }: TransactionsPageProps) {
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Transaction</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to delete this transaction? This action cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDeleteTransaction(transaction.id)}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              >
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                        <DeleteTransactionButton onConfirm={() => handleDeleteTransaction(transaction.id)} />
                       </div>
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
+            </>
           )}
         </CardContent>
       </Card>
