@@ -67,7 +67,7 @@ export function PocketsPage() {
   const { data: pocketData, isLoading } = useQuery({
     queryKey: ["pocketSpending", user?.id, selectedMonth],
     queryFn: async () => {
-      if (!user?.id) return { pockets: [], totalBudget: 0, totalSpent: 0, totalRemaining: 0 };
+      if (!user?.id) return { pockets: [], totalBudget: 0, totalSpent: 0, totalRemaining: 0, totalIncome: 0 };
       const result = await calculatePocketSpending(user.id, selectedMonth);
       console.log('Pockets data from query:', result.pockets);
       console.log('Pocket IDs:', result.pockets.map(p => ({ id: p.id, name: p.name })));

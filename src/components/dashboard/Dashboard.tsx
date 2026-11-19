@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, TrendingUp, TrendingDown, DollarSign, PiggyBank, Settings } from "lucide-react";
+import { Plus, TrendingUp, TrendingDown, DollarSign, PiggyBank, Settings, Banknote } from "lucide-react";
 import { PocketCard } from "./PocketCard";
 import { CreatePocketDialog } from "./CreatePocketDialog";
 import { TransactionDialog } from "./TransactionDialog";
@@ -15,8 +15,8 @@ import { useAuth } from "@/components/auth/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { formatCurrency, formatNumber } from "@/lib/utils";
-import { format } from "date-fns";
+import { formatCurrency, formatCompactCurrency, formatNumber } from "@/lib/utils";
+import { format, parseISO } from "date-fns";
 import { calculatePocketSpending, PocketSpending } from "@/utils/pocketCalculations";
 
 interface BudgetPocket {
@@ -77,7 +77,7 @@ export function Dashboard() {
   const { data: pocketData, isLoading, error } = useQuery({
     queryKey: ['pocketSpending', user?.id, selectedMonth],
     queryFn: async () => {
-      if (!user?.id) return { pockets: [], totalBudget: 0, totalSpent: 0, totalRemaining: 0 };
+      if (!user?.id) return { pockets: [], totalBudget: 0, totalSpent: 0, totalRemaining: 0, totalIncome: 0 };
       return await calculatePocketSpending(user.id, selectedMonth);
     },
     enabled: !!user?.id,
@@ -94,7 +94,9 @@ export function Dashboard() {
   const totalBudget = pocketData?.totalBudget ?? 0;
   const totalSpent = pocketData?.totalSpent ?? 0;
   const totalRemaining = pocketData?.totalRemaining ?? 0;
-  const overBudgetPockets = pockets.filter(p => p.currentAmount > p.budgetAmount).length;
+  const totalIncome = pocketData?.totalIncome ?? 0;
+  const expensePockets = pockets.filter(p => p.pocket_type === 'expense');
+  const overBudgetPockets = expensePockets.filter(p => p.currentAmount > p.budgetAmount).length;
 
   // Handle errors from React Query
   useEffect(() => {
@@ -294,8 +296,8 @@ export function Dashboard() {
   if (isLoading) {
     return (
       <div className="space-y-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          {[...Array(4)].map((_, i) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+          {[...Array(5)].map((_, i) => (
             <Card key={i} className="bg-gradient-card border-0 shadow-lg animate-pulse">
               <CardHeader className="pb-3">
                 <div className="h-4 bg-muted rounded w-3/4"></div>
@@ -326,16 +328,29 @@ export function Dashboard() {
       </div>
 
       {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+        <Card className="bg-gradient-card border-0 shadow-lg">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Income</CardTitle>
+            <Banknote className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl xl:text-xl font-bold text-success" title={formatCurrency(totalIncome, userCurrency)}>{formatCompactCurrency(totalIncome, userCurrency)}</div>
+            <p className="text-xs text-muted-foreground">
+              Received in {format(parseISO(`${selectedMonth}-01`), "MMMM yyyy")}
+            </p>
+          </CardContent>
+        </Card>
+
         <Card className="bg-gradient-card border-0 shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Budget</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalBudget, userCurrency)}</div>
+            <div className="text-2xl xl:text-xl font-bold" title={formatCurrency(totalBudget, userCurrency)}>{formatCompactCurrency(totalBudget, userCurrency)}</div>
             <p className="text-xs text-muted-foreground">
-              Across {pockets.length} pockets
+              Across {expensePockets.length} expense pockets
             </p>
           </CardContent>
         </Card>
@@ -346,7 +361,7 @@ export function Dashboard() {
             <TrendingDown className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalSpent, userCurrency)}</div>
+            <div className="text-2xl xl:text-xl font-bold" title={formatCurrency(totalSpent, userCurrency)}>{formatCompactCurrency(totalSpent, userCurrency)}</div>
             <p className="text-xs text-muted-foreground">
               {totalBudget > 0 ? `${formatNumber((totalSpent / totalBudget) * 100)}% of budget` : 'No budget set'}
             </p>
@@ -359,8 +374,8 @@ export function Dashboard() {
             <PiggyBank className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${totalRemaining < 0 ? 'text-destructive' : 'text-success'}`}>
-              {formatCurrency(Math.abs(totalRemaining), userCurrency)}
+            <div className={`text-2xl xl:text-xl font-bold ${totalRemaining < 0 ? 'text-destructive' : 'text-success'}`} title={formatCurrency(Math.abs(totalRemaining), userCurrency)}>
+              {formatCompactCurrency(Math.abs(totalRemaining), userCurrency)}
             </div>
             <p className="text-xs text-muted-foreground">
               {totalRemaining < 0 ? 'Over budget' : 'Available to spend'}
@@ -374,7 +389,7 @@ export function Dashboard() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{overBudgetPockets}</div>
+            <div className="text-2xl xl:text-xl font-bold">{overBudgetPockets}</div>
             <p className="text-xs text-muted-foreground">
               Pockets over budget
             </p>
