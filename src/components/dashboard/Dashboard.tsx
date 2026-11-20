@@ -280,8 +280,8 @@ export function Dashboard() {
       toast({
         title: targetData.is_featured ? "Pocket unfeatured" : "Pocket featured",
         description: targetData.is_featured
-          ? "Pocket removed from dashboard"
-          : "Pocket will now appear on dashboard",
+          ? "Pocket will stay visible with your other pockets"
+          : "Pocket moved to the top of your dashboard",
       });
     } catch (error) {
       console.error("Error toggling featured:", error);
@@ -441,41 +441,24 @@ export function Dashboard() {
             </CardContent>
           </Card>
         ) : (
-          <>
-            {/* Featured Pockets */}
-            {pockets.filter(pocket => pocket.is_featured).length > 0 ? (
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Featured Pockets</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {pockets.filter(pocket => pocket.is_featured).map((pocket) => (
-                       <PocketCard
-                        key={pocket.id}
-                        pocket={pocket}
-                        currency={userCurrency}
-                        onClick={() => navigate(`/transactions/${pocket.id}`)}
-                        onEdit={() => handleEditPocket(pocket)}
-                        onDelete={handleDeletePocket}
-                        onToggleFeatured={handleToggleFeatured}
-                       />
-                   ))}
-                   <QuickActionsCard
-                    pockets={pockets}
-                    onTransactionAdded={handleTransactionAdded}
-                    onPocketCreated={handlePocketCreated}
-                  />
-                </div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <QuickActionsCard
-                  pockets={pockets}
-                  onTransactionAdded={handleTransactionAdded}
-                  onPocketCreated={handlePocketCreated}
-                />
-              </div>
-            )}
-
-          </>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...pockets].sort((a, b) => Number(b.is_featured) - Number(a.is_featured)).map((pocket) => (
+              <PocketCard
+                key={pocket.id}
+                pocket={pocket}
+                currency={userCurrency}
+                onClick={() => navigate(`/transactions/${pocket.id}`)}
+                onEdit={() => handleEditPocket(pocket)}
+                onDelete={handleDeletePocket}
+                onToggleFeatured={handleToggleFeatured}
+              />
+            ))}
+            <QuickActionsCard
+              pockets={pockets}
+              onTransactionAdded={handleTransactionAdded}
+              onPocketCreated={handlePocketCreated}
+            />
+          </div>
         )}
       </div>
 

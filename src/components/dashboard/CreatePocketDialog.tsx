@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { withRetry, handleError } from "@/lib/error-utils";
-import { format } from "date-fns";
+import { endOfMonth, format, startOfMonth } from "date-fns";
 import { analytics } from "@/lib/analytics";
 
 interface CreatePocketDialogProps {
@@ -50,8 +50,7 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
   const [pocketType, setPocketType] = useState<"expense" | "income" | "investment">("expense");
   const [color, setColor] = useState("#8b5cf6");
   const [loading, setLoading] = useState(false);
-  const [isTemplate, setIsTemplate] = useState(false);
-  const [autoRenew, setAutoRenew] = useState(true);
+  const [isTemplate, setIsTemplate] = useState(true);
   const [rolloverType, setRolloverType] = useState<'reset' | 'carry_over' | 'percentage'>('reset');
   const [rolloverPercentage, setRolloverPercentage] = useState(100);
   const [maxCarryOver, setMaxCarryOver] = useState<number | undefined>();
@@ -120,7 +119,8 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
     try {
       setLoading(true);
       const calculatedBudget = calculateBudgetAmount();
-      const currentMonth = format(new Date(), "yyyy-MM");
+      const now = new Date();
+      const currentMonth = format(now, "yyyy-MM");
       
       const insertData = {
         user_id: user.id,
@@ -132,21 +132,36 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
         pocket_type: pocketType,
         color: color,
         is_template: isTemplate,
-        auto_renew: autoRenew,
-        recurring_rule: isTemplate && autoRenew ? {
+        auto_renew: isTemplate,
+        recurring_rule: isTemplate ? {
           type: rolloverType,
           ...(rolloverType === 'percentage' && { percentage: rolloverPercentage }),
           ...(rolloverType === 'carry_over' && maxCarryOver && { max_carry_over: maxCarryOver })
         } : null,
         month_year: isTemplate ? null : currentMonth,
-        cycle_start_date: isTemplate ? null : new Date(currentMonth + '-01').toISOString().split('T')[0],
-        cycle_end_date: isTemplate ? null : new Date(new Date(currentMonth + '-01').getFullYear(), new Date(currentMonth + '-01').getMonth() + 1, 0).toISOString().split('T')[0],
+        cycle_start_date: isTemplate ? null : format(startOfMonth(now), 'yyyy-MM-dd'),
+        cycle_end_date: isTemplate ? null : format(endOfMonth(now), 'yyyy-MM-dd'),
+      };
+
+      // Insert the recurring definition and this month's usable pocket atomically.
+      const templateId = crypto.randomUUID();
+      const monthlyPocket = {
+        ...insertData,
+        id: crypto.randomUUID(),
+        parent_pocket_id: isTemplate ? templateId : null,
+        is_template: false,
+        month_year: currentMonth,
+        cycle_start_date: format(startOfMonth(now), 'yyyy-MM-dd'),
+        cycle_end_date: format(endOfMonth(now), 'yyyy-MM-dd'),
       };
 
       await withRetry(async () => {
         const { error } = await supabase
           .from('budget_pockets')
-          .insert(insertData);
+          .insert(isTemplate ? [
+            { ...insertData, id: templateId, parent_pocket_id: null },
+            monthlyPocket,
+          ] : [monthlyPocket]);
 
         if (error) throw error;
       }, 3);
@@ -159,8 +174,7 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
       setBudgetType("regular_monthly");
       setPocketType("expense");
       setColor("#8b5cf6");
-      setIsTemplate(false);
-      setAutoRenew(true);
+      setIsTemplate(true);
       setRolloverType('reset');
       setRolloverPercentage(100);
       setMaxCarryOver(undefined);
@@ -173,7 +187,7 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
 
       toast({
         title: "Success",
-        description: isTemplate ? "Template created successfully" : "Budget pocket created successfully",
+        description: isTemplate ? "Pocket created for this month and set to repeat monthly" : "Budget pocket created for this month only",
       });
 
       analytics.trackPocketCreated(budgetType);
@@ -260,13 +274,13 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
           <div className="space-y-2">
             <Label htmlFor="budgetType">Budget Type</Label>
             <Select value={budgetType} onValueChange={setBudgetType}>
-              <SelectTrigger>
-                <SelectValue />
+              <SelectTrigger id="budgetType">
+                <SelectValue>{budgetTypeOptions.find(option => option.value === budgetType)?.label}</SelectValue>
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="w-[var(--radix-select-trigger-width)] max-w-[calc(100vw-2rem)]">
                 {budgetTypeOptions.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
-                    <div className="flex flex-col">
+                    <div className="flex flex-col whitespace-normal">
                       <span className="font-medium">{option.label}</span>
                       <span className="text-xs text-muted-foreground">{option.description}</span>
                     </div>
@@ -407,9 +421,9 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
             
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label htmlFor="is-template" className="text-sm">Create as Template</Label>
+                <Label htmlFor="is-template" className="text-sm">Repeat every month</Label>
                 <p className="text-xs text-muted-foreground">
-                  Templates can be used to generate monthly pockets automatically
+                  Create a pocket for this month and repeat it in future months. Turn off for this month only.
                 </p>
               </div>
               <Switch
@@ -420,22 +434,6 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
             </div>
 
             {isTemplate && (
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="auto-renew" className="text-sm">Auto-renewal</Label>
-                  <p className="text-xs text-muted-foreground">
-                    Automatically create new instances each month
-                  </p>
-                </div>
-                <Switch
-                  id="auto-renew"
-                  checked={autoRenew}
-                  onCheckedChange={setAutoRenew}
-                />
-              </div>
-            )}
-
-            {isTemplate && autoRenew && (
               <div className="space-y-4">
                 <h4 className="font-medium">Rollover Rules</h4>
                 <div className="space-y-3">
@@ -493,7 +491,7 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
               Cancel
             </Button>
             <Button type="submit" variant="hero" disabled={loading || !name.trim() || !isFormValid()}>
-              {loading ? "Creating..." : isTemplate ? "Create Template" : "Create Pocket"}
+              {loading ? "Creating..." : "Create Pocket"}
             </Button>
           </DialogFooter>
         </form>

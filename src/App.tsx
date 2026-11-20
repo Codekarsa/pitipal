@@ -17,7 +17,6 @@ import { SettingsPage } from "@/components/settings/SettingsPage";
 import { TransactionsPage } from "@/components/transactions/TransactionsPage";
 import { TransactionDialog } from "@/components/dashboard/TransactionDialog";
 import { CreatePocketDialog } from "@/components/dashboard/CreatePocketDialog";
-import { CreditCardBalanceDebug } from "@/components/debug/CreditCardBalanceDebug";
 import { supabase } from "@/integrations/supabase/client";
 import { handleError } from "@/lib/error-utils";
 import NotFound from "./pages/NotFound";
@@ -198,23 +197,6 @@ function AppContent() {
               onAddPocket={() => navigate("/pockets")}
             >
               <SettingsPage />
-              <TransactionDialog
-                open={showAddTransaction}
-                onOpenChange={setShowAddTransaction}
-                onSuccess={handleTransactionSaved}
-                pockets={pockets}
-              />
-            </DashboardLayout>
-          }
-        />
-        <Route
-          path="/debug/credit-cards"
-          element={
-            <DashboardLayout
-              onAddTransaction={() => setShowAddTransaction(true)}
-              onAddPocket={() => navigate("/pockets")}
-            >
-              <CreditCardBalanceDebug />
               <TransactionDialog
                 open={showAddTransaction}
                 onOpenChange={setShowAddTransaction}

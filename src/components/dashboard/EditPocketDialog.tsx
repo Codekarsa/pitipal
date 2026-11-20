@@ -234,13 +234,13 @@ export function EditPocketDialog({ open, onOpenChange, onSuccess, pocket }: Edit
           <div className="space-y-2">
             <Label htmlFor="budgetType">Budget Type</Label>
             <Select value={budgetType} onValueChange={setBudgetType}>
-              <SelectTrigger>
-                <SelectValue />
+              <SelectTrigger id="budgetType">
+                <SelectValue>{budgetTypeOptions.find(option => option.value === budgetType)?.label}</SelectValue>
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="w-[var(--radix-select-trigger-width)] max-w-[calc(100vw-2rem)]">
                 {budgetTypeOptions.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
-                    <div className="flex flex-col">
+                    <div className="flex flex-col whitespace-normal">
                       <span className="font-medium">{option.label}</span>
                       <span className="text-xs text-muted-foreground">{option.description}</span>
                     </div>

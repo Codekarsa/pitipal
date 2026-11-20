@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 import { ImportDialog } from "./ImportDialog";
 import { ExportDialog } from "./ExportDialog";
-import { PocketMigrationSection } from "./PocketMigrationSection";
 import { generateCSVTemplate, exportDataToCSV } from "@/lib/csv-utils";
 
 export function DataManagementSection() {
@@ -236,9 +235,6 @@ export function DataManagementSection() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Pocket Migration */}
-      <PocketMigrationSection />
 
       {/* CSV Templates */}
       <Card>
