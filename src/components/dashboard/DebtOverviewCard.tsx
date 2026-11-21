@@ -74,22 +74,7 @@ export function DebtOverviewCard() {
   }
 
   if (!creditCardAccounts || creditCardAccounts.length === 0) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CreditCard className="h-5 w-5" />
-            Debt Overview
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-4">
-            <CreditCard className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-            <p className="text-muted-foreground text-sm">No credit cards added yet</p>
-          </div>
-        </CardContent>
-      </Card>
-    );
+    return null;
   }
 
   // Use calculated values from creditCardData

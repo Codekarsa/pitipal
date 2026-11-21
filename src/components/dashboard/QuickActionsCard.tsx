@@ -17,9 +17,10 @@ interface QuickActionsCardProps {
   pockets: BudgetPocket[];
   onTransactionAdded: () => void;
   onPocketCreated: () => void;
+  targetMonth: string;
 }
 
-export function QuickActionsCard({ pockets, onTransactionAdded, onPocketCreated }: QuickActionsCardProps) {
+export function QuickActionsCard({ pockets, onTransactionAdded, onPocketCreated, targetMonth }: QuickActionsCardProps) {
   const [showTransactionDialog, setShowTransactionDialog] = useState(false);
   const [showCreatePocket, setShowCreatePocket] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
@@ -97,6 +98,7 @@ export function QuickActionsCard({ pockets, onTransactionAdded, onPocketCreated 
         open={showTransactionDialog}
         onOpenChange={setShowTransactionDialog}
         onSuccess={handleTransactionSuccess}
+        initialType={transactionType}
         pockets={pockets}
       />
       
@@ -104,6 +106,7 @@ export function QuickActionsCard({ pockets, onTransactionAdded, onPocketCreated 
         open={showCreatePocket}
         onOpenChange={setShowCreatePocket}
         onSuccess={handlePocketSuccess}
+        targetMonth={targetMonth}
       />
       
       <CreditCardPaymentDialog

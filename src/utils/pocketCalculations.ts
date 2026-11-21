@@ -10,6 +10,8 @@ export interface PocketSpending {
   // Budget amounts (support both formats)
   budget_amount: number;
   budgetAmount: number;
+  baseBudgetAmount: number;
+  carriedOverAmount: number;
   current_amount: number;
   currentAmount: number;
 
@@ -38,6 +40,8 @@ export interface SpendingCalculationResult {
   totalSpent: number;
   totalRemaining: number;
   totalIncome: number;
+  unassignedSpent: number;
+  unassignedCount: number;
 }
 
 /**
@@ -56,10 +60,11 @@ export async function calculatePocketSpending(
     // Query 1: Get all active pockets for the selected month
     supabase
       .from('budget_pockets')
-      .select('id, name, budget_amount, color, is_featured, pocket_type, budget_type, cycle_type, parent_pocket_id, month_year')
+      .select('id, name, budget_amount, base_budget_amount, carried_over_amount, color, is_featured, pocket_type, budget_type, cycle_type, parent_pocket_id, month_year')
       .eq('user_id', userId)
       .eq('is_active', true)
       .eq('month_year', monthYear)
+      .eq('is_template', false)
       .order('created_at', { ascending: false }),
 
     // Query 2: Get all templates to check featured status
@@ -114,7 +119,7 @@ export async function calculatePocketSpending(
     // Transactions matching the pocket's type add up (spent for expense
     // pockets, received for income pockets); others, such as refunds, offset it
     const currentAmount = pocketTransactions.reduce((sum, tx) => {
-      return sum + (tx.type === pocket.pocket_type ? tx.amount : -tx.amount);
+      return sum + (tx.type === pocket.pocket_type ? Math.abs(tx.amount) : -Math.abs(tx.amount));
     }, 0);
 
     // Determine featured status: if pocket has parent_pocket_id, use template's featured status
@@ -130,6 +135,8 @@ export async function calculatePocketSpending(
       pocketName: pocket.name,
       budget_amount: pocket.budget_amount,
       budgetAmount: pocket.budget_amount,
+      baseBudgetAmount: pocket.base_budget_amount ?? pocket.budget_amount,
+      carriedOverAmount: pocket.carried_over_amount ?? 0,
       current_amount: currentAmount,
       currentAmount,
       color: pocket.color,
@@ -145,19 +152,25 @@ export async function calculatePocketSpending(
   // Budget totals cover spending only, so income and investment pockets are left out
   const expensePockets = pocketSpending.filter(p => p.pocket_type === 'expense');
   const totalBudget = expensePockets.reduce((sum, p) => sum + p.budgetAmount, 0);
-  const totalSpent = expensePockets.reduce((sum, p) => sum + p.currentAmount, 0);
+  const expenses = allTransactions.filter(tx => tx.type === 'expense');
+  const totalSpent = expenses.reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+  const expensePocketIds = new Set(expensePockets.map(p => p.id));
+  const unassigned = expenses.filter(tx => !expensePocketIds.has(tx.pocket_id));
+  const unassignedSpent = unassigned.reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
   const totalRemaining = totalBudget - totalSpent;
   // All income received this month, whether or not it was assigned to a pocket
   const totalIncome = allTransactions
     .filter(tx => tx.type === 'income')
-    .reduce((sum, tx) => sum + tx.amount, 0);
+    .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
 
   return {
     pockets: pocketSpending,
     totalBudget,
     totalSpent,
     totalRemaining,
-    totalIncome
+    totalIncome,
+    unassignedSpent,
+    unassignedCount: unassigned.length
   };
 }
 
@@ -191,6 +204,6 @@ export async function calculateSinglePocketSpending(
   if (error) throw error;
 
   return transactions?.reduce((sum, tx) => {
-    return sum + (tx.type === 'expense' ? tx.amount : -tx.amount);
+    return sum + (tx.type === 'expense' ? Math.abs(tx.amount) : -Math.abs(tx.amount));
   }, 0) || 0;
 }

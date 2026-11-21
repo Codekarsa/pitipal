@@ -132,3 +132,31 @@ variables supplied securely:
 Tests refuse non-loopback Supabase URLs. They cover required currency selection,
 failed profile loading/saving and retry, persistence, live checklist updates,
 month navigation, and existing USD users. Never provide production credentials.
+
+## Monthly budgets and transaction workflows
+
+The updated UI requires `supabase/migrations/20261121000000_monthly_budget_planning.sql`.
+Before deploying to an existing database, run the read-only
+`scripts/audit-monthly-budgets.sql` and review any duplicate lineages or historical
+allowances. The migration preserves historical totals as base allowances with zero
+known carry; it does not guess a split or merge/delete existing records. Apply only
+pending migrations through your normal migration process; do not replay old ones.
+
+Deploy the updated `monthly-rollover` edge function with the migration. Scheduled
+calls now require a service-role bearer, not the public anon key. A trusted operator
+must securely configure the server-only `app.settings.supabase_service_role_key`
+setting used by the rollover cron jobs. Never put it in browser environment variables
+or commit credentials. Existing cron jobs are updated by the migration; check their
+deployed execution separately. Frontend-only deployment is insufficient.
+
+Monthly allowance is base budget + confirmed carry. Future plans contain base amounts
+only until rollover runs for that month. Copying a plan preserves existing destination
+overrides. Budget edits default to one month; future scope changes base amounts only,
+not metadata or rollover rules. Past monthly budgets are read-only in the editor.
+
+`npm run test:e2e` also covers repeated saves, multi-date bulk entry, monthly planning
+and CSV validation/mapping/retries. With the same local credentials plus
+`E2E_SUPABASE_DB_URL` (local PostgreSQL URL) and `E2E_SUPABASE_ANON_KEY`, run
+`npx tsx --test tests/monthly-budget.test.ts` for the real database/RPC and edge-handler
+regressions. All fixtures are disposable; these tests reject non-loopback backends.
+Use `npx vite build` for a frontend-only build; `npm run build` also invokes DB sync.

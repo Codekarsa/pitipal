@@ -13,6 +13,8 @@ import { formatCurrency, formatCompactCurrency } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { TransactionDialog } from "@/components/dashboard/TransactionDialog";
+import { BulkTransactionDialog } from "./BulkTransactionDialog";
+import { ImportDialog } from "@/components/settings/ImportDialog";
 import { MonthNavigator } from "@/components/dashboard/MonthNavigator";
 import { format } from "date-fns";
 import { analytics } from "@/lib/analytics";
@@ -113,6 +115,8 @@ export function TransactionsPage({ refreshKey }: TransactionsPageProps) {
   const [totalAccountBalance, setTotalAccountBalance] = useState<number>(0);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [transactionDialogOpen, setTransactionDialogOpen] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [deletingTransactionId, setDeletingTransactionId] = useState<string | null>(null);
   const [pockets, setPockets] = useState<BudgetPocket[]>([]);
 
@@ -223,8 +227,6 @@ export function TransactionsPage({ refreshKey }: TransactionsPageProps) {
 
   const fetchTransactions = useCallback(async () => {
     try {
-      setLoading(true);
-
       // Calculate date range for selected month
       const startDate = `${selectedMonth}-01`;
       const [year, month] = selectedMonth.split('-').map(Number);
@@ -288,7 +290,9 @@ export function TransactionsPage({ refreshKey }: TransactionsPageProps) {
 
       if (error) throw error;
 
-      let filteredData = data || [];
+      let filteredData = (data || []).map(transaction => ({ ...transaction, amount: Math.abs(transaction.amount) }));
+      if (sortBy === 'amount_asc') filteredData.sort((a, b) => a.amount - b.amount);
+      if (sortBy === 'amount_desc') filteredData.sort((a, b) => b.amount - a.amount);
 
       // Apply search filter
       if (searchTerm) {
@@ -473,10 +477,11 @@ export function TransactionsPage({ refreshKey }: TransactionsPageProps) {
             </button>
           )}
         </div>
-        <MonthNavigator
-          selectedMonth={selectedMonth}
-          onMonthChange={setSelectedMonth}
-        />
+        <div className="flex flex-wrap items-center gap-2">
+          <MonthNavigator selectedMonth={selectedMonth} onMonthChange={setSelectedMonth} />
+          <Button variant="outline" onClick={() => setImportOpen(true)}>Import CSV</Button>
+          <Button onClick={() => setBulkOpen(true)}>Add multiple</Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -655,6 +660,7 @@ export function TransactionsPage({ refreshKey }: TransactionsPageProps) {
               <p className="text-sm text-muted-foreground mt-2">
                 Try adjusting your filters or add some transactions to get started
               </p>
+              <Button className="mt-4" onClick={() => { setEditingTransaction(null); setTransactionDialogOpen(true); }}>Add a transaction</Button>
             </div>
           ) : (
             <>
@@ -780,6 +786,7 @@ export function TransactionsPage({ refreshKey }: TransactionsPageProps) {
                           size="sm"
                           onClick={() => handleEditTransaction(transaction)}
                           className="h-8 w-8 p-0"
+                          aria-label="Edit transaction"
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -799,9 +806,12 @@ export function TransactionsPage({ refreshKey }: TransactionsPageProps) {
         open={transactionDialogOpen}
         onOpenChange={setTransactionDialogOpen}
         onSuccess={handleTransactionSuccess}
+        onSaved={() => { void fetchTransactions(); void fetchAccounts(); }}
         pockets={pockets}
         editingTransaction={editingTransaction}
       />
+      <BulkTransactionDialog open={bulkOpen} onOpenChange={setBulkOpen} onSaved={() => { void fetchTransactions(); void fetchAccounts(); }} currency={userCurrency} month={selectedMonth} />
+      <ImportDialog open={importOpen} onOpenChange={open => { setImportOpen(open); if (!open) { void fetchTransactions(); void fetchAccounts(); } }} />
     </div>
   );
 }

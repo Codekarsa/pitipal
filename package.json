@@ -12,7 +12,7 @@
     "prebuild:dev": "tsx scripts/db-sync.ts",
     "build:dev": "vite build --mode development",
     "db:sync": "tsx scripts/db-sync.ts",
-    "test:e2e": "playwright test tests/onboarding.spec.ts --workers=1 --output=.amp/in/orb-backup/playwright-results",
+    "test:e2e": "playwright test tests/onboarding.spec.ts tests/transaction-workflows.spec.ts tests/csv-import.spec.ts --workers=1 --output=.amp/in/orb-backup/playwright-results",
     "lint": "eslint .",
     "preview": "vite preview"
   },

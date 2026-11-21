@@ -62,8 +62,10 @@ export type Database = {
       budget_pockets: {
         Row: {
           auto_renew: boolean | null
+          base_budget_amount: number
           budget_amount: number | null
           budget_type: string
+          carried_over_amount: number
           color: string | null
           created_at: string
           current_amount: number | null
@@ -86,8 +88,10 @@ export type Database = {
         }
         Insert: {
           auto_renew?: boolean | null
+          base_budget_amount?: number
           budget_amount?: number | null
           budget_type?: string
+          carried_over_amount?: number
           color?: string | null
           created_at?: string
           current_amount?: number | null
@@ -110,8 +114,10 @@ export type Database = {
         }
         Update: {
           auto_renew?: boolean | null
+          base_budget_amount?: number
           budget_amount?: number | null
           budget_type?: string
+          carried_over_amount?: number
           color?: string | null
           created_at?: string
           current_amount?: number | null
@@ -638,6 +644,14 @@ export type Database = {
       generate_monthly_pocket_instance: {
         Args: { target_month: string; template_pocket_id: string }
         Returns: string
+      }
+      plan_budget_months: {
+        Args: { source_month: string; target_months: string[] }
+        Returns: number
+      }
+      set_monthly_pocket_budget: {
+        Args: { pocket_id: string; base_amount: number; apply_to_future?: boolean }
+        Returns: undefined
       }
       update_pocket_amount: {
         Args: { amount_to_add: number; pocket_id: string }

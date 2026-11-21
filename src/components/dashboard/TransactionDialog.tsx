@@ -74,11 +74,13 @@ interface TransactionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+  onSaved?: () => void;
+  initialType?: "income" | "expense" | "investment";
   pockets: BudgetPocket[];
   editingTransaction?: any;
 }
 
-export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, editingTransaction }: TransactionDialogProps) {
+export function TransactionDialog({ open, onOpenChange, onSuccess, onSaved, initialType = 'expense', pockets, editingTransaction }: TransactionDialogProps) {
   const queryClient = useQueryClient();
   const [type, setType] = useState<"income" | "expense" | "investment">("expense");
   const [amount, setAmount] = useState("");
@@ -209,12 +211,21 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
     }
   }, [open, type, authLoading, user]);
 
-  // Separate effect for editing transaction data population - only runs once when dialog opens with editing data
   useEffect(() => {
-    if (open && editingTransaction && savingsAccounts.length >= 0 && investmentAccounts.length >= 0 && creditCardAccounts.length >= 0) {
+    if (!open) {
+      setSessionTransactionCount(0);
+      setKeepAddingTransactions(false);
+    } else if (!editingTransaction) {
+      setType(initialType);
+    }
+  }, [open, initialType, editingTransaction]);
+
+  // Populate once per editing session, not again when account options finish loading.
+  useEffect(() => {
+    if (open && editingTransaction) {
       console.log('Setting transaction fields for editing:', editingTransaction);
       setType(editingTransaction.type);
-      setAmount(editingTransaction.amount.toString());
+      setAmount(Math.abs(editingTransaction.amount).toString());
       setCategory(editingTransaction.category);
       setDescription(editingTransaction.description || "");
       setDate(editingTransaction.transaction_date);
@@ -252,14 +263,14 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
         setPayee("");
       }
     }
-  }, [open, editingTransaction?.id, savingsAccounts.length, investmentAccounts.length, creditCardAccounts.length]);
+  }, [open, editingTransaction]);
 
-  // Auto-suggest "Credit Card Payment" category when credit card is first selected
+  // A date/type change must never keep a pocket from the wrong month or type.
   useEffect(() => {
-    if (creditCardAccountId && type === "expense" && !editingTransaction && !category) {
-      setCategory("Credit Card Payment");
-    }
-  }, [creditCardAccountId, type, editingTransaction]);
+    if (!pocketId || !allPockets.length) return;
+    const pocket = allPockets.find(p => p.id === pocketId);
+    if (!pocket || pocket.month_year !== date.slice(0, 7) || pocket.pocket_type !== type) setPocketId("");
+  }, [date, type, allPockets, pocketId]);
 
   const fetchCategories = async () => {
     try {
@@ -277,10 +288,6 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
       if (error) throw error;
       setCategories(data || []);
       
-      // Auto-select first category if none selected
-      if (data && data.length > 0 && !category) {
-        setCategory(data[0].name);
-      }
     } catch (error: any) {
       handleError(error, "Failed to load categories. Please try again.");
     }
@@ -377,6 +384,7 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
         .select('id, name, color, pocket_type, month_year')
         .eq('user_id', user.id)
         .eq('is_active', true)
+        .eq('is_template', false)
         .order('month_year', { ascending: false });
 
       if (error) throw error;
@@ -397,7 +405,10 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
       // Calculate total amount for investment transactions
       const totalAmount = type === 'investment' 
         ? (parseFloat(quantity) * parseFloat(pricePerUnit)) + (parseFloat(fees) || 0)
-        : parseFloat(amount);
+        : Math.abs(parseFloat(amount));
+      if (!Number.isFinite(totalAmount) || totalAmount <= 0 || !category) {
+        throw new Error('Enter a positive amount and choose a category.');
+      }
       
       let transactionData;
       let transactionError;
@@ -535,6 +546,10 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
       
       // Show success message
       queryClient.invalidateQueries({ queryKey: ["setupProgress", user.id] });
+      queryClient.invalidateQueries({ queryKey: ["pocketSpending", user.id] });
+      queryClient.invalidateQueries({ queryKey: ["credit-card-balances"] });
+      queryClient.invalidateQueries({ queryKey: ["data-counts", user.id] });
+      onSaved?.();
       if (editingTransaction) {
         showSuccessMessage("Transaction updated successfully");
       } else {
@@ -550,22 +565,12 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
       
       // Handle "keep adding" feature
       if (keepAddingTransactions && !editingTransaction) {
-        // Reset form but keep date and optionally account
-        const currentDate = date;
-        const currentSavingsAccount = savingsAccountId;
-        const currentInvestmentAccount = investmentAccountId;
-        const currentCreditCardAccount = creditCardAccountId;
-        
-        resetForm();
-        
-        // Restore preserved fields
-        setDate(currentDate);
-        setSavingsAccountId(currentSavingsAccount);
-        setInvestmentAccountId(currentInvestmentAccount);
-        setCreditCardAccountId(currentCreditCardAccount);
-        
-        // Don't call onSuccess() here - it would close the modal
-        // Data will refresh when modal is eventually closed
+        // Keep date, category, pocket, payee and account for repeated entry.
+        setAmount("");
+        setDescription("");
+        setQuantity("");
+        setPricePerUnit("");
+        setFees("");
         
         // Auto-focus amount field after a brief delay
         setTimeout(() => {
@@ -607,6 +612,7 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
   };
 
   const handleDialogOpenChange = (open: boolean) => {
+    if (loading) return;
     if (!open) {
       if (!editingTransaction) {
         resetForm();
@@ -619,7 +625,7 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
 
   return (
     <Dialog open={open} onOpenChange={handleDialogOpenChange}>
-      <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto bg-gradient-card border-0 shadow-xl">
+      <DialogContent className="sm:max-w-[425px] max-h-[90vh] flex flex-col overflow-hidden bg-gradient-card border-0 shadow-xl">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold">
             {editingTransaction ? 'Edit Transaction' : 'Add Transaction'}
@@ -628,10 +634,11 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
             {editingTransaction ? 'Update transaction details.' : 'Record a new income or expense transaction.'}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="min-h-0 flex flex-col gap-4">
+          <div className="min-h-0 overflow-y-auto space-y-4 px-1 -mx-1">
           <div className="space-y-3">
             <Label>Transaction Type</Label>
-            <RadioGroup value={type} onValueChange={(value: "income" | "expense" | "investment") => {
+            <RadioGroup className="flex flex-wrap gap-4" value={type} onValueChange={(value: "income" | "expense" | "investment") => {
               setType(value);
               setCategory(""); // Reset category when type changes
             }}>
@@ -747,8 +754,10 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
                   id="amount"
                   value={amount}
                   onChange={setAmount}
-                  placeholder="0.00"
-                  allowNegative={true}
+                  placeholder="Enter amount"
+                  className="text-xl font-semibold"
+                  inputMode="decimal"
+                  autoFocus
                   required
                 />
               </div>
@@ -769,6 +778,7 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
           <div className="space-y-2">
             <Label htmlFor="category">Category *</Label>
             <Combobox
+              id="category"
               options={categories
                 .filter(cat => cat.category_groups?.name && cat.category_groups.name !== "Other Expenses" && cat.name !== cat.category_groups.name) // Exclude "Other Expenses" group and duplicate names
                 .map((cat) => ({
@@ -782,8 +792,12 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
               searchPlaceholder="Search categories..."
               emptyText="No categories found."
             />
+            <p className="text-xs text-muted-foreground">What was this for? For example, Food &amp; Dining or Transportation.</p>
           </div>
 
+          <details className="rounded-lg border p-3" open={!!editingTransaction || type === 'investment'}>
+            <summary className="cursor-pointer text-sm font-medium">More details: payee, account</summary>
+            <div className="mt-3 space-y-4">
           <div className="space-y-2">
             <Label htmlFor="payee">Payee</Label>
             <Combobox
@@ -905,8 +919,11 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
             </Select>
           </div>
 
+            </div>
+          </details>
           <div className="space-y-2">
             <Label htmlFor="pocket">Budget Pocket</Label>
+            <p className="text-xs text-muted-foreground">Which spending limit should this use? Unassigned expenses still count in your monthly totals.</p>
             {(() => {
               // Extract month-year from transaction date (YYYY-MM format)
               const transactionMonth = date ? date.substring(0, 7) : null;
@@ -927,11 +944,12 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
               }
 
               return (
-                <Select value={pocketId} onValueChange={setPocketId}>
-                  <SelectTrigger>
+                <Select value={pocketId || 'none'} onValueChange={value => setPocketId(value === 'none' ? '' : value)}>
+                  <SelectTrigger id="pocket">
                     <SelectValue placeholder="Select pocket (optional)" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="none">No pocket — include in monthly totals</SelectItem>
                     {filteredPockets.map((pocket) => (
                       <SelectItem key={pocket.id} value={pocket.id}>
                         <div className="flex items-center space-x-2">
@@ -982,22 +1000,22 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
             </div>
           )}
 
-          {/* Stays at the bottom of the scrolling dialog so saving never needs a scroll on small screens */}
-          <DialogFooter className="gap-2 sticky -bottom-6 -mx-6 -mb-6 px-6 py-4 border-t bg-background">
+          </div>
+          <DialogFooter className="shrink-0 gap-2 pt-4 border-t bg-background">
             <Button
               type="button"
               variant="outline"
-              onClick={() => onOpenChange(false)}
+              onClick={() => handleDialogOpenChange(false)}
               disabled={loading}
             >
-              Cancel
+              {sessionTransactionCount > 0 ? `Done — ${sessionTransactionCount} saved` : 'Cancel'}
             </Button>
             <Button type="submit" variant="hero" disabled={
               loading || 
               !category || 
               (type === 'investment' ? (!selectedAssetId || !quantity || !pricePerUnit) : !amount)
             }>
-              {loading ? (editingTransaction ? "Updating..." : "Adding...") : (editingTransaction ? "Update Transaction" : "Add Transaction")}
+              {loading ? (editingTransaction ? "Updating..." : "Adding...") : (editingTransaction ? "Update Transaction" : keepAddingTransactions ? "Save & add another" : "Add Transaction")}
             </Button>
           </DialogFooter>
         </form>

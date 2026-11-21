@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/useAuth";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { PocketCard } from "@/components/dashboard/PocketCard";
 import { CreatePocketDialog } from "@/components/dashboard/CreatePocketDialog";
+import { BudgetPlanningDialog } from "@/components/dashboard/BudgetPlanningDialog";
 import { EditPocketDialog } from "@/components/dashboard/EditPocketDialog";
 import { MonthNavigator } from "@/components/dashboard/MonthNavigator";
 import { useToast } from "@/hooks/use-toast";
@@ -28,6 +29,9 @@ interface BudgetPocket {
   is_featured: boolean;
   month_year: string | null;
   parent_pocket_id: string | null;
+  base_budget_amount?: number;
+  carried_over_amount?: number;
+  recurring_rule?: unknown;
 }
 
 export function PocketsPage() {
@@ -35,10 +39,18 @@ export function PocketsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [showPlanning, setShowPlanning] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [selectedPocket, setSelectedPocket] = useState<BudgetPocket | null>(null);
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), "yyyy-MM"));
+
+  useEffect(() => {
+    if (searchParams.get('create') !== '1') return;
+    setShowCreateDialog(true);
+    setSearchParams({}, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   // Fetch user profile for currency preference
   const { data: profile } = useQuery({
@@ -166,62 +178,7 @@ export function PocketsPage() {
 
       if (fetchError) throw fetchError;
 
-      // Determine if this is a past month
-      const currentMonth = format(new Date(), "yyyy-MM");
-      const pocketMonth = pocketData.month_year;
-      const isPastMonth = pocketMonth && pocketMonth < currentMonth;
-
-      let targetData: any;
-      let editingTemplate = false;
-
-      if (isPastMonth) {
-        // Past month: edit the specific month instance only
-        targetData = pocketData;
-        toast({
-          title: "Editing Past Month",
-          description: "Changes will only affect this specific month.",
-        });
-      } else {
-        // Current or future month: edit the template
-        const targetId = pocketData.parent_pocket_id || pocketData.id;
-
-        const { data: fetchedTarget, error: targetError } = await supabase
-          .from("budget_pockets")
-          .select("*")
-          .eq("id", targetId)
-          .single();
-
-        if (targetError) throw targetError;
-
-        targetData = fetchedTarget;
-        editingTemplate = targetData.is_template || false;
-
-        if (editingTemplate || pocketData.parent_pocket_id) {
-          toast({
-            title: "Editing Template",
-            description: "Changes will apply to current and future months.",
-          });
-        }
-      }
-
-      // Convert to BudgetPocket format
-      const budgetPocket: BudgetPocket = {
-        id: targetData.id,
-        name: targetData.name,
-        description: targetData.description,
-        budget_amount: targetData.budget_amount,
-        budget_type: targetData.budget_type,
-        pocket_type: targetData.pocket_type,
-        color: targetData.color,
-        is_template: targetData.is_template || false,
-        auto_renew: targetData.auto_renew || true,
-        cycle_type: targetData.cycle_type,
-        is_featured: targetData.is_featured,
-        month_year: targetData.month_year,
-        parent_pocket_id: targetData.parent_pocket_id,
-      };
-
-      setSelectedPocket(budgetPocket);
+      setSelectedPocket(pocketData);
       setShowEditDialog(true);
     } catch (error) {
       console.error("Error loading pocket for edit:", error);
@@ -268,11 +225,12 @@ export function PocketsPage() {
           </h1>
           <p className="text-muted-foreground">Manage your budget allocations</p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-3">
           <MonthNavigator 
             selectedMonth={selectedMonth} 
             onMonthChange={setSelectedMonth}
           />
+          <Button variant="outline" onClick={() => setShowPlanning(true)}>Plan months</Button>
           <Button onClick={() => setShowCreateDialog(true)} className="bg-gradient-primary hover:opacity-90">
             <Plus className="mr-2 h-4 w-4" />
             Create Pocket
@@ -324,11 +282,14 @@ export function PocketsPage() {
       <CreatePocketDialog
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}
+        targetMonth={selectedMonth}
         onSuccess={() => {
           setShowCreateDialog(false);
           queryClient.invalidateQueries({ queryKey: ["pocketSpending", user?.id, selectedMonth] });
         }}
       />
+
+      <BudgetPlanningDialog open={showPlanning} onOpenChange={setShowPlanning} selectedMonth={selectedMonth} currency={userCurrency} onPlanned={setSelectedMonth} />
 
       <EditPocketDialog
         open={showEditDialog}

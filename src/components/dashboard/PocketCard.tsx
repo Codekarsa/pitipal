@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { MoreHorizontal, TrendingUp, TrendingDown, Edit, Trash, Star } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useState } from "react";
-import { formatCurrency, formatNumber } from "@/lib/utils";
+import { formatCurrency, formatCompactCurrency, formatNumber } from "@/lib/utils";
 
 interface PocketCardProps {
   pocket: {
@@ -17,6 +17,9 @@ interface PocketCardProps {
     description?: string;
     budget_amount?: number;
     budgetAmount?: number;
+    baseBudgetAmount?: number;
+    carriedOverAmount?: number;
+    pocket_type?: string;
     current_amount?: number;
     currentAmount?: number;
     cycle_type?: string;
@@ -96,7 +99,7 @@ export function PocketCard({
               )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0" aria-label={`Actions for ${name}`} onClick={e => e.stopPropagation()}>
                     <MoreHorizontal className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -125,10 +128,11 @@ export function PocketCard({
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex justify-between items-end">
+          <div className="flex flex-wrap gap-3 justify-between items-end">
             <div>
-              <p className="text-2xl font-bold">
-                {formatCurrency(current_amount, currency)}
+              <p className="text-xs text-muted-foreground">{pocket.pocket_type === 'income' ? 'Received' : 'Spent'}</p>
+              <p className="text-2xl font-bold" title={formatCurrency(current_amount, currency)}>
+                {formatCompactCurrency(current_amount, currency)}
               </p>
               <p className="text-sm text-muted-foreground">
                 of {formatCurrency(budget_amount, currency)} budget
@@ -143,8 +147,7 @@ export function PocketCard({
                   </>
                 ) : (
                   <>
-                    <TrendingDown className="inline w-4 h-4 mr-1" />
-                    {formatCurrency(remaining, currency)} left
+                    {formatCompactCurrency(remaining, currency)} left
                   </>
                 )}
               </p>
@@ -154,16 +157,15 @@ export function PocketCard({
           <div className="space-y-2">
             <Progress 
               value={Math.min(percentageUsed, 100)} 
-              className={`h-2 ${isOverBudget ? 'bg-destructive/20' : ''}`}
+              className={`h-2 bg-muted ${isOverBudget ? '[&>div]:bg-destructive' : percentageUsed >= 80 ? '[&>div]:bg-amber-500' : '[&>div]:bg-emerald-500'}`}
             />
             <div className="flex justify-between text-xs text-muted-foreground">
-              <span>0%</span>
               <span className={isOverBudget ? 'text-destructive font-medium' : ''}>
-                {formatNumber(percentageUsed)}%
+                {formatNumber(percentageUsed)}% {pocket.pocket_type === 'income' ? 'received' : 'used'}
               </span>
-              <span>100%</span>
             </div>
           </div>
+          {pocket.baseBudgetAmount !== undefined && <p className="text-xs text-muted-foreground break-words">Base {formatCurrency(pocket.baseBudgetAmount, currency)} + carried in {formatCurrency(pocket.carriedOverAmount ?? 0, currency)} = allowance {formatCurrency(budget_amount, currency)}</p>}
         </CardContent>
       </Card>
 
@@ -172,7 +174,7 @@ export function PocketCard({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Pocket</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{name}"? This action cannot be undone and will remove all associated data.
+              Hide "{name}" from your active budgets? Existing transactions are kept. Their expenses remain in your monthly totals.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

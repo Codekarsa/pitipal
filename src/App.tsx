@@ -18,7 +18,6 @@ import { PocketsPage } from "@/components/pockets/PocketsPage";
 import { SettingsPage } from "@/components/settings/SettingsPage";
 import { TransactionsPage } from "@/components/transactions/TransactionsPage";
 import { TransactionDialog } from "@/components/dashboard/TransactionDialog";
-import { CreatePocketDialog } from "@/components/dashboard/CreatePocketDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { handleError } from "@/lib/error-utils";
 import NotFound from "./pages/NotFound";
@@ -41,7 +40,6 @@ function AppContent() {
   const [showAuthForm, setShowAuthForm] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [showAddTransaction, setShowAddTransaction] = useState(false);
-  const [showCreatePocket, setShowCreatePocket] = useState(false);
   const [pockets, setPockets] = useState<BudgetPocket[]>([]);
   const [transactionsRefreshKey, setTransactionsRefreshKey] = useState(0);
   const navigate = useNavigate();
@@ -91,8 +89,8 @@ function AppContent() {
   };
 
   // A saved transaction changes pocket totals and card balances, so refetch what shows them
-  const handleTransactionSaved = () => {
-    setShowAddTransaction(false);
+  const handleTransactionSaved = (close = true) => {
+    if (close) setShowAddTransaction(false);
     fetchPockets();
     queryClient.invalidateQueries({ queryKey: ['pocketSpending'] });
     queryClient.invalidateQueries({ queryKey: ['credit-card-balances'] });
@@ -161,6 +159,7 @@ function AppContent() {
                 open={showAddTransaction}
                 onOpenChange={setShowAddTransaction}
                 onSuccess={handleTransactionSaved}
+                onSaved={() => handleTransactionSaved(false)}
                 pockets={pockets}
               />
             </DashboardLayout>
@@ -171,19 +170,15 @@ function AppContent() {
           element={
             <DashboardLayout 
               onAddTransaction={() => setShowAddTransaction(true)}
-              onAddPocket={() => setShowCreatePocket(true)}
+              onAddPocket={() => navigate("/pockets?create=1")}
             >
               <PocketsPage />
               <TransactionDialog
                 open={showAddTransaction}
                 onOpenChange={setShowAddTransaction}
                 onSuccess={handleTransactionSaved}
+                onSaved={() => handleTransactionSaved(false)}
                 pockets={pockets}
-              />
-              <CreatePocketDialog
-                open={showCreatePocket}
-                onOpenChange={setShowCreatePocket}
-                onSuccess={() => setShowCreatePocket(false)}
               />
             </DashboardLayout>
           } 
@@ -200,6 +195,7 @@ function AppContent() {
                 open={showAddTransaction}
                 onOpenChange={setShowAddTransaction}
                 onSuccess={handleTransactionSaved}
+                onSaved={() => handleTransactionSaved(false)}
                 pockets={pockets}
               />
             </DashboardLayout>
@@ -217,6 +213,7 @@ function AppContent() {
                 open={showAddTransaction}
                 onOpenChange={setShowAddTransaction}
                 onSuccess={handleTransactionSaved}
+                onSaved={() => handleTransactionSaved(false)}
                 pockets={pockets}
               />
             </DashboardLayout>
@@ -234,6 +231,7 @@ function AppContent() {
                 open={showAddTransaction}
                 onOpenChange={setShowAddTransaction}
                 onSuccess={handleTransactionSaved}
+                onSaved={() => handleTransactionSaved(false)}
                 pockets={pockets}
               />
             </DashboardLayout>

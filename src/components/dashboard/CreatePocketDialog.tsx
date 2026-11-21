@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { CurrencyInput } from "@/components/ui/currency-input";
@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { withRetry, handleError } from "@/lib/error-utils";
-import { endOfMonth, format, startOfMonth } from "date-fns";
+import { endOfMonth, format, parseISO, startOfMonth } from "date-fns";
 import { analytics } from "@/lib/analytics";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -19,6 +19,7 @@ interface CreatePocketDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+  targetMonth?: string;
 }
 
 const colorOptions = [
@@ -42,7 +43,9 @@ const budgetTypeOptions = [
   { value: "debt_payment", label: "Debt Payment", description: "Minimum + extra payments (credit cards, loans)" },
 ];
 
-export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePocketDialogProps) {
+export function CreatePocketDialog({ open, onOpenChange, onSuccess, targetMonth = format(new Date(), 'yyyy-MM') }: CreatePocketDialogProps) {
+  const [budgetMonth, setBudgetMonth] = useState(targetMonth);
+  useEffect(() => { if (open) setBudgetMonth(targetMonth); }, [open, targetMonth]);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [budgetAmount, setBudgetAmount] = useState("");
@@ -121,14 +124,17 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
     try {
       setLoading(true);
       const calculatedBudget = calculateBudgetAmount();
-      const now = new Date();
-      const currentMonth = format(now, "yyyy-MM");
+      const now = parseISO(`${budgetMonth}-01`);
+      const currentMonth = budgetMonth;
+      if (!Number.isFinite(calculatedBudget) || calculatedBudget <= 0 || !budgetMonth) throw new Error('Enter a positive monthly budget and choose a month.');
       
       const insertData = {
         user_id: user.id,
         name: name.trim(),
         description: description.trim() || null,
         budget_amount: calculatedBudget,
+        base_budget_amount: calculatedBudget,
+        carried_over_amount: 0,
         cycle_type: cycleType,
         budget_type: budgetType,
         pocket_type: pocketType,
@@ -138,10 +144,10 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
         recurring_rule: isTemplate ? {
           type: rolloverType,
           ...(rolloverType === 'percentage' && { percentage: rolloverPercentage }),
-          ...(rolloverType === 'carry_over' && maxCarryOver && { max_carry_over: maxCarryOver })
+          ...(rolloverType === 'carry_over' && maxCarryOver !== undefined && { max_carry_over: maxCarryOver })
         } : null,
         month_year: isTemplate ? null : currentMonth,
-        cycle_start_date: isTemplate ? null : format(startOfMonth(now), 'yyyy-MM-dd'),
+        cycle_start_date: format(startOfMonth(now), 'yyyy-MM-dd'),
         cycle_end_date: isTemplate ? null : format(endOfMonth(now), 'yyyy-MM-dd'),
       };
 
@@ -189,11 +195,12 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
 
       toast({
         title: "Success",
-        description: isTemplate ? "Pocket created for this month and set to repeat monthly" : "Budget pocket created for this month only",
+        description: `Pocket created for ${format(now, 'MMMM yyyy')}${isTemplate ? ' and set to repeat monthly' : ' only'}`,
       });
 
       analytics.trackPocketCreated(budgetType);
       queryClient.invalidateQueries({ queryKey: ["setupProgress", user.id] });
+      queryClient.invalidateQueries({ queryKey: ["pocketSpending", user.id] });
       onSuccess();
     } catch (error: any) {
       handleError(error, "Failed to create pocket. Please check your inputs and try again.");
@@ -208,7 +215,7 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
         <DialogHeader>
           <DialogTitle className="text-xl font-bold">Create Budget Pocket</DialogTitle>
           <DialogDescription>
-            Create a new budget category to organize your spending and track your goals.
+            A pocket is a spending limit, like groceries or transport. Start with a name and monthly amount.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -224,6 +231,20 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
             />
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="budget-month">Budget month</Label>
+            <Input id="budget-month" type="month" value={budgetMonth} onChange={e => setBudgetMonth(e.target.value)} required />
+          </div>
+          {['regular_monthly', 'emergency_irregular', 'seasonal'].includes(budgetType) && (
+            <div className="space-y-2">
+              <Label htmlFor="budget">Monthly Budget Amount</Label>
+              <CurrencyInput id="budget" value={budgetAmount} onChange={setBudgetAmount} placeholder="Enter monthly amount" inputMode="decimal" required />
+            </div>
+          )}
+          <p className="text-sm text-muted-foreground">{isTemplate ? 'Repeats every month. Unused allowance starts fresh unless you choose rollover below.' : 'One month only. This pocket will not repeat.'}</p>
+          <details className="rounded-lg border p-3">
+            <summary className="cursor-pointer text-sm font-medium">Advanced: type, color and rollover</summary>
+            <div className="mt-4 space-y-4">
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
             <Textarea
@@ -294,17 +315,6 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
           </div>
 
           {/* Conditional fields based on budget type */}
-          {budgetType === 'regular_monthly' || budgetType === 'emergency_irregular' || budgetType === 'seasonal' ? (
-            <div className="space-y-2">
-              <Label htmlFor="budget">Monthly Budget Amount</Label>
-              <CurrencyInput
-                id="budget"
-                value={budgetAmount}
-                onChange={setBudgetAmount}
-                placeholder="0.00"
-              />
-            </div>
-          ) : null}
 
           {budgetType === 'periodic_scheduled' ? (
             <div className="grid grid-cols-2 gap-4">
@@ -426,7 +436,7 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
               <div className="space-y-0.5">
                 <Label htmlFor="is-template" className="text-sm">Repeat every month</Label>
                 <p className="text-xs text-muted-foreground">
-                  Create a pocket for this month and repeat it in future months. Turn off for this month only.
+                  Repeat from the selected month. Turn off to plan this month only.
                 </p>
               </div>
               <Switch
@@ -447,7 +457,7 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="reset">Reset to zero (don't carry over)</SelectItem>
+                        <SelectItem value="reset">Start fresh — keep only the new month's base budget</SelectItem>
                         <SelectItem value="carry_over">Carry over full unused amount</SelectItem>
                         <SelectItem value="percentage">Carry over percentage of unused</SelectItem>
                       </SelectContent>
@@ -484,7 +494,10 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
             )}
           </div>
 
-          <DialogFooter className="gap-2">
+            <p className="text-xs text-muted-foreground">Carryover adds allowance, not income. A 3M base plus 1M unused gives 4M next month. Future carry is confirmed when that month starts.</p>
+            </div>
+          </details>
+          <DialogFooter className="gap-2 sticky -bottom-6 -mx-6 -mb-6 px-6 py-4 border-t bg-background">
             <Button
               type="button"
               variant="outline"

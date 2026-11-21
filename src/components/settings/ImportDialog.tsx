@@ -1,4 +1,7 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { formatCurrency } from "@/lib/utils";
 import { useAuth } from "@/components/auth/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -17,7 +20,7 @@ import {
   Upload, FileText, CheckCircle, AlertCircle,
   X, Eye, Database, Download
 } from "lucide-react";
-import { parseCSV, validateCSVData, generateCSVTemplate, importTransactions, importBudgetPockets } from "@/lib/csv-utils";
+import { parseCSV, validateCSVData, generateCSVTemplate, importTransactions, importBudgetPockets, reviewTransactionImport, type TransactionImportReview } from "@/lib/csv-utils";
 import { analytics } from "@/lib/analytics";
 
 interface ImportDialogProps {
@@ -36,12 +39,26 @@ interface ParsedData {
 export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const fileVersion = useRef(0);
+  const { data: profile } = useQuery({
+    queryKey: ['profile', user?.id],
+    enabled: open && !!user,
+    queryFn: async () => {
+      const result = await supabase.from('profiles').select('*').eq('user_id', user!.id).single();
+      if (result.error) throw result.error;
+      return result.data;
+    },
+  });
   
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [parsedData, setParsedData] = useState<ParsedData | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [importType, setImportType] = useState<string>("transactions");
+  const [review, setReview] = useState<TransactionImportReview | null>(null);
+  const [isReviewing, setIsReviewing] = useState(false);
+  const [outcome, setOutcome] = useState<{ success: number; failed: number; skipped?: number; errors: string[] } | null>(null);
 
   const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -56,15 +73,24 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
       return;
     }
 
+    const version = ++fileVersion.current;
     setSelectedFile(file);
+    setParsedData(null);
+    setReview(null);
+    setOutcome(null);
+    setIsReviewing(true);
     
     // Parse CSV file
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       const csvText = e.target?.result as string;
       try {
         const data = parseCSV(csvText);
         const validation = validateCSVData(data, importType);
+        const transactionReview = validation.isValid && importType === 'transactions' && user
+          ? await reviewTransactionImport(data, user.id) : null;
+        if (version !== fileVersion.current) return;
+        setReview(transactionReview);
         
         setParsedData({
           headers: data[0] || [],
@@ -74,42 +100,47 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
           errors: validation.errors,
         });
       } catch (error) {
+        if (version !== fileVersion.current) return;
+        setParsedData({ headers: [], rows: [], type: importType, isValid: false, errors: [error instanceof Error ? error.message : 'Unable to review CSV'] });
         toast({
           title: "Parse Error",
           description: "Failed to parse CSV file. Please check the format.",
           variant: "destructive",
         });
+      } finally {
+        if (version === fileVersion.current) setIsReviewing(false);
       }
     };
+    reader.onerror = () => {
+      if (version !== fileVersion.current) return;
+      setIsReviewing(false);
+      setParsedData({ headers: [], rows: [], type: importType, isValid: false, errors: ['Unable to read file; choose it again'] });
+    };
     reader.readAsText(file);
-  }, [importType, toast]);
+  }, [importType, toast, user]);
 
   const handleImport = async () => {
-    if (!parsedData || !selectedFile || !user) return;
+    if (!parsedData || !selectedFile || !user || isUploading || isReviewing || outcome) return;
 
     setIsUploading(true);
     setUploadProgress(10);
 
     try {
-      // Progress updates
-      const progressInterval = setInterval(() => {
-        setUploadProgress(prev => Math.min(prev + 10, 90));
-      }, 200);
-
-      let result: { success: number; failed: number; errors: string[] };
+      let result: { success: number; failed: number; skipped?: number; errors: string[] };
 
       const csvData = [parsedData.headers, ...parsedData.rows];
 
-      if (importType === "transactions") {
+      if (parsedData.type === "transactions") {
         result = await importTransactions(csvData, user.id);
-      } else if (importType === "pockets") {
+      } else if (parsedData.type === "pockets") {
         result = await importBudgetPockets(csvData, user.id);
       } else {
         result = { success: 0, failed: 0, errors: ['Unknown import type'] };
       }
 
-      clearInterval(progressInterval);
       setUploadProgress(100);
+      setOutcome(result);
+      if (result.success > 0) await queryClient.invalidateQueries();
 
       if (result.failed > 0) {
         toast({
@@ -125,12 +156,8 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
         analytics.trackImportCompleted(importType, result.success);
       }
 
-      // Reset state
-      setSelectedFile(null);
-      setParsedData(null);
-      onOpenChange(false);
-
     } catch (error) {
+      setOutcome({ success: 0, failed: parsedData.rows.length, errors: [error instanceof Error ? error.message : 'Import failed; re-upload to review before retrying'] });
       toast({
         title: "Import Failed",
         description: "Failed to import data. Please try again.",
@@ -143,9 +170,13 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
   };
 
   const resetUpload = () => {
+    fileVersion.current++;
     setSelectedFile(null);
     setParsedData(null);
     setUploadProgress(0);
+    setReview(null);
+    setOutcome(null);
+    setIsReviewing(false);
   };
 
   const handleDownloadSample = async () => {
@@ -171,7 +202,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={value => { if (!isUploading) onOpenChange(value); }}>
       <DialogContent className="max-w-[95vw] sm:max-w-2xl lg:max-w-4xl max-h-[85vh] sm:max-h-[80vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -184,7 +215,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden">
-          <Tabs value={importType} onValueChange={setImportType} className="space-y-4">
+          <Tabs value={importType} onValueChange={value => { if (!isUploading) { resetUpload(); setImportType(value); } }} className="space-y-4">
             {/* Import Type Selection */}
             <TabsList className="grid w-full grid-cols-2 gap-1">
               <TabsTrigger value="transactions" className="text-xs sm:text-sm px-2">
@@ -225,7 +256,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
                         Choose CSV File
                       </label>
                       <p className="text-sm text-muted-foreground mt-2">
-                        Or drag and drop your CSV file here
+                        Select a UTF-8 CSV file to review before saving
                       </p>
                     </div>
 
@@ -242,6 +273,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
                               <CheckCircle className="h-3 w-3 text-green-500" />
                               Date format: YYYY-MM-DD
                             </div>
+                            <p>Amounts are positive magnitudes (negative CSV amounts are normalized). Optional payee, pocket, account_type and account_name must match your records. Pockets must belong to the transaction month, not templates.</p>
                           </>
                         )}
                         {importType === "pockets" && (
@@ -283,18 +315,39 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
                           variant="ghost"
                           size="sm"
                           onClick={resetUpload}
+                          disabled={isUploading}
+                          aria-label="Choose another CSV file"
                           className="h-8 w-8 p-0"
                         >
                           <X className="h-4 w-4" />
                         </Button>
                       </div>
+
+                      {isReviewing && <p role="status">Reviewing rows, links and duplicates...</p>}
+                      {review && !outcome && (
+                        <div className="space-y-2 text-sm" aria-label="Import review">
+                          <p>{review.ready} ready • {review.failed} invalid • {review.skipped} duplicates skipped</p>
+                          <p>Ready totals: Income {formatCurrency(review.income, profile?.currency || 'USD')} • Expenses {formatCurrency(review.expense, profile?.currency || 'USD')} • Net {formatCurrency(review.income - review.expense, profile?.currency || 'USD')}</p>
+                          <p>Only ready rows will be saved. Identical date, amount, type, category, description, notes and links are treated as duplicates, including existing transactions.</p>
+                          <ul className="max-h-40 overflow-auto space-y-1">
+                            {review.rows.map(row => <li key={row.row} className={row.status === 'invalid' ? 'text-destructive' : ''}>Row {row.row}: {row.status} — {row.message}</li>)}
+                          </ul>
+                        </div>
+                      )}
+                      {outcome && (
+                        <div role="status" className="text-sm space-y-2">
+                          <p>Import outcomes: {outcome.success} saved • {outcome.failed} failed • {outcome.skipped || 0} duplicates skipped</p>
+                          <ul className="max-h-40 overflow-auto">{outcome.errors.map((error, index) => <li key={index} className="text-destructive">{error}</li>)}</ul>
+                          <p>Use the X above to choose a corrected file and review again. Already saved rows will be skipped on retry.</p>
+                        </div>
+                      )}
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="flex items-center gap-2">
                         <FileText className="h-4 w-4 text-blue-500" />
                         <span className="font-medium">{selectedFile.name}</span>
-                        <Badge variant={parsedData?.isValid ? "default" : "destructive"}>
-                          {parsedData?.isValid ? "Valid" : "Invalid"}
+                        <Badge variant={parsedData?.isValid && !review?.failed ? "default" : "destructive"}>
+                          {isReviewing ? 'Reviewing' : review?.failed ? 'Needs attention' : parsedData?.isValid ? 'Reviewed' : 'Invalid'}
                         </Badge>
                       </div>
 
@@ -388,12 +441,12 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
 
         {/* Footer Actions */}
         <div className="flex justify-end gap-3 pt-4 border-t">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+          <Button variant="outline" disabled={isUploading} onClick={() => onOpenChange(false)}>
+            {outcome ? 'Done' : 'Cancel'}
           </Button>
           <Button
             onClick={handleImport}
-            disabled={!parsedData?.isValid || isUploading}
+            disabled={!parsedData?.isValid || isUploading || isReviewing || !!outcome || (importType === 'transactions' && !review?.ready)}
             className="min-w-[100px]"
           >
             {isUploading ? (

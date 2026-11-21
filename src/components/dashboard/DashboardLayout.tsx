@@ -62,7 +62,7 @@ export function DashboardLayout({ children, onAddTransaction, onAddPocket }: Das
                 </Button>
               )}
               {onAddTransaction && (
-                <Button onClick={onAddTransaction} variant="hero" size="sm" className="sm:hidden">
+                <Button onClick={onAddTransaction} variant="hero" size="sm" className="sm:hidden" aria-label="Add Transaction">
                   <Plus className="h-4 w-4" />
                 </Button>
               )}
@@ -74,7 +74,7 @@ export function DashboardLayout({ children, onAddTransaction, onAddPocket }: Das
                 </AvatarFallback>
               </Avatar>
 
-              <Button onClick={handleSignOut} variant="outline" size="sm" className="p-2">
+              <Button onClick={handleSignOut} variant="outline" size="sm" className="p-2" aria-label="Sign out">
                 <LogOut className="h-4 w-4" />
               </Button>
             </div>

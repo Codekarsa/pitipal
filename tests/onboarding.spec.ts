@@ -106,6 +106,8 @@ test("currency is required, persisted, and checklist follows real saves across m
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.getByRole("button", { name: "Add Transaction", exact: true }).click();
   await page.getByLabel("Amount", { exact: false }).fill("250000");
+  await page.getByLabel("Category", { exact: false }).click();
+  await page.getByRole("option", { name: "Food & Dining", exact: true }).click();
   await page.getByRole("button", { name: "Add Transaction", exact: true }).last().click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(checklist).toHaveCount(0);

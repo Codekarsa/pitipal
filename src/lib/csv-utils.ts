@@ -1,13 +1,14 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 
 // CSV Template Generators
 export const generateCSVTemplate = async (type: 'transactions' | 'pockets' | 'categories' | 'accounts'): Promise<string> => {
   switch (type) {
     case 'transactions':
-      return `date,description,amount,type,category,payee,notes,account_type,account_name
-2024-01-01,"Grocery shopping",-50.00,expense,Food & Dining,Supermarket,"Weekly groceries",savings_account,Main Savings
-2024-01-01,"Salary deposit",3000.00,income,Salary,Company,"Monthly salary",savings_account,Main Savings
-2024-01-02,"Gas station",-40.00,expense,Transportation,Gas Station,"Car fuel",credit_card,My Credit Card`;
+      return `date,description,amount,type,category,payee,notes,account_type,account_name,pocket
+2024-01-01,"Grocery shopping",50.00,expense,Food & Dining,Supermarket,"Weekly groceries",savings_account,Main Savings,Food & Dining
+2024-01-01,"Salary deposit",3000.00,income,Salary,Company,"Monthly salary",savings_account,Main Savings,
+2024-01-02,"Gas station",40.00,expense,Transportation,Gas Station,"Car fuel",credit_card,My Credit Card,Transportation`;
 
     case 'pockets':
       return `name,budget_amount,pocket_type,cycle_type,description,color,icon
@@ -222,7 +223,7 @@ export const exportDataToCSV = async (userId: string, dataType: string): Promise
       return await exportCategories(userId);
     case 'accounts':
       return await exportAccounts(userId);
-    case 'all':
+    case 'all': {
       // For complete export, we'll return a ZIP-like structure in text format
       const [transactions, pockets, categories, accounts] = await Promise.all([
         exportTransactions(userId),
@@ -232,6 +233,7 @@ export const exportDataToCSV = async (userId: string, dataType: string): Promise
       ]);
       
       return `=== TRANSACTIONS ===\n${transactions}\n\n=== BUDGET POCKETS ===\n${pockets}\n\n=== CATEGORIES ===\n${categories}\n\n=== ACCOUNTS ===\n${accounts}`;
+    }
     
     default:
       throw new Error(`Unknown export type: ${dataType}`);
@@ -240,35 +242,41 @@ export const exportDataToCSV = async (userId: string, dataType: string): Promise
 
 // CSV Parsing Utilities
 export const parseCSV = (csvText: string): string[][] => {
-  const lines = csvText.split('\n');
   const result: string[][] = [];
-  
-  for (const line of lines) {
-    if (line.trim()) {
-      // Simple CSV parser - handles quoted fields
-      const row: string[] = [];
-      let current = '';
-      let inQuotes = false;
-      
-      for (let i = 0; i < line.length; i++) {
-        const char = line[i];
-        
-        if (char === '"') {
-          inQuotes = !inQuotes;
-        } else if (char === ',' && !inQuotes) {
-          row.push(current.trim());
-          current = '';
-        } else {
-          current += char;
-        }
+  let row: string[] = [];
+  let field = '';
+  let quoted = false;
+  let closed = false;
+  const text = csvText.replace(/^\uFEFF/, '');
+  for (let i = 0; i <= text.length; i++) {
+    const char = text[i];
+    if (quoted) {
+      if (char === undefined) throw new Error('Unclosed quoted CSV field');
+      if (char === '"' && text[i + 1] === '"') { field += '"'; i++; }
+      else if (char === '"') { quoted = false; closed = true; }
+      else field += char;
+    } else if (char === ',' || char === '\n' || char === '\r' || char === undefined) {
+      row.push(field.trim());
+      field = '';
+      closed = false;
+      if (char !== ',') {
+        if (row.length > 1 || row.some(cell => cell !== '')) result.push(row);
+        row = [];
+        if (char === '\r' && text[i + 1] === '\n') i++;
       }
-      row.push(current.trim());
-      result.push(row);
+    } else if (char === '"') {
+      if (field.trim() || closed) throw new Error('Unexpected quote in CSV field');
+      field = '';
+      quoted = true;
+    } else {
+      if (closed && char.trim()) throw new Error('Unexpected text after quoted CSV field');
+      field += char;
     }
   }
-  
   return result;
 };
+
+const normalizeHeader = (header: string) => header.trim().toLowerCase().replace(/\s+/g, '_');
 
 export const validateCSVData = (data: string[][], type: string): { isValid: boolean; errors: string[] } => {
   const errors: string[] = [];
@@ -278,26 +286,29 @@ export const validateCSVData = (data: string[][], type: string): { isValid: bool
     return { isValid: false, errors };
   }
 
-  const headers = data[0];
+  const headers = data[0].map(normalizeHeader);
+  if (new Set(headers).size !== headers.length) errors.push('Duplicate column headers');
   
   switch (type) {
-    case 'transactions':
+    case 'transactions': {
       const requiredTransactionHeaders = ['date', 'amount', 'type', 'category'];
       for (const header of requiredTransactionHeaders) {
-        if (!headers.some(h => h.toLowerCase().includes(header))) {
+        if (!headers.includes(header)) {
           errors.push(`Missing required column: ${header}`);
         }
       }
       break;
+    }
       
-    case 'pockets':
+    case 'pockets': {
       const requiredPocketHeaders = ['name', 'budget_amount', 'pocket_type'];
       for (const header of requiredPocketHeaders) {
-        if (!headers.some(h => h.toLowerCase().includes(header))) {
+        if (!headers.includes(header)) {
           errors.push(`Missing required column: ${header}`);
         }
       }
       break;
+    }
       
     // Add more validation rules as needed
   }
@@ -307,118 +318,141 @@ export const validateCSVData = (data: string[][], type: string): { isValid: bool
 
 // Helper to get column index from headers
 const getColumnIndex = (headers: string[], columnName: string): number => {
-  return headers.findIndex(h => h.toLowerCase().includes(columnName.toLowerCase()));
+  return headers.findIndex(h => normalizeHeader(h) === columnName);
 };
 
-// Import Transactions
-export const importTransactions = async (
-  data: string[][],
-  userId: string
-): Promise<{ success: number; failed: number; errors: string[] }> => {
+type TransactionInsert = Database['public']['Tables']['transactions']['Insert'];
+export interface TransactionImportRow {
+  row: number;
+  status: 'ready' | 'saved' | 'invalid' | 'duplicate';
+  message: string;
+  transaction?: TransactionInsert;
+}
+export interface TransactionImportReview {
+  rows: TransactionImportRow[];
+  ready: number;
+  failed: number;
+  skipped: number;
+  income: number;
+  expense: number;
+  errors: string[];
+}
+
+// Page every lookup: Supabase's default row cap must not hide duplicates or ambiguity.
+async function allRows<T>(fetchPage: (offset: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>): Promise<T[]> {
+  const rows: T[] = [];
+  for (let offset = 0; ; offset += 500) {
+    const { data, error } = await fetchPage(offset);
+    if (error) throw new Error(error.message);
+    rows.push(...(data || []));
+    if (!data || data.length < 500) return rows;
+  }
+}
+
+const transactionKey = (tx: TransactionInsert) => JSON.stringify([
+  tx.transaction_date, Math.abs(Number(tx.amount)), tx.type, tx.category.trim(),
+  tx.description?.trim() || '', tx.notes?.trim() || '', tx.payee_id || '', tx.pocket_id || '',
+  tx.savings_account_id || '', tx.credit_card_account_id || '', tx.investment_account_id || '',
+]);
+
+// Read-only review; the importer repeats this immediately before writing (never trust a stale preview).
+export const reviewTransactionImport = async (data: string[][], userId: string): Promise<TransactionImportReview> => {
+  const validation = validateCSVData(data, 'transactions');
+  if (!validation.isValid) throw new Error(validation.errors.join('; '));
+  const [payees, pockets, savings, credit, investments, existing] = await Promise.all([
+    allRows(offset => supabase.from('payees').select('id,name').eq('user_id', userId).order('id').range(offset, offset + 499)),
+    allRows(offset => supabase.from('budget_pockets').select('id,name,month_year').eq('user_id', userId).eq('is_template', false).order('id').range(offset, offset + 499)),
+    allRows(offset => supabase.from('savings_accounts').select('id,account_name').eq('user_id', userId).order('id').range(offset, offset + 499)),
+    allRows(offset => supabase.from('credit_card_accounts').select('id,account_name').eq('user_id', userId).order('id').range(offset, offset + 499)),
+    allRows(offset => supabase.from('investment_accounts').select('id,account_name').eq('user_id', userId).order('id').range(offset, offset + 499)),
+    allRows(offset => supabase.from('transactions').select('*').eq('user_id', userId).order('id').range(offset, offset + 499)),
+  ]);
+  const seen = new Set(existing.map(transactionKey));
   const headers = data[0];
-  const rows = data.slice(1);
-  const errors: string[] = [];
-  let success = 0;
-  let failed = 0;
-
-  // Get column indices
-  const dateIdx = getColumnIndex(headers, 'date');
-  const descIdx = getColumnIndex(headers, 'description');
-  const amountIdx = getColumnIndex(headers, 'amount');
-  const typeIdx = getColumnIndex(headers, 'type');
-  const categoryIdx = getColumnIndex(headers, 'category');
-  const payeeIdx = getColumnIndex(headers, 'payee');
-  const notesIdx = getColumnIndex(headers, 'notes');
-
-  // Fetch existing categories for user
-  const { data: existingCategories } = await supabase
-    .from('categories')
-    .select('id, name')
-    .eq('user_id', userId);
-
-  const categoryMap = new Map<string, string>();
-  existingCategories?.forEach(cat => {
-    categoryMap.set(cat.name.toLowerCase(), cat.id);
-  });
-
-  // Process each row
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i];
-    const rowNum = i + 2; // Account for header row and 0-index
-
+  const review: TransactionImportReview = { rows: [], ready: 0, failed: 0, skipped: 0, income: 0, expense: 0, errors: [] };
+  const match = (label: string, name: string, records: { id: string; name: string }[]) => {
+    if (!name) return null;
+    const matches = records.filter(record => record.name.trim().toLowerCase() === name.toLowerCase());
+    if (matches.length !== 1) throw new Error(`${matches.length ? 'Ambiguous' : 'Unmatched'} ${label} "${name}"; correct the CSV or your records and review again`);
+    return matches[0].id;
+  };
+  data.slice(1).forEach((row, index) => {
+    const rowNumber = index + 2;
+    const value = (column: string) => row[getColumnIndex(headers, column)]?.trim() || '';
     try {
-      const date = row[dateIdx]?.trim();
-      const amount = parseFloat(row[amountIdx]?.trim() || '0');
-      const type = row[typeIdx]?.trim().toLowerCase();
-      const categoryName = row[categoryIdx]?.trim();
-      const description = descIdx >= 0 ? row[descIdx]?.trim() : '';
-      const payeeName = payeeIdx >= 0 ? row[payeeIdx]?.trim() : '';
-      const notes = notesIdx >= 0 ? row[notesIdx]?.trim() : '';
-
-      // Validate required fields
-      if (!date || isNaN(amount) || !type || !categoryName) {
-        errors.push(`Row ${rowNum}: Missing required fields`);
-        failed++;
-        continue;
+      if (row.length !== headers.length) throw new Error(`Expected ${headers.length} columns, found ${row.length}`);
+      const date = value('date');
+      const dateObject = new Date(`${date}T00:00:00Z`);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(dateObject.getTime()) || dateObject.toISOString().slice(0, 10) !== date || date.startsWith('0000')) {
+        throw new Error('Invalid date; use a real YYYY-MM-DD date');
       }
-
-      // Validate type
-      if (type !== 'expense' && type !== 'income') {
-        errors.push(`Row ${rowNum}: Invalid type "${type}". Must be "expense" or "income"`);
-        failed++;
-        continue;
+      const amountText = value('amount');
+      const amount = Math.abs(Number(amountText));
+      if (!/^[+-]?(?:\d+(?:\.\d{1,2})?|\.\d{1,2})$/.test(amountText) || !Number.isFinite(amount) || amount <= 0 || amount > 9999999999999.99) {
+        throw new Error('Invalid amount; use a non-zero number up to 9999999999999.99 with at most two decimal places (no separators)');
       }
-
-      // Get or create category
-      let categoryId = categoryMap.get(categoryName.toLowerCase());
-      if (!categoryId) {
-        // Auto-create category
-        const { data: newCategory, error: catError } = await supabase
-          .from('categories')
-          .insert({
-            user_id: userId,
-            name: categoryName,
-            type: type,
-            color: '#6b7280', // Default gray color
-          })
-          .select('id')
-          .single();
-
-        if (catError || !newCategory) {
-          errors.push(`Row ${rowNum}: Failed to create category "${categoryName}"`);
-          failed++;
-          continue;
-        }
-        categoryId = newCategory.id;
-        categoryMap.set(categoryName.toLowerCase(), categoryId);
+      const type = value('type').toLowerCase();
+      if (type !== 'income' && type !== 'expense') throw new Error('Invalid type; use income or expense');
+      if (!value('category')) throw new Error('Category is required');
+      const accountType = value('account_type').toLowerCase();
+      const accountName = value('account_name');
+      const accounts = { savings_account: savings, credit_card: credit, investment_account: investments };
+      if ((accountType || accountName) && (!accountName || !Object.prototype.hasOwnProperty.call(accounts, accountType))) {
+        throw new Error('Supply account_name and account_type (savings_account, credit_card or investment_account) together');
       }
-
-      // Insert transaction
-      const { error: txError } = await supabase
-        .from('transactions')
-        .insert({
-          user_id: userId,
-          transaction_date: date,
-          amount: type === 'expense' ? -Math.abs(amount) : Math.abs(amount),
-          type: type,
-          category: categoryName,
-          description: description || null,
-          notes: notes || null,
-        });
-
-      if (txError) {
-        errors.push(`Row ${rowNum}: ${txError.message}`);
-        failed++;
+      const accountId = accountName ? match('account', accountName, accounts[accountType as keyof typeof accounts].map(account => ({ id: account.id, name: account.account_name }))) : null;
+      const transaction: TransactionInsert = {
+        user_id: userId, transaction_date: date, amount, type, category: value('category'),
+        description: value('description') || null, notes: value('notes') || null,
+        payee_id: match('payee', value('payee'), payees),
+        pocket_id: match(`pocket for ${date.slice(0, 7)}`, value('pocket'), pockets.filter(pocket => pocket.month_year === date.slice(0, 7))),
+        savings_account_id: accountType === 'savings_account' ? accountId : null,
+        credit_card_account_id: accountType === 'credit_card' ? accountId : null,
+        investment_account_id: accountType === 'investment_account' ? accountId : null,
+      };
+      const key = transactionKey(transaction);
+      if (seen.has(key)) {
+        review.skipped++;
+        review.rows.push({ row: rowNumber, status: 'duplicate', message: 'Matches an existing transaction or earlier CSV row; skipped', transaction });
       } else {
-        success++;
+        seen.add(key);
+        review.ready++;
+        review[type] += amount;
+        review.rows.push({ row: rowNumber, status: 'ready', message: 'Validated; supplied links resolved', transaction });
       }
     } catch (error) {
-      errors.push(`Row ${rowNum}: Unexpected error`);
+      const message = error instanceof Error ? error.message : 'Unable to validate row';
+      review.failed++;
+      review.errors.push(`Row ${rowNumber}: ${message}`);
+      review.rows.push({ row: rowNumber, status: 'invalid', message });
+    }
+  });
+  return review;
+};
+
+export const importTransactions = async (data: string[][], userId: string): Promise<{
+  success: number; failed: number; skipped: number; errors: string[]; rows: TransactionImportRow[];
+}> => {
+  const review = await reviewTransactionImport(data, userId);
+  let success = 0;
+  let failed = review.failed;
+  const errors = [...review.errors];
+  for (const row of review.rows) {
+    if (row.status !== 'ready' || !row.transaction) continue;
+    try {
+      const { error } = await supabase.from('transactions').insert(row.transaction);
+      if (error) throw new Error(error.message);
+      success++;
+      row.status = 'saved';
+      row.message = 'Saved';
+    } catch (error) {
+      row.status = 'invalid';
+      row.message = error instanceof Error ? error.message : 'Save failed; review and retry';
       failed++;
+      errors.push(`Row ${row.row}: ${row.message}`);
     }
   }
-
-  return { success, failed, errors };
+  return { success, failed, skipped: review.skipped, errors, rows: review.rows };
 };
 
 // Import Budget Pockets

@@ -9,6 +9,7 @@ import { DebtOverviewCard } from "./DebtOverviewCard";
 import { QuickActionsCard } from "./QuickActionsCard";
 import { MonthNavigator } from "./MonthNavigator";
 import { TemplateManagementDialog } from "./TemplateManagementDialog";
+import { BudgetPlanningDialog } from "./BudgetPlanningDialog";
 import { EditPocketDialog } from "./EditPocketDialog";
 import { SetupChecklist } from "./SetupChecklist";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,13 +36,15 @@ interface BudgetPocket {
   parent_pocket_id: string | null;
   auto_renew: boolean;
   recurring_rule: unknown;
+  base_budget_amount?: number | null;
+  carried_over_amount?: number | null;
 }
 
 export function Dashboard() {
-  const [pockets, setPockets] = useState<PocketSpending[]>([]);
   const [showCreatePocket, setShowCreatePocket] = useState(false);
   const [showAddTransaction, setShowAddTransaction] = useState(false);
   const [showTemplateManagement, setShowTemplateManagement] = useState(false);
+  const [showPlanning, setShowPlanning] = useState(false);
   const [showEditPocket, setShowEditPocket] = useState(false);
   const [selectedPocketForEdit, setSelectedPocketForEdit] = useState<BudgetPocket | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<string>(format(new Date(), "yyyy-MM"));
@@ -78,18 +81,13 @@ export function Dashboard() {
   const { data: pocketData, isLoading, error } = useQuery({
     queryKey: ['pocketSpending', user?.id, selectedMonth],
     queryFn: async () => {
-      if (!user?.id) return { pockets: [], totalBudget: 0, totalSpent: 0, totalRemaining: 0, totalIncome: 0 };
+      if (!user?.id) return { pockets: [], totalBudget: 0, totalSpent: 0, totalRemaining: 0, totalIncome: 0, unassignedSpent: 0, unassignedCount: 0 };
       return await calculatePocketSpending(user.id, selectedMonth);
     },
     enabled: !!user?.id,
   });
 
-  // Update pockets when data changes
-  useEffect(() => {
-    if (pocketData?.pockets) {
-      setPockets(pocketData.pockets);
-    }
-  }, [pocketData]);
+  const pockets = pocketData?.pockets || [];
 
   // Calculate totals from pocketData or fallback to calculating from pockets
   const totalBudget = pocketData?.totalBudget ?? 0;
@@ -121,63 +119,7 @@ export function Dashboard() {
 
       if (fetchError) throw fetchError;
 
-      // Determine if this is a past month
-      const currentMonth = format(new Date(), "yyyy-MM");
-      const pocketMonth = pocketData.month_year;
-      const isPastMonth = pocketMonth && pocketMonth < currentMonth;
-
-      let targetData: BudgetPocket;
-      let editingTemplate = false;
-
-      if (isPastMonth) {
-        // Past month: edit the specific month instance only
-        targetData = pocketData;
-        toast({
-          title: "Editing Past Month",
-          description: "Changes will only affect this specific month.",
-        });
-      } else {
-        // Current or future month: edit the template
-        const targetId = pocketData.parent_pocket_id || pocketData.id;
-
-        const { data: fetchedTarget, error: targetError } = await supabase
-          .from("budget_pockets")
-          .select("*")
-          .eq("id", targetId)
-          .single();
-
-        if (targetError) throw targetError;
-
-        targetData = fetchedTarget;
-        editingTemplate = targetData.is_template || false;
-
-        if (editingTemplate || pocketData.parent_pocket_id) {
-          toast({
-            title: "Editing Template",
-            description: "Changes will apply to current and future months.",
-          });
-        }
-      }
-
-      // Convert to BudgetPocket format
-      const budgetPocket: BudgetPocket = {
-        id: targetData.id,
-        name: targetData.name,
-        description: targetData.description,
-        budget_amount: targetData.budget_amount,
-        cycle_type: targetData.cycle_type,
-        color: targetData.color,
-        is_featured: targetData.is_featured,
-        pocket_type: targetData.pocket_type,
-        budget_type: targetData.budget_type,
-        is_template: targetData.is_template || false,
-        month_year: targetData.month_year,
-        parent_pocket_id: targetData.parent_pocket_id,
-        auto_renew: targetData.auto_renew || true,
-        recurring_rule: targetData.recurring_rule,
-      };
-
-      setSelectedPocketForEdit(budgetPocket);
+      setSelectedPocketForEdit(pocketData);
       setShowEditPocket(true);
     } catch (error) {
       console.error("Error loading pocket for edit:", error);
@@ -192,7 +134,7 @@ export function Dashboard() {
   const handlePocketUpdated = () => {
     setShowEditPocket(false);
     setSelectedPocketForEdit(null);
-    queryClient.invalidateQueries({ queryKey: ['pocketSpending', user?.id, selectedMonth] });
+    queryClient.invalidateQueries({ queryKey: ['pocketSpending', user?.id] });
     toast({
       title: "Pocket updated!",
       description: "Your budget pocket has been updated successfully.",
@@ -317,7 +259,7 @@ export function Dashboard() {
   return (
     <div className="space-y-8">
       {/* Month Filter */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold">Dashboard</h1>
           <p className="text-muted-foreground">Overview of your financial activity</p>
@@ -410,17 +352,24 @@ export function Dashboard() {
         </Card>
       </div>
 
+      {(pocketData?.unassignedCount ?? 0) > 0 && <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-4 text-sm">
+        <p>{formatCurrency(pocketData!.unassignedSpent, userCurrency)} in {pocketData!.unassignedCount} expenses has no spending pocket. These expenses are included in Total Spent and Remaining, but not in individual pocket bars.</p>
+        <Button variant="link" className="h-auto p-0 mt-2" onClick={() => navigate('/transactions')}>Review unassigned expenses</Button>
+      </div>}
+      {selectedMonth > format(new Date(), 'yyyy-MM') && <p className="text-sm text-muted-foreground">Future plan: base allowances only. Carryover is confirmed when the month begins.</p>}
+
       {/* Debt Overview */}
       <DebtOverviewCard />
 
       {/* Budget Pockets */}
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-2xl font-bold">Budget Pockets</h2>
             <p className="text-muted-foreground">Organize your spending into customizable categories</p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
+            <Button variant="outline" size="sm" onClick={() => setShowPlanning(true)}>Plan months</Button>
             <Button 
               variant="outline" 
               onClick={() => setShowTemplateManagement(true)}
@@ -428,7 +377,7 @@ export function Dashboard() {
               size="sm"
             >
               <Settings className="h-4 w-4" />
-              <span className="hidden sm:inline">Templates</span>
+              <span>Repeating pockets</span>
             </Button>
             <Button onClick={() => setShowCreatePocket(true)} variant="hero" size="sm" className="text-xs sm:text-sm">
               <Plus className="mr-1 sm:mr-2 h-4 w-4" />
@@ -468,6 +417,7 @@ export function Dashboard() {
             ))}
             <QuickActionsCard
               pockets={pockets}
+              targetMonth={selectedMonth}
               onTransactionAdded={handleTransactionAdded}
               onPocketCreated={handlePocketCreated}
             />
@@ -480,6 +430,7 @@ export function Dashboard() {
         open={showCreatePocket}
         onOpenChange={setShowCreatePocket}
         onSuccess={handlePocketCreated}
+        targetMonth={selectedMonth}
       />
       
       <TransactionDialog
@@ -492,7 +443,10 @@ export function Dashboard() {
       <TemplateManagementDialog
         open={showTemplateManagement}
         onOpenChange={setShowTemplateManagement}
+        targetMonth={selectedMonth}
+        currency={userCurrency}
       />
+      <BudgetPlanningDialog open={showPlanning} onOpenChange={setShowPlanning} selectedMonth={selectedMonth} currency={userCurrency} onPlanned={setSelectedMonth} />
       
       <EditPocketDialog
         open={showEditPocket}

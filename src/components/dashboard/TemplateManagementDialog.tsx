@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Play, Trash2, Settings } from "lucide-react";
+import { FileText, Play, Trash2 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -13,6 +14,8 @@ import { format } from "date-fns";
 interface TemplateManagementDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  targetMonth: string;
+  currency: string;
 }
 
 interface BudgetTemplate {
@@ -26,12 +29,13 @@ interface BudgetTemplate {
   recurring_rule: any;
 }
 
-export function TemplateManagementDialog({ open, onOpenChange }: TemplateManagementDialogProps) {
+export function TemplateManagementDialog({ open, onOpenChange, targetMonth, currency }: TemplateManagementDialogProps) {
   const [templates, setTemplates] = useState<BudgetTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (open && user) {
@@ -66,21 +70,19 @@ export function TemplateManagementDialog({ open, onOpenChange }: TemplateManagem
   const generateInstance = async (templateId: string) => {
     try {
       setActionLoading(templateId);
-      const currentMonth = format(new Date(), "yyyy-MM");
-      
-      // Call the database function to generate instance
-      const { data, error } = await supabase.rpc('generate_monthly_pocket_instance', {
+      const { error } = await supabase.rpc('generate_monthly_pocket_instance', {
         template_pocket_id: templateId,
-        target_month: currentMonth
+        target_month: targetMonth
       });
 
       if (error) throw error;
 
       toast({
-        title: "Pocket instance created",
-        description: "Monthly pocket has been generated from template",
+        title: "Monthly pocket ready",
+        description: `Budget ready for ${format(new Date(`${targetMonth}-01T12:00:00`), 'MMMM yyyy')}. An existing pocket is kept, not duplicated.`,
       });
-      
+      await queryClient.invalidateQueries({ queryKey: ['pocketSpending'] });
+      await queryClient.invalidateQueries({ queryKey: ['setupProgress'] });
       onOpenChange(false);
     } catch (error: any) {
       toast({
@@ -128,11 +130,12 @@ export function TemplateManagementDialog({ open, onOpenChange }: TemplateManagem
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            Manage Pocket Templates
+            Repeating pockets
           </DialogTitle>
         </DialogHeader>
         
         <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">Create missing pockets for {format(new Date(`${targetMonth}-01T12:00:00`), 'MMMM yyyy')}. Existing monthly amounts are preserved.</p>
           {loading ? (
             <div className="space-y-3">
               {[...Array(3)].map((_, i) => (
@@ -148,9 +151,9 @@ export function TemplateManagementDialog({ open, onOpenChange }: TemplateManagem
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-8">
                 <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No Templates Yet</h3>
+                <h3 className="text-lg font-semibold mb-2">No repeating pockets yet</h3>
                 <p className="text-muted-foreground text-center">
-                  Create pocket templates to automatically generate monthly budget pockets.
+                  Turn on Repeat monthly when creating a pocket to reuse its allowance each month.
                 </p>
               </CardContent>
             </Card>
@@ -159,9 +162,9 @@ export function TemplateManagementDialog({ open, onOpenChange }: TemplateManagem
               {templates.map((template) => (
                 <Card key={template.id} className="bg-gradient-card border-0">
                   <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-3 mb-2">
                           <div
                             className="w-4 h-4 rounded-full border-2 border-white/20"
                             style={{ backgroundColor: template.color }}
@@ -178,7 +181,7 @@ export function TemplateManagementDialog({ open, onOpenChange }: TemplateManagem
                         </div>
                         
                         <div className="text-sm text-muted-foreground">
-                          Monthly Budget: {formatCurrency(template.budget_amount, 'USD')}
+                          Base allowance: {formatCurrency(template.budget_amount, currency)}
                         </div>
                         
                         {template.description && (
@@ -196,7 +199,7 @@ export function TemplateManagementDialog({ open, onOpenChange }: TemplateManagem
                           disabled={actionLoading === template.id}
                         >
                           <Play className="h-3 w-3 mr-1" />
-                          {actionLoading === template.id ? "Creating..." : "Generate"}
+                          {actionLoading === template.id ? "Creating..." : "Create for selected month"}
                         </Button>
                         
                         <Button
@@ -205,6 +208,7 @@ export function TemplateManagementDialog({ open, onOpenChange }: TemplateManagem
                           onClick={() => deleteTemplate(template.id)}
                           disabled={actionLoading === template.id}
                           className="text-destructive hover:text-destructive"
+                          aria-label={`Stop repeating ${template.name}`}
                         >
                           <Trash2 className="h-3 w-3" />
                         </Button>
