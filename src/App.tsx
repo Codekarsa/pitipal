@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { initializeGA, trackPageView } from "@/lib/analytics";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -8,6 +8,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/components/auth/useAuth";
 import { ErrorBoundary } from "@/components/error/ErrorBoundary";
 import { AuthForm } from "@/components/auth/AuthForm";
+import { CurrencySetup } from "@/components/auth/CurrencySetup";
+import { Button } from "@/components/ui/button";
 import { LandingPage } from "@/components/landing/LandingPage";
 import { AboutPage } from "@/components/landing/AboutPage";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
@@ -35,7 +37,7 @@ interface BudgetPocket {
 }
 
 function AppContent() {
-  const { user, loading } = useAuth();
+  const { user, loading, signOut } = useAuth();
   const [showAuthForm, setShowAuthForm] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [showAddTransaction, setShowAddTransaction] = useState(false);
@@ -44,6 +46,20 @@ function AppContent() {
   const [transactionsRefreshKey, setTransactionsRefreshKey] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
+
+  const { data: profile, isLoading: profileLoading, error: profileError, refetch: retryProfile } = useQuery({
+    queryKey: ["profile", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
 
   // Track page views
   useEffect(() => {
@@ -83,7 +99,7 @@ function AppContent() {
     setTransactionsRefreshKey(k => k + 1);
   };
 
-  if (loading) {
+  if (loading || (user && profileLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-subtle">
         <div className="text-center space-y-4">
@@ -111,6 +127,23 @@ function AppContent() {
         onAbout={() => setShowAbout(true)}
       />
     );
+  }
+
+  if (profileError) {
+    return (
+      <main className="min-h-screen bg-gradient-subtle flex items-center justify-center p-6">
+        <div className="max-w-sm space-y-4 text-center">
+          <h1 className="text-xl font-bold">We couldn't load your preferences</h1>
+          <p className="text-muted-foreground">Please try again before entering any amounts.</p>
+          <Button onClick={() => retryProfile()}>Try again</Button>
+          <Button variant="ghost" onClick={signOut}>Sign out</Button>
+        </div>
+      </main>
+    );
+  }
+
+  if (!profile?.currency) {
+    return <CurrencySetup user={user} onComplete={() => navigate("/", { replace: true })} onSignOut={signOut} />;
   }
 
   return (

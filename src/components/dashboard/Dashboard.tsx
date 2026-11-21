@@ -10,6 +10,7 @@ import { QuickActionsCard } from "./QuickActionsCard";
 import { MonthNavigator } from "./MonthNavigator";
 import { TemplateManagementDialog } from "./TemplateManagementDialog";
 import { EditPocketDialog } from "./EditPocketDialog";
+import { SetupChecklist } from "./SetupChecklist";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -293,7 +294,7 @@ export function Dashboard() {
     }
   };
 
-  if (isLoading) {
+  if (!user || !profile || isLoading) {
     return (
       <div className="space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
@@ -326,6 +327,18 @@ export function Dashboard() {
           onMonthChange={setSelectedMonth}
         />
       </div>
+
+      <SetupChecklist
+        currency={userCurrency}
+        onCreatePocket={() => {
+          setSelectedMonth(format(new Date(), "yyyy-MM"));
+          setShowCreatePocket(true);
+        }}
+        onAddTransaction={() => {
+          setSelectedMonth(format(new Date(), "yyyy-MM"));
+          setShowAddTransaction(true);
+        }}
+      />
 
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">

@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { withRetry, handleError } from "@/lib/error-utils";
 import { endOfMonth, format, startOfMonth } from "date-fns";
 import { analytics } from "@/lib/analytics";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface CreatePocketDialogProps {
   open: boolean;
@@ -65,6 +66,7 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
   
   const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const isFormValid = (): boolean => {
     switch (budgetType) {
@@ -191,6 +193,7 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess }: CreatePock
       });
 
       analytics.trackPocketCreated(budgetType);
+      queryClient.invalidateQueries({ queryKey: ["setupProgress", user.id] });
       onSuccess();
     } catch (error: any) {
       handleError(error, "Failed to create pocket. Please check your inputs and try again.");

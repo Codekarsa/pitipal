@@ -14,6 +14,7 @@ import { useAuth } from "@/components/auth/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { withRetry, handleError, showSuccessMessage } from "@/lib/error-utils";
 import { analytics } from "@/lib/analytics";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface BudgetPocket {
   id: string;
@@ -78,6 +79,7 @@ interface TransactionDialogProps {
 }
 
 export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, editingTransaction }: TransactionDialogProps) {
+  const queryClient = useQueryClient();
   const [type, setType] = useState<"income" | "expense" | "investment">("expense");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("");
@@ -532,6 +534,7 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, pockets, edit
       // No need to manually update current_balance - this prevents sync issues
       
       // Show success message
+      queryClient.invalidateQueries({ queryKey: ["setupProgress", user.id] });
       if (editingTransaction) {
         showSuccessMessage("Transaction updated successfully");
       } else {

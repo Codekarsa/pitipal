@@ -5,12 +5,11 @@ import { useAuth } from "@/components/auth/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Settings, User, Tag, Building2, TrendingUp, 
-  DollarSign, Euro, PoundSterling, CircleDollarSign,
-  CheckCircle, AlertCircle, Clock, Database
+  DollarSign, CircleDollarSign,
+  Database
 } from "lucide-react";
 
 // Import sections
@@ -19,22 +18,7 @@ import { CategoriesSection } from "./CategoriesSection";
 import { AccountsSection } from "./AccountsSection";
 import { PortfolioSection } from "./PortfolioSection";
 import { DataManagementSection } from "./DataManagementSection";
-
-const currencies = [
-  { code: "USD", symbol: "$", name: "US Dollar", icon: DollarSign },
-  { code: "EUR", symbol: "€", name: "Euro", icon: Euro },
-  { code: "GBP", symbol: "£", name: "British Pound", icon: PoundSterling },
-  { code: "JPY", symbol: "¥", name: "Japanese Yen", icon: CircleDollarSign },
-  { code: "IDR", symbol: "Rp", name: "Indonesian Rupiah", icon: CircleDollarSign },
-  { code: "SGD", symbol: "S$", name: "Singapore Dollar", icon: DollarSign },
-  { code: "MYR", symbol: "RM", name: "Malaysian Ringgit", icon: CircleDollarSign },
-  { code: "THB", symbol: "฿", name: "Thai Baht", icon: CircleDollarSign },
-  { code: "KRW", symbol: "₩", name: "South Korean Won", icon: CircleDollarSign },
-  { code: "CNY", symbol: "¥", name: "Chinese Yuan", icon: CircleDollarSign },
-  { code: "INR", symbol: "₹", name: "Indian Rupee", icon: CircleDollarSign },
-  { code: "AUD", symbol: "A$", name: "Australian Dollar", icon: DollarSign },
-  { code: "CAD", symbol: "C$", name: "Canadian Dollar", icon: DollarSign },
-];
+import { currencies } from "@/lib/currencies";
 
 export function SettingsPage() {
   const { user } = useAuth();
@@ -64,7 +48,7 @@ export function SettingsPage() {
     enabled: !!user?.id,
   });
 
-  // Fetch completion stats
+  // Fetch account stats
   const { data: stats } = useQuery({
     queryKey: ["settings-stats", user?.id],
     queryFn: async () => {
@@ -83,63 +67,10 @@ export function SettingsPage() {
         investmentAccountsCount: investmentAccounts.count || 0,
         savingsAccountsCount: savingsAccounts.count || 0,
         creditCardsCount: creditCards.count || 0,
-        profileComplete: !!profile?.currency,
       };
     },
     enabled: !!user?.id,
   });
-
-  const getCompletionProgress = () => {
-    if (!stats) return 0;
-    
-    let completed = 0;
-    let total = 5;
-
-    if (stats.profileComplete) completed++;
-    if (stats.categoriesCount > 0) completed++;
-    if (stats.investmentAccountsCount > 0) completed++;
-    if (stats.savingsAccountsCount > 0) completed++;
-    if (stats.creditCardsCount > 0) completed++;
-
-    return Math.round((completed / total) * 100);
-  };
-
-  const getCompletionItems = () => {
-    if (!stats) return [];
-
-    return [
-      {
-        title: "Profile Setup",
-        description: "Currency and basic preferences",
-        status: stats.profileComplete ? "complete" : "incomplete",
-        icon: User,
-      },
-      {
-        title: "Categories",
-        description: `${stats.categoriesCount} categories configured`,
-        status: stats.categoriesCount > 0 ? "complete" : "incomplete",
-        icon: Tag,
-      },
-      {
-        title: "Investment Accounts",
-        description: `${stats.investmentAccountsCount} accounts added`,
-        status: stats.investmentAccountsCount > 0 ? "complete" : "incomplete",
-        icon: TrendingUp,
-      },
-      {
-        title: "Savings Accounts",
-        description: `${stats.savingsAccountsCount} accounts added`,
-        status: stats.savingsAccountsCount > 0 ? "complete" : "incomplete",
-        icon: Building2,
-      },
-      {
-        title: "Credit Cards",
-        description: `${stats.creditCardsCount} cards added`,
-        status: stats.creditCardsCount > 0 ? "complete" : "incomplete",
-        icon: CircleDollarSign,
-      },
-    ];
-  };
 
   return (
     <div className="space-y-6">
@@ -181,49 +112,7 @@ export function SettingsPage() {
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-4 sm:space-y-6">
-          <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
-            {/* Setup Progress */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CheckCircle className="h-5 w-5 text-primary" />
-                  Setup Progress
-                </CardTitle>
-                <CardDescription>
-                  Complete your profile setup to get the most out of the app
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span>Setup Completion</span>
-                    <span className="font-medium">{getCompletionProgress()}%</span>
-                  </div>
-                  <Progress value={getCompletionProgress()} className="h-2" />
-                </div>
-
-                <div className="space-y-3">
-                  {getCompletionItems().map((item, index) => {
-                    const Icon = item.icon;
-                    const StatusIcon = item.status === "complete" ? CheckCircle : Clock;
-                    
-                    return (
-                      <div key={index} className="flex items-center gap-3 p-3 border rounded-lg">
-                        <Icon className="h-5 w-5 text-muted-foreground" />
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm">{item.title}</p>
-                          <p className="text-xs text-muted-foreground">{item.description}</p>
-                        </div>
-                        <StatusIcon className={`h-4 w-4 ${
-                          item.status === "complete" ? "text-green-500" : "text-yellow-500"
-                        }`} />
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-
+          <div className="grid gap-4 sm:gap-6">
             {/* Quick Stats */}
             <Card>
               <CardHeader>

@@ -12,6 +12,7 @@
     "prebuild:dev": "tsx scripts/db-sync.ts",
     "build:dev": "vite build --mode development",
     "db:sync": "tsx scripts/db-sync.ts",
+    "test:e2e": "playwright test tests/onboarding.spec.ts --workers=1 --output=.amp/in/orb-backup/playwright-results",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -70,6 +71,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
+    "@playwright/test": "^1.65.1",
     "@tailwindcss/typography": "^0.5.16",
     "@types/node": "^22.16.5",
     "@types/pg": "^8.20.0",

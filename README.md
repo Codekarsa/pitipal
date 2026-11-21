@@ -111,3 +111,24 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+
+## Currency onboarding and browser tests
+
+Apply `supabase/migrations/20261120000000_require_currency_choice.sql` before deploying
+the currency-first UI. It removes the default currency for future profiles without
+changing existing preferences. New accounts choose a currency before entering amounts.
+The dashboard checklist uses account-wide pocket and transaction records, not the
+currently selected month, and disappears when both steps are complete.
+
+Run the app against a migrated **local** Supabase instance, install Chromium with
+`npx playwright install chromium`, and run `npm run test:e2e` with these environment
+variables supplied securely:
+
+- `E2E_BASE_URL`: the running app's URL.
+- `E2E_SUPABASE_URL`: the local Supabase API URL.
+- `E2E_SUPABASE_SERVICE_ROLE_KEY`: the local admin key, used only to create and clean up disposable test users.
+- `E2E_CHROME_PATH` (optional): an existing Chromium executable instead of Playwright's download.
+
+Tests refuse non-loopback Supabase URLs. They cover required currency selection,
+failed profile loading/saving and retry, persistence, live checklist updates,
+month navigation, and existing USD users. Never provide production credentials.
