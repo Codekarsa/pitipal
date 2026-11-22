@@ -12,7 +12,7 @@ import {
   Globe,
   Code,
   Smartphone,
-  Brain
+  BarChart3
 } from "lucide-react";
 
 interface AboutPageProps {
@@ -54,8 +54,8 @@ export function AboutPage({ onBack }: AboutPageProps) {
           </h1>
           <p className="text-xl text-muted-foreground leading-relaxed max-w-3xl mx-auto">
             Pitipal was born from the belief that everyone deserves access to powerful, 
-            intuitive financial tools. We're building the future of personal budgeting 
-            with AI-driven insights and user-centric design.
+            intuitive financial tools. Organize budgets into pockets and use recorded
+            transactions to understand what remains available to spend.
           </p>
         </div>
       </section>
@@ -89,8 +89,7 @@ export function AboutPage({ onBack }: AboutPageProps) {
             <CardContent className="text-center">
               <p className="text-muted-foreground leading-relaxed">
                 A world where financial literacy and smart money management are accessible to everyone, 
-                powered by intelligent technology that learns from your habits and helps you achieve 
-                your financial dreams.
+                supported by clear budgets and spending records that help you make your own decisions.
               </p>
             </CardContent>
           </Card>
@@ -129,9 +128,10 @@ export function AboutPage({ onBack }: AboutPageProps) {
               <div className="w-12 h-12 bg-gradient-secondary rounded-xl flex items-center justify-center mx-auto mb-4">
                 <Shield className="h-6 w-6 text-secondary-foreground" />
               </div>
-              <CardTitle>Privacy First</CardTitle>
+              <CardTitle>Understand Your Data</CardTitle>
               <CardDescription>
-                Your financial data is yours alone. We employ bank-level security and never share your information.
+                Account and budgeting data use Supabase. Analytics can be enabled by the deployment operator.
+                Read the <a className="underline" href="/privacy.html">privacy information</a> for details.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -188,9 +188,9 @@ export function AboutPage({ onBack }: AboutPageProps) {
 
           <Card className="bg-gradient-card border-0 shadow-lg hover:shadow-xl transition-smooth text-center p-6">
             <div className="w-10 h-10 bg-gradient-secondary rounded-lg flex items-center justify-center mx-auto mb-3">
-              <Brain className="h-5 w-5 text-secondary-foreground" />
+              <BarChart3 className="h-5 w-5 text-secondary-foreground" />
             </div>
-            <h4 className="font-semibold text-sm">AI Integration</h4>
+            <h4 className="font-semibold text-sm">Budget Summaries</h4>
           </Card>
         </div>
       </section>

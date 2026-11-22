@@ -1,12 +1,12 @@
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, TrendingUp, TrendingDown, Edit, Trash, Star } from "lucide-react";
+import { MoreHorizontal, TrendingUp, Edit, Trash, Star } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useState } from "react";
-import { formatCurrency, formatCompactCurrency, formatNumber } from "@/lib/utils";
+import { formatCurrency, formatNumber } from "@/lib/utils";
+import { CompactAmount } from "@/components/ui/compact-amount";
 
 interface PocketCardProps {
   pocket: {
@@ -55,8 +55,6 @@ export function PocketCard({
   const description = pocket.description;
   const budget_amount = pocket.budget_amount || pocket.budgetAmount || 0;
   const current_amount = pocket.current_amount || pocket.currentAmount || 0;
-  const cycle_type = pocket.cycle_type;
-  const budget_type = pocket.budget_type;
   const color = pocket.color || '#3B82F6';
   const is_featured = pocket.is_featured || false;
   const percentageUsed = budget_amount > 0 ? (current_amount / budget_amount) * 100 : 0;
@@ -70,19 +68,16 @@ export function PocketCard({
 
   return (
     <>
-      <Card 
-        className="bg-gradient-card border-0 shadow-lg hover:shadow-xl transition-smooth cursor-pointer transform hover:scale-105"
-        onClick={onClick}
-      >
-        <CardHeader className="pb-3">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center space-x-3">
+      <Card className="relative rounded-[1.5rem] border-border/60 bg-card shadow-none transition-colors hover:border-primary/40">
+        <CardHeader className="p-5 pb-3">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex min-w-0 items-start gap-3">
               <div 
-                className="w-4 h-4 rounded-full" 
+                className="mt-1.5 h-3 w-3 shrink-0 rounded-full"
                 style={{ backgroundColor: color }}
               />
-              <div>
-                <CardTitle className="text-lg font-semibold">{name}</CardTitle>
+              <div className="min-w-0">
+                <CardTitle className="text-base font-medium leading-snug break-words"><button onClick={onClick} className="text-left after:absolute after:inset-0 after:rounded-[1.5rem] hover:text-primary focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring" aria-label={`View transactions for ${name}`}>{name}</button></CardTitle>
                 {description && (
                   <CardDescription className="text-sm text-muted-foreground">
                     {description}
@@ -90,12 +85,9 @@ export function PocketCard({
                 )}
               </div>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="relative z-10 flex shrink-0 items-center gap-1">
               {is_featured && (
-                <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-300 border-amber-200 dark:border-amber-800">
-                  <Star className="h-3 w-3 mr-1 fill-current" />
-                  Featured
-                </Badge>
+                <span title="Featured"><Star className="h-3.5 w-3.5 fill-amber-400 text-amber-500" /><span className="sr-only">Featured</span></span>
               )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -127,27 +119,27 @@ export function PocketCard({
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-wrap gap-3 justify-between items-end">
+        <CardContent className="space-y-4 p-5 pt-0">
+          <div className="grid gap-3">
             <div>
               <p className="text-xs text-muted-foreground">{pocket.pocket_type === 'income' ? 'Received' : 'Spent'}</p>
-              <p className="text-2xl font-bold" title={formatCurrency(current_amount, currency)}>
-                {formatCompactCurrency(current_amount, currency)}
+              <p className="mt-1 text-2xl font-semibold tracking-tight tabular-nums">
+                <CompactAmount amount={current_amount} currency={currency} label={`${name} spent`} />
               </p>
-              <p className="text-sm text-muted-foreground">
-                of {formatCurrency(budget_amount, currency)} budget
+              <p className="mt-1 text-xs text-muted-foreground">
+                of <CompactAmount amount={budget_amount} currency={currency} label={`${name} budget`} /> budget
               </p>
             </div>
-            <div className="text-right">
+            <div>
               <p className={`text-sm font-medium ${isOverBudget ? 'text-destructive' : remaining < budget_amount * 0.2 ? 'text-yellow-600' : 'text-success'}`}>
                 {isOverBudget ? (
                   <>
                     <TrendingUp className="inline w-4 h-4 mr-1" />
-                    {formatCurrency(Math.abs(remaining), currency)} over
+                    <CompactAmount amount={Math.abs(remaining)} currency={currency} label={`${name} over budget`} /> over
                   </>
                 ) : (
                   <>
-                    {formatCompactCurrency(remaining, currency)} left
+                    <CompactAmount amount={remaining} currency={currency} label={`${name} remaining`} /> left
                   </>
                 )}
               </p>
@@ -156,8 +148,9 @@ export function PocketCard({
           
           <div className="space-y-2">
             <Progress 
-              value={Math.min(percentageUsed, 100)} 
-              className={`h-2 bg-muted ${isOverBudget ? '[&>div]:bg-destructive' : percentageUsed >= 80 ? '[&>div]:bg-amber-500' : '[&>div]:bg-emerald-500'}`}
+              value={Math.max(0, Math.min(percentageUsed, 100))}
+              aria-label={`${name} budget used`}
+              className={`h-1.5 bg-muted ${isOverBudget ? '[&>div]:bg-destructive' : percentageUsed >= 80 ? '[&>div]:bg-amber-500' : '[&>div]:bg-primary/70'}`}
             />
             <div className="flex justify-between text-xs text-muted-foreground">
               <span className={isOverBudget ? 'text-destructive font-medium' : ''}>
@@ -165,7 +158,7 @@ export function PocketCard({
               </span>
             </div>
           </div>
-          {pocket.baseBudgetAmount !== undefined && <p className="text-xs text-muted-foreground break-words">Base {formatCurrency(pocket.baseBudgetAmount, currency)} + carried in {formatCurrency(pocket.carriedOverAmount ?? 0, currency)} = allowance {formatCurrency(budget_amount, currency)}</p>}
+          {(pocket.carriedOverAmount ?? 0) > 0 && <p className="border-t pt-3 text-xs text-muted-foreground break-words">Includes {formatCurrency(pocket.carriedOverAmount!, currency)} carried from last month</p>}
         </CardContent>
       </Card>
 

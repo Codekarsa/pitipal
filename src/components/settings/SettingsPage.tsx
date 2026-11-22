@@ -1,261 +1,135 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/useAuth";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
-import { 
-  Settings, User, Tag, Building2, TrendingUp, 
-  DollarSign, CircleDollarSign,
-  Database
-} from "lucide-react";
-
-// Import sections
+import { ArrowUpRight, Building2, CreditCard, Database, PiggyBank, Settings, Tag, TrendingUp, User } from "lucide-react";
 import { GeneralSettings } from "./GeneralSettings";
 import { CategoriesSection } from "./CategoriesSection";
 import { AccountsSection } from "./AccountsSection";
-import { PortfolioSection } from "./PortfolioSection";
 import { DataManagementSection } from "./DataManagementSection";
 import { currencies } from "@/lib/currencies";
 
+const sections = [
+  { value: "overview", label: "Overview", icon: Settings },
+  { value: "general", label: "General", icon: User },
+  { value: "categories", label: "Categories", icon: Tag },
+  { value: "accounts", label: "Accounts", icon: Building2 },
+  { value: "data", label: "Data", icon: Database },
+];
+
 export function SettingsPage() {
   const { user } = useAuth();
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedTab, setSelectedTab] = useState("overview");
 
-  // Fetch user profile
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
     queryFn: async () => {
-      if (!user?.id) return null;
-      
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", user.id)
-        .single();
-
-      if (error && error.code !== "PGRST116") {
-        console.error("Error fetching profile:", error);
-        throw error;
-      }
-
+      const { data, error } = await supabase.from("profiles").select("*").eq("user_id", user!.id).single();
+      if (error && error.code !== "PGRST116") throw error;
       return data;
     },
     enabled: !!user?.id,
   });
 
-  // Fetch account stats
-  const { data: stats } = useQuery({
+  const { data: stats, isPending: statsPending, isError: statsError } = useQuery({
     queryKey: ["settings-stats", user?.id],
     queryFn: async () => {
-      if (!user?.id) return null;
-
-      // Fetch counts for different sections
-      const [categories, investmentAccounts, savingsAccounts, creditCards] = await Promise.all([
-        supabase.from("categories").select("id", { count: 'exact' }).eq("user_id", user.id),
-        supabase.from("investment_accounts").select("id", { count: 'exact' }).eq("user_id", user.id),
-        supabase.from("savings_accounts").select("id", { count: 'exact' }).eq("user_id", user.id),
-        supabase.from("credit_card_accounts").select("id", { count: 'exact' }).eq("user_id", user.id),
+      const results = await Promise.all([
+        supabase.from("categories").select("id", { count: "exact", head: true }).eq("user_id", user!.id),
+        supabase.from("investment_accounts").select("id", { count: "exact", head: true }).eq("user_id", user!.id),
+        supabase.from("savings_accounts").select("id", { count: "exact", head: true }).eq("user_id", user!.id),
+        supabase.from("credit_card_accounts").select("id", { count: "exact", head: true }).eq("user_id", user!.id),
       ]);
-
-      return {
-        categoriesCount: categories.count || 0,
-        investmentAccountsCount: investmentAccounts.count || 0,
-        savingsAccountsCount: savingsAccounts.count || 0,
-        creditCardsCount: creditCards.count || 0,
-      };
+      for (const result of results) if (result.error) throw result.error;
+      return results.map(result => result.count ?? 0);
     },
     enabled: !!user?.id,
   });
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="p-2 bg-primary/10 rounded-lg">
-          <Settings className="h-6 w-6 text-primary" />
-        </div>
-        <div>
-          <h1 className="text-3xl font-bold">Settings</h1>
-          <p className="text-muted-foreground">Manage your account and application preferences</p>
-        </div>
-      </div>
+    <div className="settings-page min-w-0 space-y-6">
+      <header>
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Settings</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Make Pitipal work for you. Manage your preferences, accounts, and data.</p>
+      </header>
 
-      {/* Main Tabs */}
-      <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:grid-cols-5">
-          <TabsTrigger value="overview" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
-            <Settings className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden md:inline">Overview</span>
-          </TabsTrigger>
-          <TabsTrigger value="general" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
-            <User className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden md:inline">General</span>
-          </TabsTrigger>
-          <TabsTrigger value="categories" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
-            <Tag className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden md:inline">Categories</span>
-          </TabsTrigger>
-          <TabsTrigger value="accounts" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
-            <Building2 className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden md:inline">Accounts</span>
-          </TabsTrigger>
-          <TabsTrigger value="data" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
-            <Database className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden md:inline">Data</span>
-          </TabsTrigger>
+      <Tabs value={selectedTab} onValueChange={setSelectedTab} className="min-w-0 space-y-6">
+        <TabsList aria-label="Settings sections" className="flex h-auto w-full flex-wrap justify-start gap-1 rounded-[1.5rem] bg-card p-2 sm:w-fit">
+          {sections.map(({ value, label, icon: Icon }) => (
+            <TabsTrigger key={value} value={value} className="min-h-10 gap-2 rounded-full px-3 data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=active]:shadow-none sm:px-4">
+              <Icon aria-hidden="true" className="h-4 w-4 shrink-0" />
+              {label}
+            </TabsTrigger>
+          ))}
         </TabsList>
 
-        {/* Overview Tab */}
-        <TabsContent value="overview" className="space-y-4 sm:space-y-6">
-          <div className="grid gap-4 sm:gap-6">
-            {/* Quick Stats */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-primary" />
-                  Quick Stats
-                </CardTitle>
-                <CardDescription>
-                  Overview of your financial setup
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <p className="text-2xl font-bold text-primary">{stats?.categoriesCount || 0}</p>
-                    <p className="text-sm text-muted-foreground">Categories</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-2xl font-bold text-primary">{stats?.investmentAccountsCount || 0}</p>
-                    <p className="text-sm text-muted-foreground">Investment Accounts</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-2xl font-bold text-primary">{stats?.savingsAccountsCount || 0}</p>
-                    <p className="text-sm text-muted-foreground">Savings Accounts</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-2xl font-bold text-primary">{stats?.creditCardsCount || 0}</p>
-                    <p className="text-sm text-muted-foreground">Credit Cards</p>
-                  </div>
-                </div>
-
-                <div className="pt-4 border-t">
-                  <div className="flex items-center gap-2">
-                    <div className="p-1.5 bg-primary/10 rounded">
-                      <DollarSign className="h-4 w-4 text-primary" />
-                    </div>
-                    <div>
-                      <p className="font-medium">Currency</p>
-                      <p className="text-sm text-muted-foreground">
-                        {profile?.currency ? 
-                          currencies.find(c => c.code === profile.currency)?.name || profile.currency
-                          : "Not set"
-                        }
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Quick Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-              <CardDescription>
-                Jump to commonly used settings
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-                <button
-                  onClick={() => setSelectedTab("general")}
-                  className="p-3 sm:p-4 text-left border rounded-lg hover:bg-muted/50 transition-colors"
-                >
-                  <User className="h-4 w-4 sm:h-5 sm:w-5 text-primary mb-2" />
-                  <p className="font-medium text-sm sm:text-base">Profile Settings</p>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Update currency and preferences</p>
-                </button>
-                
-                <button
-                  onClick={() => setSelectedTab("categories")}
-                  className="p-3 sm:p-4 text-left border rounded-lg hover:bg-muted/50 transition-colors"
-                >
-                  <Tag className="h-4 w-4 sm:h-5 sm:w-5 text-primary mb-2" />
-                  <p className="font-medium text-sm sm:text-base">Manage Categories</p>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Organize transaction categories</p>
-                </button>
-                
-                <button
-                  onClick={() => setSelectedTab("accounts")}
-                  className="p-3 sm:p-4 text-left border rounded-lg hover:bg-muted/50 transition-colors"
-                >
-                  <Building2 className="h-4 w-4 sm:h-5 sm:w-5 text-primary mb-2" />
-                  <p className="font-medium text-sm sm:text-base">Financial Accounts</p>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Add investment and savings accounts</p>
-                </button>
-
-                <button
-                  onClick={() => setSelectedTab("accounts")}
-                  className="p-3 sm:p-4 text-left border rounded-lg hover:bg-muted/50 transition-colors"
-                >
-                  <CircleDollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-primary mb-2" />
-                  <p className="font-medium text-sm sm:text-base">Credit Cards</p>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Manage credit card accounts</p>
-                </button>
-                
-                <button
-                  onClick={() => setSelectedTab("data")}
-                  className="p-3 sm:p-4 text-left border rounded-lg hover:bg-muted/50 transition-colors"
-                >
-                  <Database className="h-4 w-4 sm:h-5 sm:w-5 text-primary mb-2" />
-                  <p className="font-medium text-sm sm:text-base">Import & Export</p>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Manage your financial data</p>
-                </button>
+        <TabsContent value="overview" className="space-y-6">
+          <div className="grid min-w-0 gap-4 lg:grid-cols-3">
+            <section aria-labelledby="preferences-title" className="min-w-0 rounded-[1.75rem] bg-sky-100 bg-[radial-gradient(at_0%_100%,hsl(174_75%_77%)_0%,transparent_65%),radial-gradient(at_100%_0%,hsl(202_95%_74%)_0%,transparent_65%)] p-5 text-slate-900 sm:p-6">
+              <div className="flex items-center justify-between gap-3">
+                <h2 id="preferences-title" className="text-sm font-medium">Your preferences</h2>
+                <span className="rounded-2xl bg-white/40 p-2.5"><User aria-hidden="true" className="h-5 w-5" /></span>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+              <p className="mt-5 text-4xl font-semibold tracking-tight">{profile?.currency || "Not set"}</p>
+              <p className="mt-2 text-sm text-slate-700">{currencies.find(currency => currency.code === profile?.currency)?.name || "Choose your preferred currency"}</p>
+              <button onClick={() => setSelectedTab("general")} className="mt-6 inline-flex min-h-10 items-center gap-2 rounded-full bg-white/60 px-4 text-sm font-medium transition-colors hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700">
+                Edit preferences <ArrowUpRight aria-hidden="true" className="h-4 w-4" />
+              </button>
+            </section>
 
-        {/* General Settings Tab */}
-        <TabsContent value="general">
-          <GeneralSettings 
-            profile={profile}
-            user={user}
-            currencies={currencies}
-            queryClient={queryClient}
-          />
-        </TabsContent>
-
-        {/* Categories Tab */}
-        <TabsContent value="categories">
-          <div className="space-y-2">
-            <div>
-              <h2 className="text-2xl font-semibold">Categories</h2>
-              <p className="text-muted-foreground">
-                Organize your transactions with custom category groups and categories
-              </p>
-            </div>
-            <CategoriesSection />
+            <section aria-labelledby="setup-title" className="min-w-0 rounded-[1.75rem] bg-card p-5 sm:p-6 lg:col-span-2">
+              <h2 id="setup-title" className="text-lg font-semibold">Your financial setup</h2>
+              <p className="mt-1 text-sm text-muted-foreground">The categories and accounts you’ve added to Pitipal.</p>
+              <dl className="mt-6 grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-4">
+                {[
+                  { label: "Categories", icon: Tag },
+                  { label: "Investment accounts", icon: TrendingUp },
+                  { label: "Savings accounts", icon: PiggyBank },
+                  { label: "Credit cards", icon: CreditCard },
+                ].map(({ label, icon: Icon }, index) => (
+                  <div key={label} className="min-w-0">
+                    <Icon aria-hidden="true" className="mb-3 h-5 w-5 text-muted-foreground" />
+                    <dt className="text-sm text-muted-foreground">{label}</dt>
+                    <dd className="mt-1 text-3xl font-semibold tracking-tight">{statsPending || statsError ? "—" : stats?.[index]}</dd>
+                  </div>
+                ))}
+              </dl>
+              {statsError && <p role="status" className="mt-4 text-sm text-muted-foreground">Setup counts couldn’t load. You can still open each section below.</p>}
+            </section>
           </div>
+
+          <section aria-labelledby="manage-title">
+            <h2 id="manage-title" className="mb-3 text-lg font-semibold">Manage your workspace</h2>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {[
+                { tab: "general", title: "Profile & preferences", description: "Review account details and choose your display currency.", icon: User, surface: "bg-sky-100 text-sky-800" },
+                { tab: "categories", title: "Categories", description: "Organize income, expenses, and investments your way.", icon: Tag, surface: "bg-violet-100 text-violet-800" },
+                { tab: "accounts", title: "Financial accounts", description: "Manage savings, investments, credit cards, and assets.", icon: Building2, surface: "bg-emerald-100 text-emerald-800" },
+                { tab: "data", title: "Import & export", description: "Bring in CSV files or download your records.", icon: Database, surface: "bg-orange-100 text-orange-800" },
+              ].map(({ tab, title, description, icon: Icon, surface }) => (
+                <button key={tab} onClick={() => setSelectedTab(tab)} className="group flex min-w-0 items-start gap-4 rounded-[1.75rem] bg-card p-5 text-left transition-colors hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:p-6">
+                  <span className={`shrink-0 rounded-2xl p-3 ${surface}`}><Icon aria-hidden="true" className="h-5 w-5" /></span>
+                  <span className="min-w-0 flex-1"><span className="block font-semibold">{title}</span><span className="mt-1 block text-sm leading-relaxed text-muted-foreground">{description}</span></span>
+                  <ArrowUpRight aria-hidden="true" className="mt-1 h-4 w-4 shrink-0 text-muted-foreground group-hover:text-foreground" />
+                </button>
+              ))}
+            </div>
+          </section>
         </TabsContent>
 
-        {/* Accounts Tab */}
+        <TabsContent value="general">
+          <GeneralSettings profile={profile} user={user} currencies={currencies} queryClient={queryClient} />
+        </TabsContent>
+        <TabsContent value="categories">
+          <CategoriesSection />
+        </TabsContent>
         <TabsContent value="accounts">
           <AccountsSection />
         </TabsContent>
-
-        {/* Data Management Tab */}
         <TabsContent value="data">
-          <div className="space-y-6">
-            <DataManagementSection />
-          </div>
+          <DataManagementSection />
         </TabsContent>
       </Tabs>
     </div>

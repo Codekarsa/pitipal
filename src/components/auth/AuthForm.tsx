@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { analytics } from "@/lib/analytics";
@@ -11,11 +10,13 @@ import { Chrome, Mail, Lock, ArrowLeft } from "lucide-react";
 
 interface AuthFormProps {
   onSuccess: () => void;
+  initialMode?: 'landing' | 'signin';
 }
 
-export function AuthForm({ onSuccess }: AuthFormProps) {
-  const [mode, setMode] = useState<'landing' | 'signup' | 'signin' | 'forgot'>('landing');
+export function AuthForm({ onSuccess, initialMode = 'landing' }: AuthFormProps) {
+  const [mode, setMode] = useState<'landing' | 'signup' | 'signin' | 'forgot' | 'confirmation'>(initialMode);
   const [isLoading, setIsLoading] = useState(false);
+  const [resendMessage, setResendMessage] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -55,7 +56,7 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
 
     try {
       setIsLoading(true);
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -74,11 +75,13 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
         });
       } else {
         analytics.trackSignUp('email');
-        toast({
-          title: "Check your email",
-          description: "We've sent you a confirmation link to complete your registration.",
-        });
-        setMode('signin');
+        setPassword('');
+        if (data.session) {
+          onSuccess();
+        } else {
+          setResendMessage('');
+          setMode('confirmation');
+        }
       }
     } catch (error) {
       toast({
@@ -86,6 +89,23 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
         description: "An unexpected error occurred",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResendConfirmation = async () => {
+    setIsLoading(true);
+    setResendMessage('');
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email,
+        options: { emailRedirectTo: `${window.location.origin}/` },
+      });
+      setResendMessage(error ? error.message : 'Confirmation requested. Check your inbox and spam folder; delivery may take a few minutes.');
+    } catch {
+      setResendMessage('Could not request another email. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -210,9 +230,6 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
         </Button>
       </div>
 
-      <p className="text-center text-sm text-muted-foreground">
-        By continuing, you agree to our Terms of Service and Privacy Policy
-      </p>
     </CardContent>
   );
 
@@ -262,8 +279,10 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Create a password"
             minLength={6}
+            aria-describedby="password-help"
             required
           />
+          <p id="password-help" className="text-sm text-muted-foreground">Use at least 6 characters. This deployment may require a stronger password.</p>
         </div>
 
         <Button
@@ -420,16 +439,18 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
       case 'signup': return 'Create Your Account';
       case 'signin': return 'Welcome Back';
       case 'forgot': return 'Reset Password';
+      case 'confirmation': return 'Check your email';
       default: return 'Welcome to Pitipal';
     }
   };
 
   const getDescription = () => {
     switch (mode) {
-      case 'signup': return 'Start your journey to financial freedom';
+      case 'signup': return 'Create pockets and keep track of your spending';
       case 'signin': return 'Sign in to continue to your dashboard';
       case 'forgot': return 'We\'ll help you get back to your account';
-      default: return 'Your smart budgeting companion with AI-powered insights';
+      case 'confirmation': return 'Finish confirming your email before signing in';
+      default: return 'Plan your budget with pockets and recorded transactions';
     }
   };
 
@@ -452,6 +473,20 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
         {mode === 'signup' && renderSignUpMode()}
         {mode === 'signin' && renderSignInMode()}
         {mode === 'forgot' && renderForgotMode()}
+        {mode === 'confirmation' && (
+          <CardContent className="space-y-4">
+            <p>A confirmation link was requested for <strong className="break-all">{email}</strong>. Check your inbox and spam folder. Delivery may take a few minutes.</p>
+            <p className="text-sm text-muted-foreground">If this address already has an account, sign in instead. For privacy, the signup response does not confirm whether an account already exists.</p>
+            <Button className="w-full" onClick={handleResendConfirmation} disabled={isLoading}>{isLoading ? 'Requesting…' : 'Resend confirmation email'}</Button>
+            <p role="status" className="text-sm">{resendMessage}</p>
+            <Button variant="outline" className="w-full" disabled={isLoading} onClick={() => { setPassword(''); setMode('signup'); }}>Correct email address</Button>
+            <Button variant="link" className="w-full" disabled={isLoading} onClick={() => setMode('signin')}>Back to Sign In</Button>
+          </CardContent>
+        )}
+        <nav aria-label="Data and usage information" className="px-6 pb-6 text-center text-sm text-muted-foreground space-y-2">
+          <p>Before continuing, read how this app handles data and what using this deployment involves.</p>
+          <p><a className="underline" href="/privacy.html" target="_blank" rel="noopener noreferrer">Privacy information (new tab)</a>{' · '}<a className="underline" href="/usage.html" target="_blank" rel="noopener noreferrer">Usage information (new tab)</a></p>
+        </nav>
       </Card>
     </div>
   );

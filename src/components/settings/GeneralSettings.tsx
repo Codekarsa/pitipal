@@ -60,13 +60,13 @@ export function GeneralSettings({ profile, user, currencies, queryClient }: Gene
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold">General Settings</h2>
-        <p className="text-muted-foreground">
-          Manage your basic account preferences and settings
+        <h2 className="text-xl font-semibold tracking-tight">General settings</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Your account details and display preferences.
         </p>
       </div>
 
-      <div className="grid gap-6">
+      <div className="grid items-start gap-6 xl:grid-cols-[1fr_1.3fr]">
         {/* Currency Settings */}
         <Card>
           <CardHeader>
@@ -80,12 +80,12 @@ export function GeneralSettings({ profile, user, currencies, queryClient }: Gene
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Preferred Currency</label>
+              <label htmlFor="settings-currency" className="text-sm font-medium">Preferred Currency</label>
               <Select
                 value={profile?.currency || selectedCurrency}
                 onValueChange={handleCurrencyChange}
               >
-                <SelectTrigger className="w-full">
+                <SelectTrigger id="settings-currency" className="h-auto min-h-11 w-full rounded-xl text-left [&>span]:min-w-0 [&>span]:whitespace-normal">
                   <SelectValue placeholder="Select currency" />
                 </SelectTrigger>
                 <SelectContent>
@@ -94,7 +94,7 @@ export function GeneralSettings({ profile, user, currencies, queryClient }: Gene
                     return (
                       <SelectItem key={currency.code} value={currency.code}>
                         <div className="flex items-center space-x-2">
-                          <Icon className="h-4 w-4" />
+                          <Icon className="h-4 w-4 shrink-0" />
                           <span>{currency.symbol} {currency.name}</span>
                         </div>
                       </SelectItem>
@@ -127,7 +127,7 @@ export function GeneralSettings({ profile, user, currencies, queryClient }: Gene
                   <Mail className="h-4 w-4" />
                   Email Address
                 </div>
-                <p className="text-sm font-medium">{user?.email}</p>
+                <p className="break-words text-sm font-medium">{user?.email}</p>
               </div>
 
               <div className="space-y-2">

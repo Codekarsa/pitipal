@@ -115,9 +115,9 @@ export function DataManagementSection() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-semibold">Data Management</h2>
-        <p className="text-muted-foreground">
-          Import, export, and manage your financial data
+        <h2 className="text-xl font-semibold tracking-tight">Import & export</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Bring your records into Pitipal or download a copy.
         </p>
       </div>
 
@@ -144,7 +144,7 @@ export function DataManagementSection() {
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm">{item.title}</p>
                     <p className="text-xs text-muted-foreground hidden sm:block">{item.description}</p>
-                    <Badge variant="secondary" className="mt-1 text-xs">
+                    <Badge variant="outline" className="mt-1 border-0 bg-muted text-xs text-foreground">
                       {item.count} items
                     </Badge>
                   </div>
@@ -158,7 +158,7 @@ export function DataManagementSection() {
       {/* Import/Export Actions */}
       <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2">
         {/* Import Section */}
-        <Card>
+        <Card className="bg-gradient-to-br from-sky-100 via-emerald-50 to-card text-slate-900 [&_p]:text-slate-600 [&_.text-muted-foreground]:text-slate-600">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Upload className="h-5 w-5 text-primary" />
@@ -198,7 +198,7 @@ export function DataManagementSection() {
         </Card>
 
         {/* Export Section */}
-        <Card>
+        <Card className="bg-gradient-to-br from-rose-100 via-violet-50 to-card text-slate-900 [&_p]:text-slate-600 [&_.text-muted-foreground]:text-slate-600">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Download className="h-5 w-5 text-primary" />
@@ -257,8 +257,7 @@ export function DataManagementSection() {
               className="flex items-center gap-2 text-xs sm:text-sm"
             >
               <FileText className="h-4 w-4" />
-              <span className="hidden sm:inline">Transactions</span>
-              <span className="sm:hidden">Trans.</span>
+              <span>Transactions</span>
             </Button>
 
             <Button
@@ -269,8 +268,7 @@ export function DataManagementSection() {
               className="flex items-center gap-2 text-xs sm:text-sm"
             >
               <FileText className="h-4 w-4" />
-              <span className="hidden sm:inline">Budget Pockets</span>
-              <span className="sm:hidden">Pockets</span>
+              <span>Budget Pockets</span>
             </Button>
 
             <Button
@@ -281,8 +279,7 @@ export function DataManagementSection() {
               className="flex items-center gap-2 text-xs sm:text-sm"
             >
               <FileText className="h-4 w-4" />
-              <span className="hidden sm:inline">Categories</span>
-              <span className="sm:hidden">Categ.</span>
+              <span>Categories</span>
             </Button>
 
             <Button
@@ -293,8 +290,7 @@ export function DataManagementSection() {
               className="flex items-center gap-2 text-xs sm:text-sm"
             >
               <FileText className="h-4 w-4" />
-              <span className="hidden sm:inline">Accounts</span>
-              <span className="sm:hidden">Acc.</span>
+              <span>Accounts</span>
             </Button>
           </div>
 

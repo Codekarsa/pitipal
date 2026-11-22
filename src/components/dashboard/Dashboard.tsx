@@ -1,25 +1,31 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect, lazy, Suspense } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, TrendingUp, TrendingDown, DollarSign, PiggyBank, Settings, Banknote } from "lucide-react";
+import { Plus, PiggyBank, Settings, MoreHorizontal, CreditCard, ArrowDownLeft, ArrowUpRight, Wallet } from "lucide-react";
 import { PocketCard } from "./PocketCard";
 import { CreatePocketDialog } from "./CreatePocketDialog";
 import { TransactionDialog } from "./TransactionDialog";
 import { DebtOverviewCard } from "./DebtOverviewCard";
-import { QuickActionsCard } from "./QuickActionsCard";
+import { CreditCardPaymentDialog } from "./CreditCardPaymentDialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { MonthNavigator } from "./MonthNavigator";
 import { TemplateManagementDialog } from "./TemplateManagementDialog";
 import { BudgetPlanningDialog } from "./BudgetPlanningDialog";
 import { EditPocketDialog } from "./EditPocketDialog";
-import { SetupChecklist } from "./SetupChecklist";
+import { SetupChecklist, SetupPocket } from "./SetupChecklist";
+import { CompactAmount } from "@/components/ui/compact-amount";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { formatCurrency, formatCompactCurrency, formatNumber } from "@/lib/utils";
+import { formatCurrency, formatNumber } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
 import { calculatePocketSpending, PocketSpending } from "@/utils/pocketCalculations";
+
+// Keep the charting library out of the initial sign-in and setup bundle.
+const SpendingTrend = lazy(() => import("./DashboardActivity").then(module => ({ default: module.SpendingTrend })));
+const DashboardActivity = lazy(() => import("./DashboardActivity").then(module => ({ default: module.DashboardActivity })));
 
 interface BudgetPocket {
   id: string;
@@ -43,8 +49,10 @@ interface BudgetPocket {
 export function Dashboard() {
   const [showCreatePocket, setShowCreatePocket] = useState(false);
   const [showAddTransaction, setShowAddTransaction] = useState(false);
+  const [firstTransactionPocket, setFirstTransactionPocket] = useState<SetupPocket>();
   const [showTemplateManagement, setShowTemplateManagement] = useState(false);
   const [showPlanning, setShowPlanning] = useState(false);
+  const [showPayment, setShowPayment] = useState(false);
   const [showEditPocket, setShowEditPocket] = useState(false);
   const [selectedPocketForEdit, setSelectedPocketForEdit] = useState<BudgetPocket | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<string>(format(new Date(), "yyyy-MM"));
@@ -81,7 +89,7 @@ export function Dashboard() {
   const { data: pocketData, isLoading, error } = useQuery({
     queryKey: ['pocketSpending', user?.id, selectedMonth],
     queryFn: async () => {
-      if (!user?.id) return { pockets: [], totalBudget: 0, totalSpent: 0, totalRemaining: 0, totalIncome: 0, unassignedSpent: 0, unassignedCount: 0 };
+      if (!user?.id) return { pockets: [], monthlyTransactions: [], totalBudget: 0, totalSpent: 0, totalRemaining: 0, totalIncome: 0, unassignedSpent: 0, unassignedCount: 0 };
       return await calculatePocketSpending(user.id, selectedMonth);
     },
     enabled: !!user?.id,
@@ -96,6 +104,8 @@ export function Dashboard() {
   const totalIncome = pocketData?.totalIncome ?? 0;
   const expensePockets = pockets.filter(p => p.pocket_type === 'expense');
   const overBudgetPockets = expensePockets.filter(p => p.currentAmount > p.budgetAmount).length;
+  const budgetUsed = totalBudget > 0 ? Math.max(0, Math.min(100, totalSpent / totalBudget * 100)) : 0;
+  const monthlyTransactions = pocketData?.monthlyTransactions ?? [];
 
   // Handle errors from React Query
   useEffect(() => {
@@ -239,9 +249,9 @@ export function Dashboard() {
   if (!user || !profile || isLoading) {
     return (
       <div className="space-y-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-          {[...Array(5)].map((_, i) => (
-            <Card key={i} className="bg-gradient-card border-0 shadow-lg animate-pulse">
+        <div className="grid gap-4 xl:grid-cols-[1fr_1.4fr]" role="status" aria-label="Loading dashboard">
+          {[...Array(2)].map((_, i) => (
+            <Card key={i} className="h-48 shadow-none animate-pulse">
               <CardHeader className="pb-3">
                 <div className="h-4 bg-muted rounded w-3/4"></div>
               </CardHeader>
@@ -257,153 +267,110 @@ export function Dashboard() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-7">
       {/* Month Filter */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground">Overview of your financial activity</p>
+          <h1 className="text-2xl sm:text-3xl font-medium tracking-tight">Dashboard</h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">A little more clarity. A little more control.</p>
         </div>
         <MonthNavigator
           selectedMonth={selectedMonth}
           onMonthChange={setSelectedMonth}
+          className="rounded-full border-0 px-2"
         />
       </div>
 
       <SetupChecklist
         currency={userCurrency}
+        remaining={totalRemaining}
+        hasSpendingBudget={totalBudget > 0}
         onCreatePocket={() => {
           setSelectedMonth(format(new Date(), "yyyy-MM"));
           setShowCreatePocket(true);
         }}
-        onAddTransaction={() => {
-          setSelectedMonth(format(new Date(), "yyyy-MM"));
+        onAddTransaction={(pocket) => {
+          setFirstTransactionPocket(pocket);
+          setSelectedMonth(pocket?.month_year ?? format(new Date(), "yyyy-MM"));
           setShowAddTransaction(true);
         }}
       />
 
-      {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-        <Card className="bg-gradient-card border-0 shadow-lg">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Income</CardTitle>
-            <Banknote className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl xl:text-xl font-bold text-success" title={formatCurrency(totalIncome, userCurrency)}>{formatCompactCurrency(totalIncome, userCurrency)}</div>
-            <p className="text-xs text-muted-foreground">
-              Received in {format(parseISO(`${selectedMonth}-01`), "MMMM yyyy")}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-card border-0 shadow-lg">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Budget</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl xl:text-xl font-bold" title={formatCurrency(totalBudget, userCurrency)}>{formatCompactCurrency(totalBudget, userCurrency)}</div>
-            <p className="text-xs text-muted-foreground">
-              Across {expensePockets.length} expense pockets
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-card border-0 shadow-lg">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Spent</CardTitle>
-            <TrendingDown className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl xl:text-xl font-bold" title={formatCurrency(totalSpent, userCurrency)}>{formatCompactCurrency(totalSpent, userCurrency)}</div>
-            <p className="text-xs text-muted-foreground">
-              {totalBudget > 0 ? `${formatNumber((totalSpent / totalBudget) * 100)}% of budget` : 'No budget set'}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-card border-0 shadow-lg">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Remaining</CardTitle>
-            <PiggyBank className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl xl:text-xl font-bold ${totalRemaining < 0 ? 'text-destructive' : 'text-success'}`} title={formatCurrency(Math.abs(totalRemaining), userCurrency)}>
-              {formatCompactCurrency(Math.abs(totalRemaining), userCurrency)}
+      <div className="grid items-start gap-8 xl:grid-cols-[minmax(0,1fr)_280px] 2xl:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="min-w-0 space-y-7">
+      <div className="grid gap-4 min-[380px]:grid-cols-2 sm:grid-cols-[1.15fr_1fr_1fr]">
+        <Card className="flex min-w-0 flex-col rounded-[1.75rem] border-0 p-5 shadow-none min-[380px]:col-span-2 sm:col-span-1 sm:p-6">
+          <CardTitle className="text-base font-medium">{totalRemaining < 0 ? 'Over budget' : 'Remaining'}</CardTitle>
+          <div className="my-4 flex items-center gap-5 sm:my-5 sm:justify-center">
+            <div className="relative h-24 w-24 shrink-0 sm:h-28 sm:w-28" role="img" aria-label={totalBudget > 0 ? `${formatNumber(totalSpent / totalBudget * 100)}% of spending budget used` : 'No spending budget set'}>
+              <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90" aria-hidden="true"><circle cx="50" cy="50" r="43" fill="none" stroke="hsl(var(--muted))" strokeWidth="5" /><circle cx="50" cy="50" r="43" fill="none" stroke={totalRemaining < 0 ? 'hsl(var(--destructive))' : 'hsl(350 80% 70%)'} strokeWidth="5" strokeLinecap="round" pathLength="100" strokeDasharray={`${budgetUsed} 100`} /></svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center"><span className="text-2xl font-medium tracking-tight">{totalRemaining < 0 ? 'Over' : totalBudget > 0 ? `${Math.round(budgetUsed)}%` : '—'}</span><span className="mt-0.5 text-[10px] text-muted-foreground">{totalRemaining < 0 ? 'budget' : totalBudget > 0 ? 'budget used' : 'no budget'}</span></div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              {totalRemaining < 0 ? 'Over budget' : 'Available to spend'}
-            </p>
-          </CardContent>
+            <p className="max-w-40 text-xs leading-relaxed text-muted-foreground sm:hidden">{totalBudget > 0 ? 'Your monthly spending limit, at a glance.' : 'Create a pocket to set your spending budget.'}</p>
+          </div>
+          <p className="mt-auto text-2xl font-medium tracking-tight tabular-nums sm:text-base md:text-2xl xl:text-xl 2xl:text-2xl"><CompactAmount amount={Math.abs(totalRemaining)} currency={userCurrency} label={totalRemaining < 0 ? 'over budget' : 'remaining budget'} /></p>
+          <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{totalRemaining < 0 ? 'Over your spending budget' : totalBudget > 0 ? 'Left in your spending budget' : 'Create a pocket to set a budget'}</p>
         </Card>
-
-        <Card className="bg-gradient-card border-0 shadow-lg">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Alerts</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl xl:text-xl font-bold">{overBudgetPockets}</div>
-            <p className="text-xs text-muted-foreground">
-              Pockets over budget
-            </p>
-          </CardContent>
+        <Card className="flex min-w-0 flex-col rounded-[1.75rem] border-0 bg-sky-100 bg-[radial-gradient(at_0%_100%,hsl(174_75%_77%)_0%,transparent_65%),radial-gradient(at_100%_0%,hsl(202_95%_74%)_0%,transparent_65%)] p-5 text-slate-900 shadow-none sm:p-6">
+          <div className="flex items-start justify-between gap-2"><CardTitle className="text-sm font-medium md:text-base">Income</CardTitle><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/35 md:h-10 md:w-10 md:rounded-2xl"><ArrowDownLeft className="h-5 w-5" /></span></div>
+          <p className="mt-8 text-2xl font-medium tracking-tight tabular-nums min-[380px]:text-base sm:mt-auto sm:pt-16 md:text-2xl xl:text-xl 2xl:text-2xl"><CompactAmount amount={totalIncome} currency={userCurrency} label="income" /></p>
+          <p className="mt-2 text-xs leading-relaxed text-slate-700">Received in {format(parseISO(`${selectedMonth}-01`), "MMMM")}</p>
+        </Card>
+        <Card className="flex min-w-0 flex-col rounded-[1.75rem] border-0 bg-rose-100 bg-[radial-gradient(at_100%_0%,hsl(12_95%_78%)_0%,transparent_65%),radial-gradient(at_0%_100%,hsl(264_85%_86%)_0%,transparent_70%)] p-5 text-slate-900 shadow-none sm:p-6">
+          <div className="flex items-start justify-between gap-2"><CardTitle className="text-sm font-medium md:text-base">Total Spent</CardTitle><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/35 md:h-10 md:w-10 md:rounded-2xl"><ArrowUpRight className="h-5 w-5" /></span></div>
+          <p className="mt-8 text-2xl font-medium tracking-tight tabular-nums min-[380px]:text-base sm:mt-auto sm:pt-16 md:text-2xl xl:text-xl 2xl:text-2xl"><CompactAmount amount={totalSpent} currency={userCurrency} label="total spent" /></p>
+          <p className="mt-2 text-xs leading-relaxed text-slate-700">{totalBudget > 0 ? `${formatNumber((totalSpent / totalBudget) * 100)}% of budget used` : 'No budget set yet'}</p>
         </Card>
       </div>
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-[1.5rem] bg-muted/80 px-5 py-4 sm:px-6">
+        <div className="flex items-center gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-card"><Wallet className="h-5 w-5 text-muted-foreground" /></span><div><h2 className="text-sm font-medium">Total Budget</h2><p className="mt-0.5 text-xs text-muted-foreground">Across {expensePockets.length} expense {expensePockets.length === 1 ? 'pocket' : 'pockets'}</p></div></div>
+        <p className="text-xl font-medium tracking-tight tabular-nums"><CompactAmount amount={totalBudget} currency={userCurrency} label="total budget" /></p>
+      </div>
+      <p className="!mt-3 px-1 text-[11px] text-muted-foreground">Remaining = budget minus expenses · not your bank balance</p>
 
       {(pocketData?.unassignedCount ?? 0) > 0 && <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-4 text-sm">
-        <p>{formatCurrency(pocketData!.unassignedSpent, userCurrency)} in {pocketData!.unassignedCount} expenses has no spending pocket. These expenses are included in Total Spent and Remaining, but not in individual pocket bars.</p>
-        <Button variant="link" className="h-auto p-0 mt-2" onClick={() => navigate('/transactions')}>Review unassigned expenses</Button>
+        <p>{formatCurrency(pocketData!.unassignedSpent, userCurrency)} in {pocketData!.unassignedCount} unassigned {pocketData!.unassignedCount === 1 ? 'expense' : 'expenses'}. Included in Total Spent and Remaining, but not in individual pocket bars.</p>
+        <Button variant="link" className="h-auto p-0 mt-2" onClick={() => navigate(`/transactions?month=${selectedMonth}&pocket=unassigned`)}>Review unassigned expenses</Button>
       </div>}
       {selectedMonth > format(new Date(), 'yyyy-MM') && <p className="text-sm text-muted-foreground">Future plan: base allowances only. Carryover is confirmed when the month begins.</p>}
 
-      {/* Debt Overview */}
-      <DebtOverviewCard />
+      <Suspense fallback={<div role="status" aria-label="Loading monthly chart" className="h-96 animate-pulse rounded-[1.75rem] bg-card" />}>
+        <SpendingTrend transactions={monthlyTransactions} currency={userCurrency} month={selectedMonth} />
+      </Suspense>
 
       {/* Budget Pockets */}
       <div className="space-y-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <h2 className="text-2xl font-bold">Budget Pockets</h2>
-            <p className="text-muted-foreground">Organize your spending into customizable categories</p>
+            <h2 className="text-xl font-medium tracking-tight">Budget Pockets</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Your monthly limits for the things that matter.</p>
+            {overBudgetPockets > 0 && <p role="status" className="mt-2 text-sm font-medium text-destructive">{overBudgetPockets} {overBudgetPockets === 1 ? 'pocket is' : 'pockets are'} over budget. Review the amounts below.</p>}
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <Button variant="outline" size="sm" onClick={() => setShowPlanning(true)}>Plan months</Button>
-            <Button 
-              variant="outline" 
-              onClick={() => setShowTemplateManagement(true)}
-              className="gap-2 text-xs sm:text-sm"
-              size="sm"
-            >
-              <Settings className="h-4 w-4" />
-              <span>Repeating pockets</span>
-            </Button>
-            <Button onClick={() => setShowCreatePocket(true)} variant="hero" size="sm" className="text-xs sm:text-sm">
-              <Plus className="mr-1 sm:mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">Create Pocket</span>
-              <span className="sm:hidden">Create</span>
-            </Button>
+            <Button onClick={() => setShowCreatePocket(true)} variant="outline" size="sm"><Plus className="h-4 w-4" />Create Pocket</Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" aria-label="More budget actions"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => setShowTemplateManagement(true)}><Settings className="mr-2 h-4 w-4" />Repeating pockets</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setShowPayment(true)}><CreditCard className="mr-2 h-4 w-4" />Pay Credit Card</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
         {pockets.length === 0 ? (
-          <Card className="bg-gradient-card border-0 shadow-lg">
+          <Card className="border-dashed shadow-none">
             <CardContent className="flex flex-col items-center justify-center py-12">
               <PiggyBank className="h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">No pockets yet</h3>
-              <p className="text-muted-foreground text-center mb-6 max-w-md">
-                Create your first budget pocket to start organizing your finances. 
-                Each pocket can track a specific category like groceries, entertainment, or savings.
+              <p className="text-sm text-muted-foreground text-center max-w-md">
+                Use Create Pocket above to set a monthly limit for groceries, transport, or another expense.
               </p>
-              <Button onClick={() => setShowCreatePocket(true)} variant="hero">
-                <Plus className="mr-2 h-4 w-4" />
-                Create Your First Pocket
-              </Button>
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-4">
             {[...pockets].sort((a, b) => Number(b.is_featured) - Number(a.is_featured)).map((pocket) => (
               <PocketCard
                 key={pocket.id}
@@ -415,17 +382,18 @@ export function Dashboard() {
                 onToggleFeatured={handleToggleFeatured}
               />
             ))}
-            <QuickActionsCard
-              pockets={pockets}
-              targetMonth={selectedMonth}
-              onTransactionAdded={handleTransactionAdded}
-              onPocketCreated={handlePocketCreated}
-            />
           </div>
         )}
       </div>
+      <DebtOverviewCard />
+      </div>
+      <Suspense fallback={<div role="status" aria-label="Loading monthly activity" className="h-96 animate-pulse rounded-[1.75rem] bg-card" />}>
+        <DashboardActivity transactions={monthlyTransactions} currency={userCurrency} month={selectedMonth} />
+      </Suspense>
+      </div>
 
       {/* Dialogs */}
+      <CreditCardPaymentDialog open={showPayment} onOpenChange={setShowPayment} onSuccess={handleTransactionAdded} />
       <CreatePocketDialog
         open={showCreatePocket}
         onOpenChange={setShowCreatePocket}
@@ -437,6 +405,9 @@ export function Dashboard() {
         open={showAddTransaction}
         onOpenChange={setShowAddTransaction}
         onSuccess={handleTransactionAdded}
+        initialPocketId={firstTransactionPocket?.id}
+        initialDate={firstTransactionPocket?.month_year && firstTransactionPocket.month_year !== format(new Date(), 'yyyy-MM') ? `${firstTransactionPocket.month_year}-01` : format(new Date(), 'yyyy-MM-dd')}
+        initialType={firstTransactionPocket?.pocket_type === 'income' ? 'income' : firstTransactionPocket?.pocket_type === 'investment' ? 'investment' : 'expense'}
         pockets={pockets}
       />
       

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useLayoutEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { addMonths, format, parseISO } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
@@ -27,7 +27,7 @@ export function BudgetPlanningDialog({ open, onOpenChange, selectedMonth, curren
   const [count, setCount] = useState(3);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!open) return;
     setSource(selectedMonth);
     setStart(format(addMonths(parseISO(`${selectedMonth}-01`), 1), 'yyyy-MM'));
@@ -63,13 +63,13 @@ export function BudgetPlanningDialog({ open, onOpenChange, selectedMonth, curren
     finally { setSaving(false); }
   }
   return <Dialog open={open} onOpenChange={value => { if (!saving) onOpenChange(value); }}>
-    <DialogContent className="max-h-[90vh] flex flex-col overflow-hidden sm:max-w-lg">
+    <DialogContent className="max-h-[90dvh] flex flex-col overflow-hidden sm:max-w-xl">
       <DialogHeader>
         <DialogTitle>Plan monthly budgets</DialogTitle>
-        <DialogDescription>Copy base allowances, not spending or income. Existing monthly pockets and their amounts will not be overwritten.</DialogDescription>
+        <DialogDescription>Start with a month that works for you. Copy its budgets, then adjust each month as needed.</DialogDescription>
       </DialogHeader>
       <div className="min-h-0 overflow-y-auto space-y-4">
-      <Button variant="outline" onClick={() => {
+      <Button variant="secondary" className="h-auto min-h-10 whitespace-normal text-left" onClick={() => {
         setSource(format(addMonths(parseISO(`${selectedMonth}-01`), -1), 'yyyy-MM'));
         setStart(selectedMonth);
         setCount(1);
@@ -81,12 +81,12 @@ export function BudgetPlanningDialog({ open, onOpenChange, selectedMonth, curren
       <div className="space-y-2"><Label htmlFor="plan-count">Number of months</Label><select id="plan-count" className="h-10 w-full rounded-md border bg-background px-3" value={count} onChange={e => setCount(Number(e.target.value))}>
         <option value={1}>One month</option><option value={3}>Three months</option>
       </select></div>
-      {isLoading ? <p>Loading budgets…</p> : loadError ? <p role="alert">Could not load source budgets. Choose a month and try again.</p> : pockets.length === 0 ? <p className="text-sm text-muted-foreground">No budgets in this source month. Choose a month with pockets, or create your first pocket.</p> : <div className="rounded-lg border p-3 space-y-2">
-        <p className="font-medium">{pockets.length} pockets · {formatCurrency(total, currency)} spending allowance per month</p>
-        <ul className="max-h-40 overflow-y-auto text-sm space-y-1">{pockets.map(p => <li key={p.id} className="flex justify-between gap-3"><span>{p.name}</span><span>{formatCurrency(p.base_budget_amount ?? p.budget_amount, currency)}</span></li>)}</ul>
-        <p className="text-sm">Plan for {targets.map(m => format(parseISO(`${m}-01`), 'MMM yyyy')).join(', ')}.</p>
+      {isLoading ? <p>Loading budgets…</p> : loadError ? <p role="alert">Could not load source budgets. Choose a month and try again.</p> : pockets.length === 0 ? <p className="rounded-lg bg-muted p-4 text-sm text-muted-foreground">No budgets in this source month. Choose a month with pockets, or create your first pocket.</p> : <div className="rounded-lg border p-4 space-y-4">
+        <div><p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Your plan preview</p><p className="mt-2 font-semibold">{pockets.length} pockets · {formatCurrency(total, currency)} spending allowance per month</p></div>
+        <ul className="max-h-40 overflow-y-auto divide-y text-sm">{pockets.map(p => <li key={p.id} className="flex flex-wrap justify-between gap-2 py-2"><span className="break-words">{p.name}</span><span className="tabular-nums">{formatCurrency(p.base_budget_amount ?? p.budget_amount, currency)}</span></li>)}</ul>
+        <p className="rounded-md bg-accent px-3 py-2 text-sm text-accent-foreground">Plan for {targets.map(m => format(parseISO(`${m}-01`), 'MMM yyyy')).join(', ')}.</p>
       </div>}
-      <p className="text-xs text-muted-foreground">Edit a pocket afterward to adjust only that month or that month and future plans. Carryover is confirmed when the month begins; it is not new income.</p>
+      <p className="text-xs leading-relaxed text-muted-foreground">Only base budgets are copied, not spending or income. Existing monthly amounts stay unchanged. Carryover is added when the month begins; it is not new income.</p>
       {invalidMonths && <p role="alert" className="text-sm text-destructive">Choose a target after the source month, starting this month or later.</p>}
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
       </div>

@@ -10,6 +10,7 @@ import { CurrencyInput } from '@/components/ui/currency-input';
 import { Label } from '@/components/ui/label';
 import { formatCurrency } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { X } from 'lucide-react';
 
 interface Row { id: string; date: string; amount: string; category: string; pocket: string; description: string }
 interface Props { open: boolean; onOpenChange: (open: boolean) => void; onSaved: () => void; currency: string; month: string }
@@ -89,15 +90,18 @@ export function BulkTransactionDialog({ open, onOpenChange, onSaved, currency, m
   }
   const selectClass = 'h-10 w-full min-w-0 rounded-md border bg-background px-2 text-sm';
   return <Dialog open={open} onOpenChange={value => { if (!saving) onOpenChange(value); }}>
-    <DialogContent className="max-h-[90vh] flex flex-col overflow-hidden sm:max-w-5xl">
+    <DialogContent className="max-h-[90dvh] flex flex-col overflow-hidden sm:max-w-6xl">
       <DialogHeader><DialogTitle>Add multiple transactions</DialogTitle><DialogDescription>Enter a day's receipts or catch up on several days. Tab between fields, then review everything before saving.</DialogDescription></DialogHeader>
       <div className="min-h-0 overflow-y-auto space-y-4">
       {isLoading ? <p>Loading categories and pockets…</p> : loadError ? <p role="alert">Could not load entry options. Close and try again.</p> : <>
         {!review && <>
-          <div className="space-y-1 sm:max-w-xs"><Label htmlFor="bulk-type">Transaction type</Label><select id="bulk-type" className={selectClass} value={type} onChange={e => {
+          <div className="flex flex-wrap items-end justify-between gap-3">
+          <div className="flex-1 space-y-1 sm:max-w-xs"><Label htmlFor="bulk-type">Transaction type</Label><select id="bulk-type" className={selectClass} value={type} onChange={e => {
             setType(e.target.value as 'expense' | 'income'); setDefaultCategory(''); setDefaultPocket('');
             setRows(current => current.map(r => ({ ...r, category: '', pocket: '' })));
           }}><option value="expense">Expense</option><option value="income">Income</option></select></div>
+          <Button variant="outline" onClick={() => setRows(current => [...current, ...Array.from({ length: 5 }, () => newRow())])} disabled={rows.length >= 100}>Add 5 rows</Button>
+          </div>
           <details className="rounded-lg bg-muted/50 p-3">
             <summary className="cursor-pointer text-sm font-medium">Defaults for repeated entries (optional)</summary>
           <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -115,31 +119,33 @@ export function BulkTransactionDialog({ open, onOpenChange, onSaved, currency, m
             }}><option value="">No pocket</option>{data?.pockets.filter(p => p.month_year === defaultDate.slice(0, 7)).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
           </div>
           </details>
-          <p className="text-xs text-muted-foreground">Defaults fill empty and new rows only. Filled rows keep their dates and choices. Each row can be changed separately. Unassigned expenses still count in monthly totals.</p>
-          <div className="space-y-3">
-            {rows.map((row, i) => <fieldset key={row.id} className="rounded-lg border p-3 min-w-0" aria-label={`Transaction row ${i + 1}`}>
-              <legend className="px-1 text-xs text-muted-foreground">Transaction {i + 1}</legend>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2">
+          <p className="text-xs text-muted-foreground">Defaults fill empty and new rows only. Filled rows keep their choices. Unassigned expenses still count in monthly totals.</p>
+          <div className="hidden grid-cols-[1.15fr_1fr_1.3fr_1.2fr_1.4fr_2rem] gap-2 border-b pb-3 text-xs font-medium text-muted-foreground lg:grid" aria-hidden="true">
+            <span>Date</span><span>Amount · {currency}</span><span>Category</span><span>Budget pocket</span><span>Description</span><span />
+          </div>
+          <div className="space-y-3 lg:space-y-0">
+            {rows.map((row, i) => <fieldset key={row.id} className="relative min-w-0 rounded-lg border bg-muted/20 p-3 lg:rounded-none lg:border-x-0 lg:border-t-0 lg:bg-transparent lg:px-0" aria-label={`Transaction row ${i + 1}`}>
+              <legend className="px-1 text-xs font-medium text-muted-foreground lg:sr-only">Transaction {i + 1}</legend>
+              <div className="grid grid-cols-2 gap-2 pt-5 lg:grid-cols-[1.15fr_1fr_1.3fr_1.2fr_1.4fr_2rem] lg:pt-0">
                 <Input aria-label={`Date ${i + 1}`} type="date" value={row.date} onChange={e => update(row.id, { date: e.target.value, pocket: '' })} />
                 <CurrencyInput aria-label={`Amount ${i + 1}`} placeholder={`Amount (${currency})`} value={row.amount} onChange={amount => update(row.id, { amount })} inputMode="decimal" />
                 <select aria-label={`Category ${i + 1}`} className={selectClass} value={row.category} onChange={e => update(row.id, { category: e.target.value })}><option value="">Category</option>{data?.categories.map(c => <option key={c}>{c}</option>)}</select>
                 <select aria-label={`Pocket ${i + 1}`} className={selectClass} value={row.pocket} onChange={e => update(row.id, { pocket: e.target.value })}><option value="">No pocket</option>{data?.pockets.filter(p => p.month_year === row.date.slice(0, 7)).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
-                <Input aria-label={`Description ${i + 1}`} placeholder="Description" value={row.description} maxLength={200} onChange={e => update(row.id, { description: e.target.value })} />
-                <Button variant="ghost" aria-label={`Remove row ${i + 1}`} onClick={() => setRows(current => current.filter(r => r.id !== row.id))}>Remove</Button>
+                <Input className="col-span-2 lg:col-span-1" aria-label={`Description ${i + 1}`} placeholder="Description (optional)" value={row.description} maxLength={200} onChange={e => update(row.id, { description: e.target.value })} />
+                <Button variant="ghost" size="icon" className="absolute right-2 top-0 h-8 w-8 text-muted-foreground hover:text-destructive lg:static lg:mt-1" aria-label={`Remove row ${i + 1}`} onClick={() => setRows(current => current.filter(r => r.id !== row.id))}><X className="h-4 w-4" /></Button>
               </div>
             </fieldset>)}
           </div>
-          <Button variant="outline" onClick={() => setRows(current => [...current, ...Array.from({ length: 5 }, () => newRow())])} disabled={rows.length >= 100}>Add 5 rows</Button>
         </>}
         {review && <div className="space-y-3">
-          <p className="text-lg font-semibold">{used.length} {type === 'expense' ? used.length === 1 ? 'expense' : 'expenses' : used.length === 1 ? 'income entry' : 'income entries'} · {formatCurrency(total, currency)}</p>
+          <div className="rounded-lg bg-accent p-4"><p className="text-xs font-medium text-accent-foreground">Ready to save</p><p className="mt-1 text-xl font-semibold tracking-tight">{used.length} {type === 'expense' ? used.length === 1 ? 'expense' : 'expenses' : used.length === 1 ? 'income entry' : 'income entries'} · {formatCurrency(total, currency)}</p></div>
           <p className="text-sm text-muted-foreground">{used.filter(r => !r.pocket).length} without a pocket. Blank rows are ignored. All entries will be saved together.</p>
           <ul className="max-h-64 overflow-y-auto space-y-2 rounded-lg border p-3 text-sm">{used.map(row => <li key={row.id} className="flex flex-wrap justify-between gap-2"><span>{row.date} · {row.category} · {row.description || 'No description'}</span><strong>{formatCurrency(Number(row.amount), currency)}</strong></li>)}</ul>
         </div>}
       </>}
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
       </div>
-      <DialogFooter className="shrink-0 border-t bg-background pt-4 gap-2">
+      <DialogFooter className="shrink-0 border-t bg-card pt-4 gap-2">
         <Button variant="outline" disabled={saving} onClick={() => review ? setReview(false) : onOpenChange(false)}>{review ? 'Back to entries' : 'Cancel'}</Button>
         <Button disabled={saving || isLoading || !!loadError || !used.length} onClick={() => {
           if (review) { void save(); return; }

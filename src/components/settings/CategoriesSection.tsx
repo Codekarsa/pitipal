@@ -276,10 +276,10 @@ export function CategoriesSection() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 rounded-[1.75rem] bg-card p-5 sm:p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold">Transaction Categories</h3>
+          <h2 className="text-xl font-semibold tracking-tight">Categories</h2>
           <p className="text-sm text-muted-foreground">
             Organize your transactions with custom category groups and categories
           </p>
@@ -287,23 +287,23 @@ export function CategoriesSection() {
       </div>
 
       <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="expense" className="flex items-center gap-2">
-            <TrendingDown className="h-4 w-4" />
+        <TabsList aria-label="Category types" className="flex h-auto w-full flex-wrap justify-start gap-1 rounded-2xl bg-muted/60 p-1.5 sm:w-fit">
+          <TabsTrigger value="expense" className="min-h-10 gap-2 rounded-full">
+            <TrendingDown className="hidden h-4 w-4 sm:block" />
             Expenses
           </TabsTrigger>
-          <TabsTrigger value="income" className="flex items-center gap-2">
-            <TrendingUp className="h-4 w-4" />
+          <TabsTrigger value="income" className="min-h-10 gap-2 rounded-full">
+            <TrendingUp className="hidden h-4 w-4 sm:block" />
             Income
           </TabsTrigger>
-          <TabsTrigger value="investment" className="flex items-center gap-2">
-            <DollarSign className="h-4 w-4" />
+          <TabsTrigger value="investment" className="min-h-10 gap-2 rounded-full">
+            <DollarSign className="hidden h-4 w-4 sm:block" />
             Investments
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value={selectedTab} className="space-y-4 mt-6">
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Dialog open={showGroupDialog} onOpenChange={setShowGroupDialog}>
               <DialogTrigger asChild>
                 <Button onClick={resetGroupForm} className="flex items-center gap-2">

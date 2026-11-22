@@ -16,9 +16,9 @@ export function formatCurrency(amount: number, currency: string = 'USD'): string
   }).format(amount);
 }
 
-// Shortens amounts of 100 million or more (e.g. "IDR 150M") so they fit in narrow cards
+// Keep summary cards readable; transaction lists and tooltips retain exact amounts.
 export function formatCompactCurrency(amount: number, currency: string = 'USD'): string {
-  if (Math.abs(amount) < 100_000_000) return formatCurrency(amount, currency);
+  if (Math.abs(amount) < 1_000_000) return formatCurrency(amount, currency);
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: currency,

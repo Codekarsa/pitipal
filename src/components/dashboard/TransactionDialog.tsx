@@ -76,11 +76,13 @@ interface TransactionDialogProps {
   onSuccess: () => void;
   onSaved?: () => void;
   initialType?: "income" | "expense" | "investment";
+  initialPocketId?: string;
+  initialDate?: string;
   pockets: BudgetPocket[];
   editingTransaction?: any;
 }
 
-export function TransactionDialog({ open, onOpenChange, onSuccess, onSaved, initialType = 'expense', pockets, editingTransaction }: TransactionDialogProps) {
+export function TransactionDialog({ open, onOpenChange, onSuccess, onSaved, initialType = 'expense', initialPocketId, initialDate, pockets, editingTransaction }: TransactionDialogProps) {
   const queryClient = useQueryClient();
   const [type, setType] = useState<"income" | "expense" | "investment">("expense");
   const [amount, setAmount] = useState("");
@@ -114,6 +116,7 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, onSaved, init
   
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
+  const currency = queryClient.getQueryData<{ currency?: string }>(["profile", user?.id])?.currency ?? 'USD';
 
   // Helper function to handle credit card balance changes when editing transactions
   const handleCreditCardBalanceForEdit = async (
@@ -217,8 +220,10 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, onSaved, init
       setKeepAddingTransactions(false);
     } else if (!editingTransaction) {
       setType(initialType);
+      if (initialPocketId) setPocketId(initialPocketId);
+      if (initialDate) setDate(initialDate);
     }
-  }, [open, initialType, editingTransaction]);
+  }, [open, initialType, initialPocketId, initialDate, editingTransaction]);
 
   // Populate once per editing session, not again when account options finish loading.
   useEffect(() => {
@@ -625,36 +630,59 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, onSaved, init
 
   return (
     <Dialog open={open} onOpenChange={handleDialogOpenChange}>
-      <DialogContent className="sm:max-w-[425px] max-h-[90vh] flex flex-col overflow-hidden bg-gradient-card border-0 shadow-xl">
+      <DialogContent className="sm:max-w-[480px] max-h-[90dvh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold">
             {editingTransaction ? 'Edit Transaction' : 'Add Transaction'}
           </DialogTitle>
           <DialogDescription>
-            {editingTransaction ? 'Update transaction details.' : 'Record a new income or expense transaction.'}
+            {editingTransaction ? 'Update transaction details.' : 'Record income, spending, or an investment.'}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="min-h-0 flex flex-col gap-4">
           <div className="min-h-0 overflow-y-auto space-y-4 px-1 -mx-1">
           <div className="space-y-3">
-            <Label>Transaction Type</Label>
-            <RadioGroup className="flex flex-wrap gap-4" value={type} onValueChange={(value: "income" | "expense" | "investment") => {
+            <Label id="transaction-type-label" className="sr-only">Transaction Type</Label>
+            <RadioGroup aria-labelledby="transaction-type-label" orientation="horizontal" className="grid grid-cols-3 gap-1 rounded-lg bg-muted p-1" value={type} onValueChange={(value: "income" | "expense" | "investment") => {
               setType(value);
               setCategory(""); // Reset category when type changes
             }}>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="expense" id="expense" />
-                <Label htmlFor="expense">Expense</Label>
+              <div>
+                <RadioGroupItem value="expense" id="expense" className="peer sr-only" />
+                <Label htmlFor="expense" className="flex min-h-10 cursor-pointer items-center justify-center rounded-md text-xs text-muted-foreground peer-data-[state=checked]:bg-card peer-data-[state=checked]:text-foreground peer-data-[state=checked]:shadow-sm peer-focus-visible:ring-2 peer-focus-visible:ring-ring sm:text-sm">Expense</Label>
               </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="income" id="income" />
-                  <Label htmlFor="income">Income</Label>
+                <div>
+                  <RadioGroupItem value="income" id="income" className="peer sr-only" />
+                  <Label htmlFor="income" className="flex min-h-10 cursor-pointer items-center justify-center rounded-md text-xs text-muted-foreground peer-data-[state=checked]:bg-card peer-data-[state=checked]:text-foreground peer-data-[state=checked]:shadow-sm peer-focus-visible:ring-2 peer-focus-visible:ring-ring sm:text-sm">Income</Label>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="investment" id="investment" />
-                  <Label htmlFor="investment">Investment</Label>
+                <div>
+                  <RadioGroupItem value="investment" id="investment" className="peer sr-only" />
+                  <Label htmlFor="investment" className="flex min-h-10 cursor-pointer items-center justify-center rounded-md text-xs text-muted-foreground peer-data-[state=checked]:bg-card peer-data-[state=checked]:text-foreground peer-data-[state=checked]:shadow-sm peer-focus-visible:ring-2 peer-focus-visible:ring-ring sm:text-sm">Investment</Label>
                 </div>
               </RadioGroup>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="pocket">Budget Pocket</Label>
+            <p className="text-xs text-muted-foreground">Which budget should this count toward? A category describes the purchase; a pocket tracks its budget.</p>
+            {(() => {
+              const transactionMonth = date ? date.substring(0, 7) : null;
+              const filteredPockets = allPockets.filter(pocket =>
+                pocket.pocket_type === type && (!transactionMonth || pocket.month_year === transactionMonth)
+              );
+              if (filteredPockets.length === 0) return <p className="rounded-md border bg-muted/50 p-3 text-sm text-muted-foreground">
+                No {type} pockets for this month. This transaction will still count in monthly totals.
+              </p>;
+              return <Select value={pocketId || 'none'} onValueChange={value => setPocketId(value === 'none' ? '' : value)}>
+                <SelectTrigger id="pocket"><SelectValue placeholder="Select pocket (optional)" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No pocket — include in monthly totals</SelectItem>
+                  {filteredPockets.map(pocket => <SelectItem key={pocket.id} value={pocket.id}>
+                    <span className="flex items-center gap-2"><span className="h-3 w-3 rounded-full" style={{ backgroundColor: pocket.color }} />{pocket.name}</span>
+                  </SelectItem>)}
+                </SelectContent>
+              </Select>;
+            })()}
           </div>
 
           {type === 'investment' ? (
@@ -747,15 +775,16 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, onSaved, init
               )}
             </>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="amount">Amount *</Label>
+                <p className="text-xs text-muted-foreground">Amount in {currency}</p>
                 <CurrencyInput
                   id="amount"
                   value={amount}
                   onChange={setAmount}
-                  placeholder="Enter amount"
-                  className="text-xl font-semibold"
+                  placeholder="0"
+                  className="h-16 bg-muted/40 text-3xl md:text-3xl font-semibold tracking-tight"
                   inputMode="decimal"
                   autoFocus
                   required
@@ -792,7 +821,7 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, onSaved, init
               searchPlaceholder="Search categories..."
               emptyText="No categories found."
             />
-            <p className="text-xs text-muted-foreground">What was this for? For example, Food &amp; Dining or Transportation.</p>
+            <p className="text-xs text-muted-foreground">What was it for? This label does not choose a budget pocket.</p>
           </div>
 
           <details className="rounded-lg border p-3" open={!!editingTransaction || type === 'investment'}>
@@ -921,51 +950,6 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, onSaved, init
 
             </div>
           </details>
-          <div className="space-y-2">
-            <Label htmlFor="pocket">Budget Pocket</Label>
-            <p className="text-xs text-muted-foreground">Which spending limit should this use? Unassigned expenses still count in your monthly totals.</p>
-            {(() => {
-              // Extract month-year from transaction date (YYYY-MM format)
-              const transactionMonth = date ? date.substring(0, 7) : null;
-
-              // Filter pockets by type and month using allPockets instead of pockets prop
-              const filteredPockets = allPockets.filter(pocket => {
-                const typeMatches = pocket.pocket_type === type;
-                const monthMatches = !transactionMonth || pocket.month_year === transactionMonth;
-                return typeMatches && monthMatches;
-              });
-
-              if (filteredPockets.length === 0) {
-                return (
-                  <div className="text-sm text-muted-foreground p-3 border rounded-md bg-muted/50">
-                    No {type} pockets available for {transactionMonth ? new Date(transactionMonth + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'the selected month'}.
-                  </div>
-                );
-              }
-
-              return (
-                <Select value={pocketId || 'none'} onValueChange={value => setPocketId(value === 'none' ? '' : value)}>
-                  <SelectTrigger id="pocket">
-                    <SelectValue placeholder="Select pocket (optional)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No pocket — include in monthly totals</SelectItem>
-                    {filteredPockets.map((pocket) => (
-                      <SelectItem key={pocket.id} value={pocket.id}>
-                        <div className="flex items-center space-x-2">
-                          <div
-                            className="w-3 h-3 rounded-full"
-                            style={{ backgroundColor: pocket.color }}
-                          />
-                          <span>{pocket.name}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              );
-            })()}
-          </div>
 
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
@@ -1001,7 +985,7 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, onSaved, init
           )}
 
           </div>
-          <DialogFooter className="shrink-0 gap-2 pt-4 border-t bg-background">
+          <DialogFooter className="shrink-0 gap-2 pt-4 border-t bg-card">
             <Button
               type="button"
               variant="outline"

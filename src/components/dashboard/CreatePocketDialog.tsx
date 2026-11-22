@@ -70,6 +70,7 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess, targetMonth 
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const currency = queryClient.getQueryData<{ currency?: string }>(["profile", user?.id])?.currency ?? 'USD';
 
   const isFormValid = (): boolean => {
     switch (budgetType) {
@@ -211,7 +212,7 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess, targetMonth 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto bg-gradient-card border-0 shadow-xl">
+      <DialogContent className="sm:max-w-[500px] max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold">Create Budget Pocket</DialogTitle>
           <DialogDescription>
@@ -238,6 +239,7 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess, targetMonth 
           {['regular_monthly', 'emergency_irregular', 'seasonal'].includes(budgetType) && (
             <div className="space-y-2">
               <Label htmlFor="budget">Monthly Budget Amount</Label>
+              <p className="text-xs text-muted-foreground">Amount in {currency}</p>
               <CurrencyInput id="budget" value={budgetAmount} onChange={setBudgetAmount} placeholder="Enter monthly amount" inputMode="decimal" required />
             </div>
           )}
@@ -497,7 +499,7 @@ export function CreatePocketDialog({ open, onOpenChange, onSuccess, targetMonth 
             <p className="text-xs text-muted-foreground">Carryover adds allowance, not income. A 3M base plus 1M unused gives 4M next month. Future carry is confirmed when that month starts.</p>
             </div>
           </details>
-          <DialogFooter className="gap-2 sticky -bottom-6 -mx-6 -mb-6 px-6 py-4 border-t bg-background">
+          <DialogFooter className="gap-2 sticky -bottom-5 -mx-5 -mb-5 px-5 py-4 border-t bg-card sm:-bottom-6 sm:-mx-6 sm:-mb-6 sm:px-6">
             <Button
               type="button"
               variant="outline"

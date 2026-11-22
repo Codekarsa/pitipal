@@ -5,7 +5,7 @@ import {
   PiggyBank, 
   Shield, 
   Smartphone, 
-  Brain, 
+  BarChart3,
   Upload, 
   CreditCard, 
   ArrowRight,
@@ -16,10 +16,11 @@ import {
 
 interface LandingPageProps {
   onGetStarted: () => void;
+  onSignIn: () => void;
   onAbout?: () => void;
 }
 
-export function LandingPage({ onGetStarted, onAbout }: LandingPageProps) {
+export function LandingPage({ onGetStarted, onSignIn, onAbout }: LandingPageProps) {
   return (
     <div className="min-h-screen bg-background">
       {/* Subtle grid pattern */}
@@ -32,7 +33,7 @@ export function LandingPage({ onGetStarted, onAbout }: LandingPageProps) {
 
       {/* Header */}
       <header className="relative container mx-auto px-4 py-6 border-b border-border/40">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center space-x-3">
             <div className="w-9 h-9 rounded-lg flex items-center justify-center overflow-hidden">
               <img src="/pitipal_square.png" alt="Pitipal" className="w-full h-full object-cover" />
@@ -57,29 +58,28 @@ export function LandingPage({ onGetStarted, onAbout }: LandingPageProps) {
             <Button onClick={onGetStarted} size="sm">
               Get Started
             </Button>
+            <Button onClick={onSignIn} variant="outline" size="sm">
+              Sign In
+            </Button>
           </div>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className="relative container mx-auto px-4 py-20 lg:py-32">
-        <div className="max-w-4xl mx-auto text-center space-y-8">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-border bg-muted/50 text-sm">
-            <Code className="h-3 w-3" />
-            <span>Open Source • AGPL-3.0 Licensed</span>
-          </div>
-          
-          <h1 className="text-5xl lg:text-7xl font-bold tracking-tight">
-            Smart budgeting
-            <span className="block text-primary">made simple</span>
+      <section className="relative container mx-auto px-4 py-10 sm:py-16">
+        <div className="mx-auto grid max-w-6xl items-center gap-8 lg:grid-cols-2 lg:gap-12">
+          <div className="space-y-5 text-center lg:text-left">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight">
+            Know what's left
+            <span className="block text-primary">before you spend</span>
           </h1>
           
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            A modern, open-source budget management tool with unlimited pockets, 
-            AI-powered insights, and seamless data portability.
+          <p className="text-lg text-muted-foreground leading-relaxed">
+            Give groceries, rent, and other priorities their own budget pockets.
+            Set an amount for each pocket, record your spending, and see how much remains.
           </p>
           
-          <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
+          <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start pt-2">
             <Button onClick={onGetStarted} size="lg" className="text-base">
               Start for Free
               <ArrowRight className="ml-2 h-4 w-4" />
@@ -94,6 +94,23 @@ export function LandingPage({ onGetStarted, onAbout }: LandingPageProps) {
               View on GitHub
             </Button>
           </div>
+          <p className="flex items-center justify-center gap-2 text-xs text-muted-foreground lg:justify-start"><Code className="h-3 w-3" />Open-source software · AGPL-3.0</p>
+          </div>
+          <Card className="w-full max-w-lg mx-auto text-left border-primary/30 shadow-none">
+            <CardHeader>
+              <Badge variant="outline" className="w-fit">Example preview · not your account</Badge>
+              <CardTitle>Groceries pocket</CardTitle>
+              <CardDescription>Illustrative monthly budget in IDR. No bank connection or live data.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <dl className="space-y-3">
+                <div className="flex justify-between gap-4"><dt>Budget</dt><dd>IDR 3,000,000</dd></div>
+                <div className="flex justify-between gap-4"><dt>Spending recorded</dt><dd>− IDR 250,000</dd></div>
+                <div className="flex justify-between gap-4 border-t pt-3 font-semibold"><dt>Left to spend</dt><dd>IDR 2,750,000</dd></div>
+              </dl>
+              <p className="text-sm text-muted-foreground">3M budget − 250k spending = 2.75M left. Your totals depend on the transactions you record.</p>
+            </CardContent>
+          </Card>
         </div>
       </section>
 
@@ -116,9 +133,9 @@ export function LandingPage({ onGetStarted, onAbout }: LandingPageProps) {
               description: "Create unlimited customizable budget categories with flexible cycles"
             },
             {
-              icon: Brain,
-              title: "AI-Powered Insights", 
-              description: "Smart categorization and personalized recommendations"
+              icon: BarChart3,
+              title: "Spending Overview",
+              description: "See recorded income, expenses, and remaining pocket budgets"
             },
             {
               icon: Upload,
@@ -132,8 +149,8 @@ export function LandingPage({ onGetStarted, onAbout }: LandingPageProps) {
             },
             {
               icon: Shield,
-              title: "Secure & Private",
-              description: "Bank-level security with complete data privacy"
+              title: "Know How Data Is Used",
+              description: "Read the privacy information below for details about Supabase and optional analytics"
             },
             {
               icon: Smartphone,
@@ -171,7 +188,7 @@ export function LandingPage({ onGetStarted, onAbout }: LandingPageProps) {
               Open Source & Community Driven
             </h2>
             <p className="text-lg text-muted-foreground">
-              Pitipal is completely free and open source under the AGPL-3.0 license.
+              Pitipal's source code is available under the AGPL-3.0 license.
               Join our community, contribute to the project, or customize it for your needs.
             </p>
           </div>
@@ -203,7 +220,7 @@ export function LandingPage({ onGetStarted, onAbout }: LandingPageProps) {
               Community Driven
             </Badge>
             <Badge variant="outline" className="text-sm px-3 py-1">
-              Always Free
+              Source Available
             </Badge>
           </div>
         </div>
@@ -238,6 +255,10 @@ export function LandingPage({ onGetStarted, onAbout }: LandingPageProps) {
             <p className="text-sm text-muted-foreground">
               © 2025 Pitipal. Open source under AGPL-3.0 License.
             </p>
+            <nav aria-label="Data and usage information" className="flex gap-4 text-sm">
+              <a className="underline" href="/privacy.html" target="_blank" rel="noopener noreferrer">Privacy information (new tab)</a>
+              <a className="underline" href="/usage.html" target="_blank" rel="noopener noreferrer">Usage information (new tab)</a>
+            </nav>
           </div>
         </div>
       </footer>

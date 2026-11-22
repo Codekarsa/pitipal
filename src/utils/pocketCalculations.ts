@@ -36,6 +36,14 @@ export interface PocketSpending {
 
 export interface SpendingCalculationResult {
   pockets: PocketSpending[];
+  monthlyTransactions: Array<{
+    id: string;
+    amount: number;
+    type: string;
+    category: string;
+    description: string | null;
+    transaction_date: string;
+  }>;
   totalBudget: number;
   totalSpent: number;
   totalRemaining: number;
@@ -78,7 +86,7 @@ export async function calculatePocketSpending(
     // Query 3: Get ALL transactions for the month (single query)
     supabase
       .from('transactions')
-      .select('id, amount, type, category, transaction_date, pocket_id')
+      .select('id, amount, type, category, description, transaction_date, pocket_id')
       .eq('user_id', userId)
       .gte('transaction_date', `${monthYear}-01`)
       .lt('transaction_date', getNextMonth(monthYear))
@@ -165,6 +173,7 @@ export async function calculatePocketSpending(
 
   return {
     pockets: pocketSpending,
+    monthlyTransactions: allTransactions,
     totalBudget,
     totalSpent,
     totalRemaining,

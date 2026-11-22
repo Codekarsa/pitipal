@@ -6,24 +6,41 @@
 All colors MUST be HSL.
 */
 
+@layer components {
+  /* Settings shares the dashboard's soft surfaces without changing cards elsewhere. */
+  .settings-page .rounded-lg.bg-card {
+    @apply min-w-0 rounded-[1.75rem] border-0 shadow-none;
+  }
+
+  .settings-page h3.tracking-tight {
+    @apply text-lg leading-snug;
+  }
+
+  @media (max-width: 639px) {
+    .settings-page .bg-card > .p-6 {
+      @apply px-5;
+    }
+  }
+}
+
 @layer base {
   :root {
-    /* Modern gradient backgrounds */
-    --background: 250 100% 99%;
-    --background-subtle: 248 100% 97%;
-    --foreground: 222.2 84% 4.9%;
+    /* Calm neutral surfaces, with purple reserved for actions. */
+    --background: 240 14% 97%;
+    --background-subtle: 240 14% 97%;
+    --foreground: 240 20% 15%;
 
     /* Card styling with subtle elevation */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --card-subtle: 250 50% 98%;
+    --card-foreground: 240 20% 15%;
+    --card-subtle: 240 14% 98%;
 
     /* Popover styling */
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 240 20% 15%;
 
     /* Modern purple-blue gradient primary */
-    --primary: 262 83% 58%;
+    --primary: 258 57% 49%;
     --primary-light: 262 100% 88%;
     --primary-dark: 262 83% 38%;
     --primary-foreground: 0 0% 100%;
@@ -43,27 +60,27 @@ All colors MUST be HSL.
     --accent-foreground: 262 83% 38%;
 
     /* Success and error colors */
-    --success: 158 64% 52%;
+    --success: 160 64% 30%;
     --success-foreground: 0 0% 100%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
 
     /* Form elements */
-    --border: 250 20% 92%;
-    --input: 250 20% 95%;
-    --ring: 262 83% 58%;
+    --border: 240 12% 90%;
+    --input: 240 12% 84%;
+    --ring: 258 57% 49%;
 
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(262 83% 58%), hsl(242 78% 65%));
     --gradient-secondary: linear-gradient(135deg, hsl(158 64% 52%), hsl(142 71% 45%));
-    --gradient-subtle: linear-gradient(180deg, hsl(250 100% 99%), hsl(248 100% 97%));
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(250 50% 98%));
+    --gradient-subtle: linear-gradient(180deg, hsl(var(--background)), hsl(var(--background-subtle)));
+    --gradient-card: linear-gradient(0deg, hsl(var(--card)), hsl(var(--card)));
 
     /* Shadows */
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
     --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 4px 16px -4px hsl(240 20% 15% / 0.08);
+    --shadow-xl: 0 16px 48px -12px hsl(240 20% 15% / 0.18);
     --shadow-glow: 0 0 20px hsl(262 83% 58% / 0.3);
 
     /* Animation */
@@ -144,7 +161,22 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv11", "ss01";
+  }
+
+  h1, h2, h3 { text-wrap: balance; }
+
+  /* Routine feedback must not cover a newly opened form. Errors stay visible. */
+  body:has([role="dialog"][data-state="open"]) [data-toast-variant="default"] {
+    visibility: hidden;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
   }
   
   /* Hide scrollbars but keep functionality */

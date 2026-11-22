@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/components/auth/useAuth";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,8 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Filter, ArrowUpDown, TrendingUp, TrendingDown, Edit, Trash2 } from "lucide-react";
-import { formatCurrency, formatCompactCurrency } from "@/lib/utils";
+import { Search, TrendingUp, TrendingDown, Edit, Trash2, ArrowDownLeft, ArrowUpRight, ArrowLeftRight, Receipt, Upload, ListPlus, Wallet } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
+import { CompactAmount } from "@/components/ui/compact-amount";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { TransactionDialog } from "@/components/dashboard/TransactionDialog";
@@ -101,6 +102,20 @@ export function TransactionsPage({ refreshKey }: TransactionsPageProps) {
   const { toast } = useToast();
   const { pocketId } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const monthParam = searchParams.get('month') || '';
+  const selectedMonth = /^\d{4}-(0[1-9]|1[0-2])$/.test(monthParam) && !monthParam.startsWith('0000')
+    ? monthParam : format(new Date(), 'yyyy-MM');
+  // The existing pocket route takes precedence over query-string filters.
+  const pocketFilter = pocketId || searchParams.get('pocket') || 'all';
+  const updateQuery = (key: string, value: string) => {
+    setSearchParams(previous => {
+      const next = new URLSearchParams(previous);
+      if (value === 'all') next.delete(key);
+      else next.set(key, value);
+      return next;
+    });
+  };
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -108,7 +123,6 @@ export function TransactionsPage({ refreshKey }: TransactionsPageProps) {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [accountFilter, setAccountFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("date_desc");
-  const [selectedMonth, setSelectedMonth] = useState<string>(format(new Date(), "yyyy-MM"));
   const [userCurrency, setUserCurrency] = useState<string>('USD');
   const [pocketName, setPocketName] = useState<string>('');
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -117,7 +131,6 @@ export function TransactionsPage({ refreshKey }: TransactionsPageProps) {
   const [transactionDialogOpen, setTransactionDialogOpen] = useState(false);
   const [bulkOpen, setBulkOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
-  const [deletingTransactionId, setDeletingTransactionId] = useState<string | null>(null);
   const [pockets, setPockets] = useState<BudgetPocket[]>([]);
 
   const fetchUserProfile = useCallback(async () => {
@@ -245,8 +258,10 @@ export function TransactionsPage({ refreshKey }: TransactionsPageProps) {
         .lt('transaction_date', endDate);
 
       // Apply filters
-      if (pocketId) {
-        query = query.eq('pocket_id', pocketId);
+      if (pocketFilter === 'unassigned') {
+        query = query.is('pocket_id', null).eq('type', 'expense');
+      } else if (pocketFilter !== 'all') {
+        query = query.eq('pocket_id', pocketFilter);
       }
 
       if (typeFilter !== "all") {
@@ -330,7 +345,7 @@ export function TransactionsPage({ refreshKey }: TransactionsPageProps) {
     } finally {
       setLoading(false);
     }
-  }, [user, pocketId, typeFilter, categoryFilter, accountFilter, sortBy, searchTerm, accounts, toast, selectedMonth]);
+  }, [user, pocketFilter, typeFilter, categoryFilter, accountFilter, sortBy, searchTerm, accounts, toast, selectedMonth]);
 
   // Initial data loading effect
   useEffect(() => {
@@ -397,6 +412,10 @@ export function TransactionsPage({ refreshKey }: TransactionsPageProps) {
     setTransactionDialogOpen(true);
   };
 
+  const getPocketName = (transaction: Transaction) => transaction.pocket_id
+    ? pockets.find(pocket => pocket.id === transaction.pocket_id)?.name || 'Unknown pocket'
+    : 'Unassigned';
+
   const handleDeleteTransaction = async (transactionId: string) => {
     try {
       // Note: Credit card balances are calculated dynamically from transactions
@@ -440,13 +459,13 @@ export function TransactionsPage({ refreshKey }: TransactionsPageProps) {
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-7" role="status" aria-label="Loading transactions">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Transactions</h1>
+          <h1 className="text-2xl sm:text-3xl font-medium tracking-tight">Transactions</h1>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[...Array(3)].map((_, i) => (
-            <Card key={i} className="animate-pulse">
+            <Card key={i} className="rounded-[1.75rem] border-0 shadow-none animate-pulse">
               <CardContent className="p-6">
                 <div className="h-4 bg-muted rounded w-1/2 mb-2"></div>
                 <div className="h-8 bg-muted rounded w-3/4"></div>
@@ -459,18 +478,18 @@ export function TransactionsPage({ refreshKey }: TransactionsPageProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-3xl font-bold">
+          <h1 className="text-2xl sm:text-3xl font-medium tracking-tight break-words">
             {pocketId ? `${pocketName} Transactions` : 'Transactions'}
           </h1>
-          <p className="text-muted-foreground">
-            {pocketId ? `Transactions for ${pocketName} pocket` : 'Track and manage all your financial transactions'}
+          <p className="mt-1.5 text-sm text-muted-foreground">
+            {pocketId ? `Transactions for ${pocketName} pocket` : 'Your income and spending, all in one place.'}
           </p>
           {pocketId && (
             <button
-              onClick={() => navigate('/transactions')}
+              onClick={() => navigate(`/transactions?month=${selectedMonth}`)}
               className="text-sm text-primary hover:underline mt-1"
             >
               ← View all transactions
@@ -478,106 +497,72 @@ export function TransactionsPage({ refreshKey }: TransactionsPageProps) {
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <MonthNavigator selectedMonth={selectedMonth} onMonthChange={setSelectedMonth} />
-          <Button variant="outline" onClick={() => setImportOpen(true)}>Import CSV</Button>
-          <Button onClick={() => setBulkOpen(true)}>Add multiple</Button>
+          <MonthNavigator selectedMonth={selectedMonth} onMonthChange={month => updateQuery('month', month)} className="rounded-full border-0 px-2" />
+          <Button variant="outline" className="rounded-full bg-card px-4" onClick={() => setImportOpen(true)}><Upload className="h-4 w-4" />Import CSV</Button>
+          <Button className="rounded-full px-4" onClick={() => setBulkOpen(true)}><ListPlus className="h-4 w-4" />Add multiple</Button>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6">
-        <Card className="bg-gradient-card border-0 shadow-sm">
-          <CardContent className="p-4 lg:p-6">
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex-1 min-w-0">
-                <p className="text-xs lg:text-sm font-medium text-muted-foreground truncate">Total Income</p>
-                <p className="text-lg lg:text-xl 2xl:text-2xl font-bold text-green-600 truncate" title={formatCurrency(stats.income, userCurrency)}>
-                  {formatCompactCurrency(stats.income, userCurrency)}
-                </p>
-              </div>
-              <div className="w-10 h-10 lg:w-12 lg:h-12 bg-green-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                <TrendingUp className="h-5 w-5 lg:h-6 lg:w-6 text-green-600" />
-              </div>
+      <div className="space-y-3">
+        <div className="grid gap-4 min-[380px]:grid-cols-2 md:grid-cols-3">
+          {[
+            { label: 'Total Income', amount: stats.income, icon: ArrowDownLeft, description: 'Money received', surface: 'bg-sky-100 bg-[radial-gradient(at_0%_100%,hsl(174_75%_77%)_0%,transparent_65%),radial-gradient(at_100%_0%,hsl(202_95%_74%)_0%,transparent_65%)] text-slate-900' },
+            { label: 'Total Expenses', amount: stats.expenses, icon: ArrowUpRight, description: 'Money spent', surface: 'bg-rose-100 bg-[radial-gradient(at_100%_0%,hsl(12_95%_78%)_0%,transparent_65%),radial-gradient(at_0%_100%,hsl(264_85%_86%)_0%,transparent_70%)] text-slate-900' },
+            { label: 'Net Amount', amount: stats.net, icon: ArrowLeftRight, description: 'Income minus expenses · not your balance', surface: 'bg-card' },
+          ].map(({ label, amount, icon: Icon, description, surface }) => <section key={label} aria-label={label} className={`min-w-0 rounded-[1.75rem] p-5 sm:p-6 ${label === 'Net Amount' ? 'min-[380px]:col-span-2 md:col-span-1' : ''} ${surface}`}>
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-sm font-medium">{label}</h2>
+              <span className="hidden rounded-2xl bg-white/40 p-2.5 md:inline-flex"><Icon className="h-5 w-5" /></span>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-card border-0 shadow-sm">
-          <CardContent className="p-4 lg:p-6">
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex-1 min-w-0">
-                <p className="text-xs lg:text-sm font-medium text-muted-foreground truncate">Total Expenses</p>
-                <p className="text-lg lg:text-xl 2xl:text-2xl font-bold text-red-600 truncate" title={formatCurrency(stats.expenses, userCurrency)}>
-                  {formatCompactCurrency(stats.expenses, userCurrency)}
-                </p>
-              </div>
-              <div className="w-10 h-10 lg:w-12 lg:h-12 bg-red-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                <TrendingDown className="h-5 w-5 lg:h-6 lg:w-6 text-red-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-card border-0 shadow-sm">
-          <CardContent className="p-4 lg:p-6">
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex-1 min-w-0">
-                <p className="text-xs lg:text-sm font-medium text-muted-foreground truncate">Net Amount</p>
-                <p className={`text-lg lg:text-xl 2xl:text-2xl font-bold truncate ${stats.net >= 0 ? 'text-green-600' : 'text-red-600'}`} title={formatCurrency(stats.net, userCurrency)}>
-                  {formatCompactCurrency(stats.net, userCurrency)}
-                </p>
-              </div>
-              <div className={`w-10 h-10 lg:w-12 lg:h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                stats.net >= 0 ? 'bg-green-500/10' : 'bg-red-500/10'
-              }`}>
-                {stats.net >= 0 ? 
-                  <TrendingUp className="h-5 w-5 lg:h-6 lg:w-6 text-green-600" /> :
-                  <TrendingDown className="h-5 w-5 lg:h-6 lg:w-6 text-red-600" />
-                }
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-card border-0 shadow-sm">
-          <CardContent className="p-4 lg:p-6">
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex-1 min-w-0">
-                <p className="text-xs lg:text-sm font-medium text-muted-foreground truncate">Total Account Balance</p>
-                <p className="text-lg lg:text-xl 2xl:text-2xl font-bold text-primary truncate" title={formatCurrency(totalAccountBalance, userCurrency)}>
-                  {formatCompactCurrency(totalAccountBalance, userCurrency)}
-                </p>
-              </div>
-              <div className="w-10 h-10 lg:w-12 lg:h-12 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                <div className="h-5 w-5 lg:h-6 lg:w-6 rounded-full bg-primary/20 border-2 border-primary"></div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            <p className={`mt-3 text-xl font-medium tracking-tight tabular-nums min-[380px]:text-base sm:text-xl md:mt-7 xl:text-2xl ${label === 'Net Amount' && amount < 0 ? 'text-destructive' : ''}`}>
+              <CompactAmount amount={amount} currency={userCurrency} label={label} />
+            </p>
+            <p className="mt-2 text-xs leading-relaxed opacity-75">{description}</p>
+          </section>)}
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-3 px-1 text-xs text-muted-foreground">
+          <p>Totals reflect the selected month and filters · Net = income − expenses</p>
+          <p className="flex flex-wrap items-center gap-1.5"><Wallet className="h-3.5 w-3.5" />Total Account Balance (all time): <CompactAmount amount={totalAccountBalance} currency={userCurrency} label="total account balance" /></p>
+        </div>
       </div>
 
       {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filters & Search
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            <div className="relative">
+      <Card className="rounded-[1.75rem] border-0 shadow-none">
+        <CardContent className="p-5 sm:p-6">
+          <div className={`grid gap-4 ${pocketId ? '' : 'md:grid-cols-2'}`}>
+            {!pocketId && (
+              <div className="flex flex-wrap items-center gap-2">
+                <label htmlFor="transaction-pocket-filter" className="text-sm font-medium">Pocket</label>
+                <select
+                  id="transaction-pocket-filter"
+                  className="h-10 min-w-0 max-w-full rounded-full border-0 bg-muted px-4 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  value={pocketFilter}
+                  onChange={event => updateQuery('pocket', event.target.value)}
+                >
+                  <option value="all">All pockets</option>
+                  <option value="unassigned">Unassigned expenses</option>
+                  {pockets.map(pocket => <option key={pocket.id} value={pocket.id}>{pocket.name}</option>)}
+                </select>
+                {pocketFilter !== 'all' && <Button variant="ghost" size="sm" className="rounded-full" onClick={() => updateQuery('pocket', 'all')}>Clear pocket filter</Button>}
+              </div>
+            )}
+            <div className="relative min-w-0">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search..."
+                placeholder="Search transactions…"
+                aria-label="Search transactions"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="h-11 rounded-full border-0 bg-muted/80 pl-10 shadow-none"
               />
             </div>
 
+            <details className="col-span-full border-t border-border/60 pt-4">
+              <summary className="w-fit cursor-pointer rounded text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Filters and sort{[typeFilter, categoryFilter, accountFilter].some(value => value !== 'all') ? ' · Filters active' : ''}</summary>
+              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger>
+              <SelectTrigger className="rounded-xl bg-muted/50" aria-label="Filter transaction type">
                 <SelectValue placeholder="All Types" />
               </SelectTrigger>
               <SelectContent>
@@ -588,7 +573,7 @@ export function TransactionsPage({ refreshKey }: TransactionsPageProps) {
             </Select>
 
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger>
+              <SelectTrigger className="rounded-xl bg-muted/50" aria-label="Filter category">
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
@@ -600,7 +585,7 @@ export function TransactionsPage({ refreshKey }: TransactionsPageProps) {
             </Select>
 
             <Select value={accountFilter} onValueChange={setAccountFilter}>
-              <SelectTrigger>
+              <SelectTrigger className="rounded-xl bg-muted/50" aria-label="Filter account">
                 <SelectValue placeholder="All Accounts" />
               </SelectTrigger>
               <SelectContent>
@@ -626,7 +611,7 @@ export function TransactionsPage({ refreshKey }: TransactionsPageProps) {
             </Select>
 
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger>
+              <SelectTrigger className="rounded-xl bg-muted/50" aria-label="Sort transactions">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
@@ -636,39 +621,38 @@ export function TransactionsPage({ refreshKey }: TransactionsPageProps) {
                 <SelectItem value="amount_asc">Lowest Amount</SelectItem>
               </SelectContent>
             </Select>
+              </div>
+            </details>
           </div>
         </CardContent>
       </Card>
 
       {/* Transactions Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
+      <Card className="rounded-[1.75rem] border-0 shadow-none">
+        <CardHeader className="p-5 sm:p-6">
+          <CardTitle className="text-base font-medium leading-relaxed">
             <span>
               Transactions for {format(new Date(`${selectedMonth}-01`), "MMMM yyyy")} ({transactions.length})
             </span>
-            <Button variant="outline" size="sm">
-              <ArrowUpDown className="h-4 w-4 mr-2" />
-              Sort
-            </Button>
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-5 pb-5 sm:px-6 sm:pb-6">
           {transactions.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">No transactions found</p>
-              <p className="text-sm text-muted-foreground mt-2">
-                Try adjusting your filters or add some transactions to get started
+            <div className="text-center py-10">
+              <span className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-accent/70"><Receipt className="h-6 w-6 text-primary" /></span>
+              <p className="text-lg font-medium">No transactions found</p>
+              <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
+                Try adjusting your filters, or record your first income or expense for this month.
               </p>
-              <Button className="mt-4" onClick={() => { setEditingTransaction(null); setTransactionDialogOpen(true); }}>Add a transaction</Button>
+              <Button className="mt-5 rounded-full px-5" onClick={() => { setEditingTransaction(null); setTransactionDialogOpen(true); }}>Add a transaction</Button>
             </div>
           ) : (
             <>
             {/* Phones: one stacked row per transaction so amount and actions stay visible */}
-            <ul className="lg:hidden divide-y">
+            <ul className="lg:hidden divide-y divide-border/60">
               {transactions.map((transaction) => (
-                <li key={transaction.id} className="flex items-start gap-3 py-3">
-                  <div className="flex-1 min-w-0">
+                <li key={transaction.id} className="flex flex-wrap items-start gap-3 py-5">
+                  <div className="min-w-0 basis-full sm:basis-48 sm:flex-1">
                     <p className="font-medium truncate">
                       {transaction.description || transaction.payees?.name || transaction.category}
                     </p>
@@ -677,9 +661,10 @@ export function TransactionsPage({ refreshKey }: TransactionsPageProps) {
                         .filter(Boolean)
                         .join(' · ')}
                     </p>
+                    <p className="text-xs text-muted-foreground break-words">Pocket: {getPocketName(transaction)}</p>
                   </div>
                   <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                    <span className={`font-medium whitespace-nowrap ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                    <span className={`font-medium whitespace-nowrap tabular-nums ${transaction.type === 'income' ? 'text-success' : 'text-foreground'}`}>
                       {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount, userCurrency)}
                     </span>
                     <div className="flex gap-1">
@@ -687,10 +672,11 @@ export function TransactionsPage({ refreshKey }: TransactionsPageProps) {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleEditTransaction(transaction)}
-                        className="h-8 w-8 p-0"
-                        aria-label="Edit transaction"
+                        className={transaction.type === 'expense' && !transaction.pocket_id ? 'h-8 px-2 text-xs' : 'h-8 w-8 p-0'}
+                        aria-label={transaction.type === 'expense' && !transaction.pocket_id ? 'Assign pocket' : 'Edit transaction'}
                       >
                         <Edit className="h-4 w-4" />
+                        {transaction.type === 'expense' && !transaction.pocket_id && <span>Assign pocket</span>}
                       </Button>
                       <DeleteTransactionButton onConfirm={() => handleDeleteTransaction(transaction.id)} />
                     </div>
@@ -699,26 +685,27 @@ export function TransactionsPage({ refreshKey }: TransactionsPageProps) {
               ))}
             </ul>
             <Table className="hidden lg:table">
-              <TableHeader>
+              <TableHeader className="bg-muted/60 [&_th]:text-xs [&_th:first-child]:rounded-l-xl [&_th:last-child]:rounded-r-xl">
                 <TableRow>
                   <TableHead>Date</TableHead>
-                  <TableHead>Payee</TableHead>
+                  <TableHead className="hidden 2xl:table-cell">Payee</TableHead>
                   <TableHead>Description</TableHead>
                   <TableHead>Category</TableHead>
-                  <TableHead>Account</TableHead>
+                  <TableHead className="hidden 2xl:table-cell">Account</TableHead>
+                  <TableHead>Pocket</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead className="text-right">Amount</TableHead>
-                  <TableHead className="hidden xl:table-cell">Status</TableHead>
+                  <TableHead className="hidden 2xl:table-cell">Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {transactions.map((transaction) => (
-                  <TableRow key={transaction.id}>
+                  <TableRow key={transaction.id} className="border-border/60 hover:bg-muted/30">
                     <TableCell className="font-medium">
                       {formatDate(transaction.transaction_date)}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden 2xl:table-cell">
                       {transaction.payees?.name ? (
                         <span className="font-medium text-foreground">
                           {transaction.payees.name}
@@ -737,9 +724,9 @@ export function TransactionsPage({ refreshKey }: TransactionsPageProps) {
                       )}
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary">{transaction.category}</Badge>
+                      <Badge variant="secondary" className="rounded-full bg-muted font-normal text-foreground">{transaction.category}</Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden 2xl:table-cell">
                       {getAccountName(transaction) ? (
                         <div className="text-sm">
                           <div className="font-medium">{getAccountName(transaction)?.split(' (')[0]}</div>
@@ -751,10 +738,11 @@ export function TransactionsPage({ refreshKey }: TransactionsPageProps) {
                         <span className="text-muted-foreground text-sm">No account</span>
                       )}
                     </TableCell>
+                    <TableCell className="text-sm">{getPocketName(transaction)}</TableCell>
                     <TableCell>
                       <Badge 
-                        variant={transaction.type === 'income' ? 'default' : 'destructive'}
-                        className={transaction.type === 'income' ? 'bg-green-500/10 text-green-700 hover:bg-green-500/20' : ''}
+                        variant="secondary"
+                        className={`rounded-full font-normal ${transaction.type === 'income' ? 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100' : 'bg-rose-50 text-rose-800 hover:bg-rose-100'}`}
                       >
                         {transaction.type === 'income' ? (
                           <TrendingUp className="h-3 w-3 mr-1" />
@@ -765,11 +753,11 @@ export function TransactionsPage({ refreshKey }: TransactionsPageProps) {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right font-medium">
-                      <span className={transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}>
+                      <span className={`inline-block whitespace-nowrap tabular-nums ${transaction.type === 'income' ? 'text-success' : 'text-foreground'}`}>
                         {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount, userCurrency)}
                       </span>
                     </TableCell>
-                    <TableCell className="hidden xl:table-cell">
+                    <TableCell className="hidden 2xl:table-cell">
                       <div className="flex gap-1">
                         {transaction.is_recurring && (
                           <Badge variant="outline" className="text-xs">Recurring</Badge>
@@ -785,10 +773,11 @@ export function TransactionsPage({ refreshKey }: TransactionsPageProps) {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleEditTransaction(transaction)}
-                          className="h-8 w-8 p-0"
-                          aria-label="Edit transaction"
+                          className={transaction.type === 'expense' && !transaction.pocket_id ? 'h-8 px-2 text-xs whitespace-nowrap' : 'h-8 w-8 p-0'}
+                          aria-label={transaction.type === 'expense' && !transaction.pocket_id ? 'Assign pocket' : 'Edit transaction'}
                         >
                           <Edit className="h-4 w-4" />
+                          {transaction.type === 'expense' && !transaction.pocket_id && <span>Assign pocket</span>}
                         </Button>
                         <DeleteTransactionButton onConfirm={() => handleDeleteTransaction(transaction.id)} />
                       </div>

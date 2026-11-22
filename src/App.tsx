@@ -38,6 +38,7 @@ interface BudgetPocket {
 function AppContent() {
   const { user, loading, signOut } = useAuth();
   const [showAuthForm, setShowAuthForm] = useState(false);
+  const [authInitialMode, setAuthInitialMode] = useState<'landing' | 'signin'>('landing');
   const [showAbout, setShowAbout] = useState(false);
   const [showAddTransaction, setShowAddTransaction] = useState(false);
   const [pockets, setPockets] = useState<BudgetPocket[]>([]);
@@ -112,7 +113,7 @@ function AppContent() {
 
   if (!user) {
     if (showAuthForm) {
-      return <AuthForm onSuccess={() => setShowAuthForm(false)} />;
+      return <AuthForm initialMode={authInitialMode} onSuccess={() => setShowAuthForm(false)} />;
     }
     
     if (showAbout) {
@@ -121,7 +122,8 @@ function AppContent() {
     
     return (
       <LandingPage 
-        onGetStarted={() => setShowAuthForm(true)}
+        onGetStarted={() => { setAuthInitialMode('landing'); setShowAuthForm(true); }}
+        onSignIn={() => { setAuthInitialMode('signin'); setShowAuthForm(true); }}
         onAbout={() => setShowAbout(true)}
       />
     );

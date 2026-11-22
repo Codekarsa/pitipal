@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy information · Pitipal</title>
+  <style>body{font:1rem/1.7 system-ui,sans-serif;max-width:46rem;margin:auto;padding:2rem;color:#17212b;background:#fafafa}a{color:#075cab}h1,h2{line-height:1.3}nav{display:flex;flex-wrap:wrap;gap:1rem}</style>
+</head>
+<body>
+  <nav aria-label="Navigation"><a href="/">Return to Pitipal</a><a href="/usage.html">Usage information</a></nav>
+  <main>
+    <h1>Privacy information</h1>
+    <p>This page describes how the open-source app handles data. It is not a deployment-specific legal privacy policy. The operator of the instance you use is responsible for explaining its actual data practices.</p>
+    <h2>Account and budgeting data</h2>
+    <p>The app uses Supabase for authentication and database storage. Email signup sends your email address, password, and full name to the configured Supabase service. Google sign-in is also offered through Supabase. Profiles, currency preferences, budget pockets, accounts, and recorded transactions are stored in that service.</p>
+    <h2>Storage in your browser</h2>
+    <p>The Supabase client stores the sign-in session in local storage, keeps it between visits, and refreshes it automatically. Sign out on shared devices. Clearing browser storage removes the local session; it does not delete your server-side account or records.</p>
+    <h2>Analytics</h2>
+    <p>When a Google Analytics measurement ID is configured, the app initializes Google Analytics and sends page views and usage events. The analytics helpers include signup/login methods, transaction and pocket actions, and import/export events. This is not a guarantee that no other data is collected by the hosting or authentication services.</p>
+    <h2>Deployment-specific questions</h2>
+    <p>The source code does not establish an operator contact, retention schedule, deletion process, or hosting location for every instance. Ask the operator of your deployment about these details before entering sensitive financial information. An open-source license is not a guarantee of privacy or bank-level security.</p>
+    <p>Implementation references: <a href="https://github.com/Codekarsa/pitipal/blob/main/src/integrations/supabase/client.ts">Supabase client</a>, <a href="https://github.com/Codekarsa/pitipal/blob/main/src/lib/analytics.ts">analytics helpers</a>, and <a href="https://github.com/Codekarsa/pitipal">source repository</a>. Deployed versions and configuration may differ.</p>
+  </main>
+</body>
+</html>

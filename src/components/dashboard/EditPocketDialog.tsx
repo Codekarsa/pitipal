@@ -321,7 +321,7 @@ export function EditPocketDialog({
       }}
     >
       <DialogContent
-        className={`sm:max-w-[480px] bg-gradient-card border-0 shadow-xl max-h-[90vh] overflow-y-auto ${loading ? "[&>button]:pointer-events-none [&>button]:opacity-40" : ""}`}
+        className={`sm:max-w-[480px] max-h-[90dvh] overflow-y-auto ${loading ? "[&>button]:pointer-events-none [&>button]:opacity-40" : ""}`}
         onEscapeKeyDown={(event) => {
           if (saving.current) event.preventDefault();
         }}
@@ -681,7 +681,7 @@ export function EditPocketDialog({
               </fieldset>
             </details>
           </fieldset>
-          <DialogFooter className="sticky -bottom-6 z-10 gap-2 border-t bg-background py-4">
+          <DialogFooter className="sticky -bottom-5 z-10 gap-2 border-t bg-card py-4 sm:-bottom-6">
             <Button
               type="button"
               variant="outline"
